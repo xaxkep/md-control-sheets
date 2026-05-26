@@ -443,24 +443,6 @@
 
             const activeRole = getActiveUserRole();
 
-            // Get all sheets that failed to sync
-            const getSyncErrors = () => {
-                if (isSandbox) return [];
-                if (!activeRole) return [];
-                const sheetsToCheck = activeRole.isMD ? mappings : [activeRole.mapping].filter(Boolean);
-                const errors = [];
-                sheetsToCheck.forEach(map => {
-                    const status = syncStatuses[map.spreadsheetId];
-                    if (status && status.status === 'error') {
-                        errors.push({
-                            map,
-                            error: status.error
-                        });
-                    }
-                });
-                return errors;
-            };
-            const syncErrors = getSyncErrors();
 
             // Fetch Sheets data
             const loadSpreadsheetData = React.useCallback(async () => {
@@ -1203,81 +1185,7 @@
                                     </div>
                                 </div>
 
-                                {/* Sync Errors Diagnostics & Troubleshooting Panel */}
-                                {syncErrors.length > 0 && (
-                                    <div className="glass-panel p-6 rounded-3xl border border-rose-200 bg-rose-50/50 shadow-lg flex flex-col gap-4 text-slate-800 animate-fade-in">
-                                        <div className="flex items-start gap-3">
-                                            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 flex-shrink-0">
-                                                <Icon name="alert" className="w-5 h-5 animate-pulse" />
-                                            </div>
-                                            <div>
-                                                <h4 className="text-base font-bold text-rose-800">Google Sheets Sync Alert</h4>
-                                                <p className="text-xs text-rose-700/80 font-medium mt-0.5">We encountered issues synchronizing the spreadsheet data. Please follow the instructions below:</p>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
-                                            {syncErrors.map(({ map, error }) => {
-                                                const isPermissionErr = error.includes('403') || error.toLowerCase().includes('permission') || error.toLowerCase().includes('forbidden');
-                                                const isNotFoundErr = error.includes('404') || error.toLowerCase().includes('not found') || error.toLowerCase().includes('spreadsheet id');
-                                                const isRangeErr = error.toLowerCase().includes('range') || error.toLowerCase().includes('tab') || error.includes('400');
-                                                
-                                                return (
-                                                    <div key={map.id} className="p-4 bg-white/85 border border-rose-100 rounded-2xl flex flex-col gap-2.5 text-xs shadow-sm">
-                                                        <div className="flex items-center justify-between border-b border-rose-50/60 pb-1.5">
-                                                            <span className="font-bold text-slate-800">{map.deptName} ({map.headName})</span>
-                                                            <span className="px-2 py-0.5 rounded bg-rose-100/50 text-[10px] text-rose-700 font-bold tracking-wide uppercase">Sync Failed</span>
-                                                        </div>
-                                                        <div className="flex flex-col gap-1">
-                                                            <div className="font-semibold text-slate-400 uppercase tracking-wider text-[9px]">Spreadsheet ID:</div>
-                                                            <div className="font-mono text-[10px] bg-slate-50 border border-slate-200 rounded px-2 py-1 select-all break-all text-slate-600">{map.spreadsheetId || '(Empty)'}</div>
-                                                        </div>
-                                                        <div className="flex flex-col gap-1">
-                                                            <div className="font-semibold text-rose-700 uppercase tracking-wider text-[9px]">Error Message:</div>
-                                                            <div className="font-mono text-[10px] text-rose-650 bg-rose-50/30 border border-rose-100/50 rounded px-2 py-1 leading-relaxed">{error}</div>
-                                                        </div>
-                                                        
-                                                        {/* Step-by-step resolution instructions */}
-                                                        <div className="mt-1 bg-slate-50/50 border border-slate-100 rounded-xl p-3 text-slate-600 flex flex-col gap-1.5 leading-relaxed">
-                                                            <span className="font-bold text-slate-700 text-[11px]">🛠️ How to resolve:</span>
-                                                            {isPermissionErr && (
-                                                                <ul className="list-decimal pl-4 flex flex-col gap-1 font-medium text-slate-500">
-                                                                    <li>Open the Google Sheet <a href={`https://docs.google.com/spreadsheets/d/${map.spreadsheetId}/edit`} target="_blank" className="text-teal-600 font-bold underline hover:text-teal-700">here</a>.</li>
-                                                                    <li>Click the <strong className="text-slate-700 font-bold">"Share"</strong> button in the top right.</li>
-                                                                    <li>Invite the logged-in email <strong className="text-teal-650 font-mono text-[10px]">{auth?.email}</strong> with <strong className="text-slate-700">Viewer</strong> or <strong className="text-slate-700">Editor</strong> access.</li>
-                                                                    <li>Refresh this page to retry syncing.</li>
-                                                                </ul>
-                                                            )}
-                                                            {isNotFoundErr && (
-                                                                <ul className="list-decimal pl-4 flex flex-col gap-1 font-medium text-slate-500">
-                                                                    <li>Open Administrative Settings (cog ⚙️ icon in the header).</li>
-                                                                    <li>Verify that the Spreadsheet ID for <strong className="text-slate-700">{map.deptName}</strong> matches the actual sheet URL exactly.</li>
-                                                                    <li>The ID is the long string of letters and numbers in the URL (between <code>/d/</code> and <code>/edit</code>).</li>
-                                                                    <li>Save settings and refresh the page.</li>
-                                                                </ul>
-                                                            )}
-                                                            {isRangeErr && (
-                                                                <ul className="list-decimal pl-4 flex flex-col gap-1 font-medium text-slate-500">
-                                                                    <li>Open the Google Sheet <a href={`https://docs.google.com/spreadsheets/d/${map.spreadsheetId}/edit`} target="_blank" className="text-teal-600 font-bold underline hover:text-teal-700">here</a>.</li>
-                                                                    <li>Verify that the worksheet tab name matches <strong className="text-teal-655 font-bold">"{sheetTabName}"</strong> exactly.</li>
-                                                                    <li>If the tab name is different (e.g. <code>Sheet1</code>), either rename it in Google Sheets to <strong className="text-slate-700">"{sheetTabName}"</strong> OR change the tab name in Administrative Settings.</li>
-                                                                    <li>Refresh this page to retry.</li>
-                                                                </ul>
-                                                            )}
-                                                            {!isPermissionErr && !isNotFoundErr && !isRangeErr && (
-                                                                <ul className="list-decimal pl-4 flex flex-col gap-1 font-medium text-slate-500">
-                                                                    <li>Confirm that you are logged into Google with the correct account.</li>
-                                                                    <li>Verify that the Spreadsheet is shared with <strong className="text-teal-655 font-mono text-[10px]">{auth?.email}</strong>.</li>
-                                                                    <li>Check if the tab is named <strong className="text-slate-700">"{sheetTabName}"</strong>.</li>
-                                                                    <li>Ensure the spreadsheet ID is valid and has no typos.</li>
-                                                                </ul>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
+
 
                                 {/* Consolidated Mappings Status Panel (MD view only) */}
                                 {activeRole.isMD && (
