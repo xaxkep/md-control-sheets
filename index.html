@@ -501,7 +501,7 @@
                         try {
                             const quotedTab = `'${sheetTabName.replace(/'/g, "''")}'`;
                             const response = await fetch(
-                                `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A1:J1000?valueRenderOption=FORMATTED_VALUE&_t=${Date.now()}`,
+                                `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A1:J1000?valueRenderOption=FORMATTED_VALUE`,
                                 {
                                     headers: { 'Authorization': `Bearer ${auth.accessToken}` }
                                 }
