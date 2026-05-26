@@ -481,20 +481,28 @@
                     
                     const fetchPromises = sheetsToFetch.map(async (map) => {
                         try {
+                            const quotedTab = `'${sheetTabName.replace(/'/g, "''")}'`;
                             const response = await fetch(
-                                `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values/${encodeURIComponent(sheetTabName)}!A1:J1000?valueRenderOption=FORMATTED_VALUE&_t=${Date.now()}`,
+                                `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A1:J1000?valueRenderOption=FORMATTED_VALUE&_t=${Date.now()}`,
                                 {
                                     headers: { 'Authorization': `Bearer ${auth.accessToken}` }
                                 }
                             );
                             
                             if (!response.ok) {
+                                let errMsg = '';
+                                try {
+                                    const errData = await response.json();
+                                    errMsg = errData?.error?.message || response.statusText || '';
+                                } catch (_) {
+                                    errMsg = response.statusText || '';
+                                }
                                 if (response.status === 403) {
-                                    throw new Error('403 Forbidden (No permission to this sheet)');
+                                    throw new Error(`403 Forbidden (No permission): ${errMsg || 'Ensure sheet is shared with your account'}`);
                                 } else if (response.status === 404) {
-                                    throw new Error('404 Not Found (Invalid Spreadsheet ID)');
+                                    throw new Error(`404 Not Found (Invalid Sheet ID): ${errMsg || 'Check if ID is correct'}`);
                                 } else {
-                                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                                    throw new Error(`Error ${response.status}: ${errMsg || response.statusText}`);
                                 }
                             }
                             
@@ -638,8 +646,9 @@
                 // Google Sheets API append request
                 if (!auth) return;
                 try {
+                    const quotedTab = `'${sheetTabName.replace(/'/g, "''")}'`;
                     const response = await fetch(
-                        `https://sheets.googleapis.com/v4/spreadsheets/${targetDept.spreadsheetId}/values/${encodeURIComponent(sheetTabName)}!A:J:append?valueInputOption=USER_ENTERED`,
+                        `https://sheets.googleapis.com/v4/spreadsheets/${targetDept.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A:J:append?valueInputOption=USER_ENTERED`,
                         {
                             method: 'POST',
                             headers: {
@@ -653,8 +662,14 @@
                     );
 
                     if (!response.ok) {
-                        const errDetails = await response.text();
-                        throw new Error(`Failed to append row: ${response.statusText}. details: ${errDetails}`);
+                        let errMsg = '';
+                        try {
+                            const errData = await response.json();
+                            errMsg = errData?.error?.message || response.statusText || '';
+                        } catch (_) {
+                            errMsg = await response.text() || response.statusText || '';
+                        }
+                        throw new Error(`Failed to append row (Error ${response.status}): ${errMsg}`);
                     }
 
                     setDispatchDesc('');
@@ -741,8 +756,9 @@
                 // Google Sheets API update row request
                 if (!auth) return;
                 try {
+                    const quotedTab = `'${sheetTabName.replace(/'/g, "''")}'`;
                     const response = await fetch(
-                        `https://sheets.googleapis.com/v4/spreadsheets/${currentDirective.spreadsheetId}/values/${encodeURIComponent(sheetTabName)}!A${excelRowNumber}:J${excelRowNumber}?valueInputOption=USER_ENTERED`,
+                        `https://sheets.googleapis.com/v4/spreadsheets/${currentDirective.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A${excelRowNumber}:J${excelRowNumber}?valueInputOption=USER_ENTERED`,
                         {
                             method: 'PUT',
                             headers: {
@@ -756,7 +772,14 @@
                     );
 
                     if (!response.ok) {
-                        throw new Error(`Failed to update row: ${response.statusText}`);
+                        let errMsg = '';
+                        try {
+                            const errData = await response.json();
+                            errMsg = errData?.error?.message || response.statusText || '';
+                        } catch (_) {
+                            errMsg = response.statusText || '';
+                        }
+                        throw new Error(`Failed to update row (Error ${response.status}): ${errMsg}`);
                     }
 
                     setEditingDirective(null);
@@ -834,8 +857,9 @@
 
                 if (!auth) return;
                 try {
+                    const quotedTab = `'${sheetTabName.replace(/'/g, "''")}'`;
                     const response = await fetch(
-                        `https://sheets.googleapis.com/v4/spreadsheets/${directive.spreadsheetId}/values/${encodeURIComponent(sheetTabName)}!A${excelRowNumber}:J${excelRowNumber}?valueInputOption=USER_ENTERED`,
+                        `https://sheets.googleapis.com/v4/spreadsheets/${directive.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A${excelRowNumber}:J${excelRowNumber}?valueInputOption=USER_ENTERED`,
                         {
                             method: 'PUT',
                             headers: {
@@ -849,7 +873,14 @@
                     );
 
                     if (!response.ok) {
-                        throw new Error(`Failed to update row: ${response.statusText}`);
+                        let errMsg = '';
+                        try {
+                            const errData = await response.json();
+                            errMsg = errData?.error?.message || response.statusText || '';
+                        } catch (_) {
+                            errMsg = response.statusText || '';
+                        }
+                        throw new Error(`Failed to audit row (Error ${response.status}): ${errMsg}`);
                     }
 
                     showNotification(`Directive audited: ${auditAction === 'verify' ? 'Verified' : 'Reset'}`);
