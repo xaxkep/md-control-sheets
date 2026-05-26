@@ -240,7 +240,21 @@
             });
 
             // Authentication state
-            const [auth, setAuth] = React.useState(null);
+            const [auth, setAuth] = React.useState(() => {
+                try {
+                    const saved = localStorage.getItem('pcil_auth');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        // Validate token expiration (1 hour limit, using a 2-minute safety buffer)
+                        if (parsed && parsed.accessToken && parsed.expiresAt && parsed.expiresAt > Date.now() + 120 * 1000) {
+                            return parsed;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to parse persistent auth session:', e);
+                }
+                return null;
+            });
             const [gisLoaded, setGisLoaded] = React.useState(false);
             
             // Sandbox State
@@ -361,12 +375,15 @@
                     const userInfo = await res.json();
                     
                     if (userInfo.email) {
-                        setAuth({
+                        const authData = {
                             accessToken,
                             email: userInfo.email.toLowerCase(),
                             name: userInfo.name || userInfo.email,
-                            picture: userInfo.picture || ''
-                        });
+                            picture: userInfo.picture || '',
+                            expiresAt: Date.now() + 3600 * 1000 // expires in 1 hour
+                        };
+                        setAuth(authData);
+                        localStorage.setItem('pcil_auth', JSON.stringify(authData));
                         setIsSandbox(false);
                         showNotification(`Logged in as ${userInfo.name || userInfo.email}`, 'success');
                     } else {
@@ -389,6 +406,7 @@
 
             const handleLogout = () => {
                 setAuth(null);
+                localStorage.removeItem('pcil_auth');
                 setIsSandbox(false);
                 setDirectives([]);
                 showNotification('Logged out successfully.', 'info');
