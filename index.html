@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCIL Command Canvas - Google Sheets Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', sans-serif;
+            background-color: #f8fafc; /* Slate-50 */
+        }
+        .hindi-text { 
+            line-height: 1.7; 
+            font-family: 'Noto Sans Devanagari', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .glass-panel-hover:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 bg-[#f8fafc] min-h-screen flex flex-col selection:bg-teal-500/20 selection:text-teal-900">
+    <div id="root" class="flex-grow flex flex-col"></div>
+
+    <script type="text/babel">
+        // Helper Icon Component mapping Lucide-like SVGs dynamically
+        function Icon({ name, className = "w-5 h-5", strokeWidth = 2 }) {
+            const icons = {
+                settings: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                ),
+                trash: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                ),
+                plus: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                ),
+                check: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                ),
+                refresh: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3-3m0 0l3 3m-3-3v8" />
+                    </svg>
+                ),
+                alert: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                ),
+                logout: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                ),
+                down: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                ),
+                user: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                ),
+                shield: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                ),
+                key: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m-2 4a2 2 0 01-2-2m2 2a2 2 0 002-2m0 0a2 2 0 00-2-2m-2 4h.01M17 7h.01M11 12H3m8 0v2m0-2v-2m-8 2v-2m6 4h2M5 12h2" />
+                    </svg>
+                ),
+                search: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                ),
+                filter: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                ),
+                info: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                ),
+                sheet: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                ),
+                close: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                ),
+                undo: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                ),
+                edit: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                ),
+                globe: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                    </svg>
+                )
+            };
+            return icons[name] || (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" />
+                </svg>
+            );
+        }
+
+        // Mock spreadsheets database matching the local files checked by node script
+        const DEFAULT_MOCK_DATA = {
+            "spreadsheet_kajal_sharma": [
+                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date"],
+                ["26-May-2026", "Work", "ग्लॉस विजिटिंग कार्ड के सभी प्रोडक्ट्स एवं NT/PVC विजिटिंग कार्ड बॉक्स की नई डिजाइन तैयार करवानी है, ताकि पैकेजिंग को अधिक आकर्षक एवं प्रोफेशनल बनाया जा सके।", "Urgent", "03-Jun-2026", "Pending", "In Progress", "डिजाइनर कार्य कर रहे हैं और 2 डिजाइन सिलेक्ट कर लिए गए हैं।", "Rahul Kumar", ""],
+                ["26-May-2026", "Work", "ग्लॉस विजिटिंग कार्ड के सभी प्रोडक्ट बॉक्स पर RICOH का Advertisement / Branding प्रदर्शित करनी है", "Urgent", "03-Jun-2026", "Pending", "In Progress", "RICOH की ओर से ब्रांडिंग गाइडलाइन्स का इंतजार है।", "", ""],
+                ["12-May-2026", "Work", "For the visiting card product, develop a short-format (mini) sample file as an alternative to the detailed sample file, and also suggest an appropriate standard name for it (e.g., Short-Format Sample File or Mini Sample File)", "Normal", "04-Jun-2026", "Pending", "On Hold", "Hold By MD - pending pricing confirmation", "", ""],
+                ["20-May-2026", "Instruction", "बिना MD सर के अप्रूवल के कोई भी प्रोडक्ट लॉन्च नहीं होंगे", "Very Urgent", "Immediate", "Done", "Checked & Confirmed", "सभी टीम मेम्बर्स को सूचित कर दिया गया है।", "Printing Team", "24-May-2026 11:30"]
+            ],
+            "spreadsheet_ramesh_panwar": [
+                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date"],
+                ["22-May-2026", "Deficiency", "No Proper solution to - complaint no 4565 (CRC customer escalation)", "Urgent", "25-May-2026", "Done", "Checked & Confirmed", "Customer was contacted, refund processed and case closed.", "Mohit", "24-May-2026 15:30"],
+                ["22-May-2026", "Deficiency", "छुट्टी करने की परमिशन नहीं ली, जबकि सुबह ही नई जिम्मेदारी दी थी", "Normal", "23-May-2026", "Done", "Checked & Confirmed", "इसकी जानकारी मेने मोहित जी को दे दी थी लेकिन MD सर से पेर्मिशन नहीं ली थी इसके लिए में माफ़ी चाहता हु और आगे से ऐसी गलती दुबारा नहीं की जाएगी।", "", "23-May-2026 10:00"],
+                ["24-May-2026", "Instruction", "आपके डिपार्टमेंट से संबंधित मेजर कम्प्लेंट्स की वीकली रिपोर्ट अब नए फॉर्मेट में प्रस्तुत करना अनिवार्य है। साथ ही, आपके डिपार्टमेंट की ओर से सबमिट की जाने वाली प्रत्येक रिपोर्ट पर आपके हस्ताक्षर होना आवश्यक है।", "Urgent", "01-Jun-2026", "Pending", "Pending", "नए टेम्पलेट का ड्राफ्ट तैयार किया जा रहा है।", "", ""]
+            ],
+            "spreadsheet_manan_mongia": [
+                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date"],
+                ["25-May-2026", "Work", "Implement automated daily backup script for database and verify integrity.", "Normal", "30-May-2026", "Pending", "In Progress", "Backup script is running on cron job, verifying validation reports.", "IT Infra Team", ""],
+                ["26-May-2026", "Work", "Develop MD Multi-Sheet Control Canvas with real-time Google Sheets sync.", "Very Urgent", "27-May-2026", "Pending", "In Progress", "React Single-page app completed, ready for deployment to GitHub Pages.", "Self", ""]
+            ],
+            "spreadsheet_shahid_khan": [
+                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date"],
+                ["20-May-2026", "Instruction", "Review Q1 sales projections and present efficiency strategy for printing division.", "Urgent", "28-May-2026", "Pending", "Pending", "Sales data compiled, drafting the presentation now.", "Sales Head", ""]
+            ],
+            "spreadsheet_lalit_kumawat": [
+                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date"],
+                ["18-May-2026", "Work", "Reconcile vendor payments for the logistics department for the past quarter.", "Normal", "25-May-2026", "Done", "Checked & Confirmed", "Logistics payments cleared, final statement sent to auditors.", "Accounts Team", "24-May-2026 18:00"]
+            ],
+            "spreadsheet_dileep_yadav": [
+                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date"],
+                ["24-May-2026", "Work", "Prepare catalog for corporate corporate gifting orders for upcoming festival season.", "Normal", "05-Jun-2026", "Pending", "Not Seen", "Drafting corporate brochures and gifting collections.", "", ""]
+            ]
+        };
+
+        const DEFAULT_MAPPINGS = [
+            { id: "1", deptName: "IT Project Management", headName: "Manan Mongia", headEmail: "manan@pcil.com", spreadsheetId: "spreadsheet_manan_mongia" },
+            { id: "2", deptName: "Product Management (Printing)", headName: "Kajal Sharma", headEmail: "kajal@pcil.com", spreadsheetId: "spreadsheet_kajal_sharma" },
+            { id: "3", deptName: "Support Center", headName: "Ramesh Panwar", headEmail: "ramesh@pcil.com", spreadsheetId: "spreadsheet_ramesh_panwar" },
+            { id: "4", deptName: "PCIL CEO Office", headName: "Shahid Khan", headEmail: "shahid@pcil.com", spreadsheetId: "spreadsheet_shahid_khan" },
+            { id: "5", deptName: "Finance & Accounts", headName: "Lalit Kumawat", headEmail: "lalit@pcil.com", spreadsheetId: "spreadsheet_lalit_kumawat" },
+            { id: "6", deptName: "Gifting Division", headName: "Dileep Yadav", headEmail: "dileep@pcil.com", spreadsheetId: "spreadsheet_dileep_yadav" }
+        ];
+
+        // Date helper functions
+        function parseExcelDate(val) {
+            if (!val) return '';
+            if (!isNaN(val) && String(val).trim() !== '') {
+                const num = Number(val);
+                // Excel 1900 leap year bug handler
+                const date = new Date(Math.round((num - (num > 60 ? 25569 : 25568)) * 86400 * 1000));
+                return formatDateString(date);
+            }
+            return String(val);
+        }
+
+        // Format Date to DD-MMM-YYYY
+        function formatDateString(date) {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = months[date.getMonth()];
+            const year = date.getFullYear();
+            return `${day}-${month}-${year}`;
+        }
+
+        function formatDateTimeString(date) {
+            const dateStr = formatDateString(date);
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${dateStr} ${hours}:${minutes}`;
+        }
+
+        // Main App Wrapper
+        function App() {
+            // Settings states loaded from localStorage or initialized with defaults
+            const [clientId, setClientId] = React.useState(() => localStorage.getItem('pcil_clientId') || '');
+            const [mdEmail, setMdEmail] = React.useState(() => localStorage.getItem('pcil_mdEmail') || 'manan@pcil.com');
+            const [sheetTabName, setSheetTabName] = React.useState(() => localStorage.getItem('pcil_sheetTabName') || 'MD Directives');
+            const [mappings, setMappings] = React.useState(() => {
+                const saved = localStorage.getItem('pcil_mappings');
+                return saved ? JSON.parse(saved) : DEFAULT_MAPPINGS;
+            });
+
+            // Authentication state
+            const [auth, setAuth] = React.useState(null);
+            const [gisLoaded, setGisLoaded] = React.useState(false);
+            
+            // Sandbox State
+            const [isSandbox, setIsSandbox] = React.useState(false);
+            const [sandboxRole, setSandboxRole] = React.useState('MD'); // 'MD' or 'DH:email'
+            const [mockDb, setMockDb] = React.useState(() => {
+                const saved = localStorage.getItem('pcil_mockDb');
+                return saved ? JSON.parse(saved) : DEFAULT_MOCK_DATA;
+            });
+
+            // Settings Modal Open
+            const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+            
+            // Data Loading States
+            const [directives, setDirectives] = React.useState([]);
+            const [loading, setLoading] = React.useState(false);
+            const [syncStatuses, setSyncStatuses] = React.useState({}); // { spreadsheetId: { status: 'success'|'error', error: '' } }
+            const [tokenClient, setTokenClient] = React.useState(null);
+
+            // Filter States
+            const [searchTerm, setSearchTerm] = React.useState('');
+            const [filterDept, setFilterDept] = React.useState('All');
+            const [filterStatus, setFilterStatus] = React.useState('All');
+            const [filterPriority, setFilterPriority] = React.useState('All');
+            const [filterType, setFilterType] = React.useState('All');
+
+            // Dispatch Form State
+            const [dispatchDeptId, setDispatchDeptId] = React.useState('');
+            const [dispatchType, setDispatchType] = React.useState('Work');
+            const [dispatchDesc, setDispatchDesc] = React.useState('');
+            const [dispatchPriority, setDispatchPriority] = React.useState('Normal');
+            const [dispatchTargetDate, setDispatchTargetDate] = React.useState('');
+            const [dispatchSuccess, setDispatchSuccess] = React.useState(false);
+            const [dispatchLoading, setDispatchLoading] = React.useState(false);
+
+            // Row editing state (DH or MD edit)
+            const [editingDirective, setEditingDirective] = React.useState(null);
+            const [editStatus, setEditStatus] = React.useState('');
+            const [editRemark, setEditRemark] = React.useState('');
+            const [editDelegated, setEditDelegated] = React.useState('');
+            const [editLoading, setEditLoading] = React.useState(false);
+
+            // Notification message state
+            const [notification, setNotification] = React.useState(null);
+
+            // Setup GIS Client
+            React.useEffect(() => {
+                const checkGis = setInterval(() => {
+                    if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+                        clearInterval(checkGis);
+                        setGisLoaded(true);
+                    }
+                }, 100);
+                return () => clearInterval(checkGis);
+            }, []);
+
+            React.useEffect(() => {
+                if (gisLoaded && clientId) {
+                    try {
+                        const client = window.google.accounts.oauth2.initTokenClient({
+                            client_id: clientId.trim(),
+                            scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+                            callback: (tokenResponse) => {
+                                if (tokenResponse.error !== undefined) {
+                                    showNotification('OAuth error: ' + tokenResponse.error, 'error');
+                                    return;
+                                }
+                                handleOAuthSuccess(tokenResponse.access_token);
+                            },
+                        });
+                        setTokenClient(client);
+                    } catch (err) {
+                        console.error('Failed to init token client', err);
+                    }
+                }
+            }, [gisLoaded, clientId]);
+
+            // Save settings to localStorage helper
+            const saveSettings = (newClientId, newMdEmail, newTabName, newMappings) => {
+                const trimmedClientId = (newClientId || '').trim();
+                const trimmedMdEmail = (newMdEmail || '').trim();
+                const trimmedTabName = (newTabName || '').trim();
+                
+                localStorage.setItem('pcil_clientId', trimmedClientId);
+                localStorage.setItem('pcil_mdEmail', trimmedMdEmail);
+                localStorage.setItem('pcil_sheetTabName', trimmedTabName);
+                localStorage.setItem('pcil_mappings', JSON.stringify(newMappings));
+                
+                setClientId(trimmedClientId);
+                setMdEmail(trimmedMdEmail);
+                setSheetTabName(trimmedTabName);
+                setMappings(newMappings);
+                
+                showNotification('Settings saved successfully!', 'success');
+            };
+
+            // Trigger notification banner
+            const showNotification = (message, type = 'info') => {
+                setNotification({ message, type });
+                setTimeout(() => setNotification(null), 4000);
+            };
+
+            // Google login success handler
+            const handleOAuthSuccess = async (accessToken) => {
+                setLoading(true);
+                try {
+                    // Fetch user info from Google API
+                    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    const userInfo = await res.json();
+                    
+                    if (userInfo.email) {
+                        setAuth({
+                            accessToken,
+                            email: userInfo.email.toLowerCase(),
+                            name: userInfo.name || userInfo.email,
+                            picture: userInfo.picture || ''
+                        });
+                        setIsSandbox(false);
+                        showNotification(`Logged in as ${userInfo.name || userInfo.email}`, 'success');
+                    } else {
+                        throw new Error('Could not retrieve email address.');
+                    }
+                } catch (err) {
+                    showNotification('Sign-in failed: ' + err.message, 'error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const triggerGoogleLogin = () => {
+                if (!tokenClient) {
+                    showNotification('Google OAuth Client ID is missing or incorrect. Click settings (cog) to check.', 'error');
+                    return;
+                }
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            };
+
+            const handleLogout = () => {
+                setAuth(null);
+                setIsSandbox(false);
+                setDirectives([]);
+                showNotification('Logged out successfully.', 'info');
+            };
+
+            // Identify current role and view mode
+            const getActiveUserRole = () => {
+                if (isSandbox) {
+                    if (sandboxRole === 'MD') return { isMD: true, email: mdEmail.toLowerCase(), name: 'Managing Director (Demo)' };
+                    const mapping = mappings.find(m => `DH:${m.headEmail.toLowerCase()}` === sandboxRole);
+                    return {
+                        isMD: false,
+                        email: mapping?.headEmail.toLowerCase() || '',
+                        name: mapping?.headName || 'Department Head (Demo)',
+                        mapping: mapping
+                    };
+                }
+                if (!auth) return null;
+                const userEmail = auth.email.toLowerCase();
+                if (userEmail === mdEmail.toLowerCase()) {
+                    return { isMD: true, email: userEmail, name: auth.name };
+                }
+                const mapping = mappings.find(m => m.headEmail.toLowerCase() === userEmail);
+                if (mapping) {
+                    return {
+                        isMD: false,
+                        email: userEmail,
+                        name: auth.name,
+                        mapping: mapping
+                    };
+                }
+                return { isUnregistered: true, email: userEmail, name: auth.name };
+            };
+
+            const activeRole = getActiveUserRole();
+
+            // Fetch Sheets data
+            const loadSpreadsheetData = React.useCallback(async () => {
+                if (!activeRole) return;
+                setLoading(true);
+                const statuses = {};
+                let compiledDirectives = [];
+
+                if (isSandbox) {
+                    // Sandbox loading
+                    if (activeRole.isMD) {
+                        // Aggregate all sheets
+                        mappings.forEach(map => {
+                            const sheetRows = mockDb[map.spreadsheetId] || [];
+                            const parsed = parseSheetRows(sheetRows, map);
+                            compiledDirectives = [...compiledDirectives, ...parsed];
+                            statuses[map.spreadsheetId] = { status: 'success' };
+                        });
+                    } else if (activeRole.mapping) {
+                        const map = activeRole.mapping;
+                        const sheetRows = mockDb[map.spreadsheetId] || [];
+                        compiledDirectives = parseSheetRows(sheetRows, map);
+                        statuses[map.spreadsheetId] = { status: 'success' };
+                    }
+                    setDirectives(compiledDirectives);
+                    setSyncStatuses(statuses);
+                    setLoading(false);
+                    return;
+                }
+
+                // Production loading via Google Sheets API
+                if (!auth) return;
+                
+                try {
+                    const sheetsToFetch = activeRole.isMD ? mappings : [activeRole.mapping].filter(Boolean);
+                    
+                    const fetchPromises = sheetsToFetch.map(async (map) => {
+                        try {
+                            const response = await fetch(
+                                `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values/${encodeURIComponent(sheetTabName)}!A1:J1000?valueRenderOption=FORMATTED_VALUE&_t=${Date.now()}`,
+                                {
+                                    headers: { 'Authorization': `Bearer ${auth.accessToken}` }
+                                }
+                            );
+                            
+                            if (!response.ok) {
+                                if (response.status === 403) {
+                                    throw new Error('403 Forbidden (No permission to this sheet)');
+                                } else if (response.status === 404) {
+                                    throw new Error('404 Not Found (Invalid Spreadsheet ID)');
+                                } else {
+                                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                                }
+                            }
+                            
+                            const data = await response.json();
+                            statuses[map.spreadsheetId] = { status: 'success' };
+                            return parseSheetRows(data.values || [], map);
+                        } catch (err) {
+                            console.error(`Error loading sheet for ${map.deptName}:`, err);
+                            statuses[map.spreadsheetId] = { status: 'error', error: err.message };
+                            return [];
+                        }
+                    });
+
+                    const results = await Promise.all(fetchPromises);
+                    results.forEach(rows => {
+                        compiledDirectives = [...compiledDirectives, ...rows];
+                    });
+                    
+                    setDirectives(compiledDirectives);
+                    setSyncStatuses(statuses);
+                } catch (err) {
+                    showNotification('Error syncing Google Sheets: ' + err.message, 'error');
+                } finally {
+                    setLoading(false);
+                }
+            }, [isSandbox, auth, activeRole, mappings, mockDb, sheetTabName]);
+
+            // Load data when active role changes
+            React.useEffect(() => {
+                if (activeRole && !activeRole.isUnregistered) {
+                    loadSpreadsheetData();
+                }
+            }, [sandboxRole, isSandbox, auth, mappings]);
+
+            // Save sandbox DB changes to local storage
+            React.useEffect(() => {
+                if (isSandbox) {
+                    localStorage.setItem('pcil_mockDb', JSON.stringify(mockDb));
+                }
+            }, [mockDb, isSandbox]);
+
+            // Parse sheet rows, identifying headers dynamically
+            const parseSheetRows = (values, mapping) => {
+                if (!values || values.length === 0) return [];
+                
+                // Scan rows to find headers containing Date and Description
+                let headerIndex = -1;
+                for (let i = 0; i < Math.min(10, values.length); i++) {
+                    const row = values[i];
+                    if (row && row.some(cell => typeof cell === 'string' && cell.toLowerCase().includes('date')) &&
+                              row.some(cell => typeof cell === 'string' && cell.toLowerCase().includes('description'))) {
+                        headerIndex = i;
+                        break;
+                    }
+                }
+
+                // If headers not found, assume index 0 is headers or assume starting row
+                const dataStartRow = headerIndex !== -1 ? headerIndex + 1 : 1;
+                
+                const parsedDirectives = [];
+                for (let i = dataStartRow; i < values.length; i++) {
+                    const row = values[i];
+                    const isRowEmpty = !row || row.length === 0 || row.every(cell => cell === undefined || String(cell).trim() === "");
+                    if (isRowEmpty) continue;
+
+                    parsedDirectives.push({
+                        excelRowNumber: i + 1, // 1-indexed row number in the actual Google Sheet
+                        spreadsheetId: mapping.spreadsheetId,
+                        departmentId: mapping.id,
+                        departmentName: mapping.deptName,
+                        headName: mapping.headName,
+                        headEmail: mapping.headEmail,
+                        
+                        date: parseExcelDate(row[0]) || '',
+                        type: row[1] || 'Work',
+                        description: row[2] || '',
+                        priority: row[3] || 'Normal',
+                        targetDate: parseExcelDate(row[4]) || '',
+                        verification: row[5] || 'Pending',
+                        status: row[6] || 'Pending',
+                        remark: row[7] || '',
+                        delegatedTo: row[8] || '',
+                        completionDate: row[9] || ''
+                    });
+                }
+                return parsedDirectives;
+            };
+
+            // Write a new directive (MD dispatch)
+            const handleDispatchSubmit = async (e) => {
+                e.preventDefault();
+                if (!dispatchDeptId) {
+                    showNotification('Please select a recipient department.', 'error');
+                    return;
+                }
+                
+                const targetDept = mappings.find(m => m.id === dispatchDeptId);
+                if (!targetDept) return;
+
+                setDispatchLoading(true);
+                const todayStr = formatDateString(new Date());
+                const targetDateStr = dispatchTargetDate ? formatDateString(new Date(dispatchTargetDate)) : '';
+                
+                // Sequence matches exactly: Date, Type, Description, Priority, Target Date, Verification, Status, Remark, Delegated To, Completion Date
+                const rowValues = [
+                    todayStr,
+                    dispatchType,
+                    dispatchDesc,
+                    dispatchPriority,
+                    targetDateStr,
+                    'Pending',     // Verification
+                    'Not Seen',    // Status
+                    '',            // Remark
+                    '',            // Delegated To
+                    ''             // Completion Date
+                ];
+
+                if (isSandbox) {
+                    // Sandbox writing
+                    const existingRows = mockDb[targetDept.spreadsheetId] || [
+                        ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date"]
+                    ];
+                    
+                    const updatedRows = [...existingRows, rowValues];
+                    setMockDb(prev => ({
+                        ...prev,
+                        [targetDept.spreadsheetId]: updatedRows
+                    }));
+                    
+                    setDispatchDesc('');
+                    setDispatchTargetDate('');
+                    showNotification(`Directive successfully dispatched to ${targetDept.headName} (Sandbox Mode)`, 'success');
+                    setDispatchSuccess(true);
+                    setTimeout(() => setDispatchSuccess(false), 3000);
+                    setDispatchLoading(false);
+                    // Reload data
+                    setTimeout(loadSpreadsheetData, 100);
+                    return;
+                }
+
+                // Google Sheets API append request
+                if (!auth) return;
+                try {
+                    const response = await fetch(
+                        `https://sheets.googleapis.com/v4/spreadsheets/${targetDept.spreadsheetId}/values/${encodeURIComponent(sheetTabName)}!A:J:append?valueInputOption=USER_ENTERED`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${auth.accessToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                values: [rowValues]
+                            })
+                        }
+                    );
+
+                    if (!response.ok) {
+                        const errDetails = await response.text();
+                        throw new Error(`Failed to append row: ${response.statusText}. details: ${errDetails}`);
+                    }
+
+                    setDispatchDesc('');
+                    setDispatchTargetDate('');
+                    showNotification(`Directive successfully dispatched to ${targetDept.headName}!`, 'success');
+                    setDispatchSuccess(true);
+                    setTimeout(() => setDispatchSuccess(false), 3000);
+                    loadSpreadsheetData();
+                } catch (err) {
+                    showNotification('Dispatch failed: ' + err.message, 'error');
+                } finally {
+                    setDispatchLoading(false);
+                }
+            };
+
+            // Save row updates (Status, Remark, Delegated To, Verification etc.)
+            const handleUpdateRow = async (updatedFields) => {
+                if (!editingDirective) return;
+                setEditLoading(true);
+
+                const currentDirective = editingDirective;
+                const excelRowNumber = currentDirective.excelRowNumber;
+                
+                // Assemble the full updated row
+                const dateVal = currentDirective.date;
+                const typeVal = currentDirective.type;
+                const descVal = currentDirective.description;
+                const priorityVal = currentDirective.priority;
+                const targetDateVal = currentDirective.targetDate;
+
+                const newVerification = updatedFields.hasOwnProperty('verification') ? updatedFields.verification : currentDirective.verification;
+                const newStatus = updatedFields.hasOwnProperty('status') ? updatedFields.status : currentDirective.status;
+                const newRemark = updatedFields.hasOwnProperty('remark') ? updatedFields.remark : currentDirective.remark;
+                const newDelegated = updatedFields.hasOwnProperty('delegatedTo') ? updatedFields.delegatedTo : currentDirective.delegatedTo;
+                
+                // Complete date handler
+                let newCompletionDate = currentDirective.completionDate;
+                if (updatedFields.status === 'Completed' && currentDirective.status !== 'Completed') {
+                    newCompletionDate = formatDateTimeString(new Date());
+                } else if (updatedFields.status && updatedFields.status !== 'Completed') {
+                    newCompletionDate = '';
+                }
+
+                // If MD verification marks completed
+                if (updatedFields.verification === 'Done' && newStatus !== 'Checked & Confirmed') {
+                    // Automatically upgrade to Checked & Confirmed
+                    // And check if Completion Date was missing
+                    if (!newCompletionDate) {
+                        newCompletionDate = formatDateTimeString(new Date());
+                    }
+                }
+
+                const updatedRowValues = [
+                    dateVal,
+                    typeVal,
+                    descVal,
+                    priorityVal,
+                    targetDateVal,
+                    newVerification,
+                    newStatus,
+                    newRemark,
+                    newDelegated,
+                    newCompletionDate
+                ];
+
+                if (isSandbox) {
+                    // Sandbox update
+                    const sheetId = currentDirective.spreadsheetId;
+                    const sheetRows = [...(mockDb[sheetId] || [])];
+                    sheetRows[excelRowNumber - 1] = updatedRowValues;
+                    
+                    setMockDb(prev => ({
+                        ...prev,
+                        [sheetId]: sheetRows
+                    }));
+
+                    setEditingDirective(null);
+                    showNotification('Directive updated successfully (Sandbox Mode)', 'success');
+                    setEditLoading(false);
+                    setTimeout(loadSpreadsheetData, 100);
+                    return;
+                }
+
+                // Google Sheets API update row request
+                if (!auth) return;
+                try {
+                    const response = await fetch(
+                        `https://sheets.googleapis.com/v4/spreadsheets/${currentDirective.spreadsheetId}/values/${encodeURIComponent(sheetTabName)}!A${excelRowNumber}:J${excelRowNumber}?valueInputOption=USER_ENTERED`,
+                        {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${auth.accessToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                values: [updatedRowValues]
+                            })
+                        }
+                    );
+
+                    if (!response.ok) {
+                        throw new Error(`Failed to update row: ${response.statusText}`);
+                    }
+
+                    setEditingDirective(null);
+                    showNotification('Directive updated successfully!', 'success');
+                    loadSpreadsheetData();
+                } catch (err) {
+                    showNotification('Update failed: ' + err.message, 'error');
+                } finally {
+                    setEditLoading(false);
+                }
+            };
+
+            // Shortcut MD Actions: Verify and Reset
+            const handleQuickAudit = async (directive, auditAction) => {
+                let updatedFields = {};
+                if (auditAction === 'verify') {
+                    updatedFields = {
+                        verification: 'Done',
+                        status: 'Checked & Confirmed'
+                    };
+                } else if (auditAction === 'reset') {
+                    updatedFields = {
+                        verification: 'Pending',
+                        status: 'In Progress'
+                    };
+                }
+
+                setLoading(true);
+                // Create temporary edit context to reuse update logic
+                setEditingDirective(directive);
+                
+                const excelRowNumber = directive.excelRowNumber;
+                
+                // Assemble the full updated row
+                const dateVal = directive.date;
+                const typeVal = directive.type;
+                const descVal = directive.description;
+                const priorityVal = directive.priority;
+                const targetDateVal = directive.targetDate;
+                
+                const newVerification = updatedFields.verification;
+                const newStatus = updatedFields.status;
+                const newRemark = directive.remark;
+                const newDelegated = directive.delegatedTo;
+                const newCompletionDate = auditAction === 'verify' ? (directive.completionDate || formatDateTimeString(new Date())) : '';
+
+                const updatedRowValues = [
+                    dateVal,
+                    typeVal,
+                    descVal,
+                    priorityVal,
+                    targetDateVal,
+                    newVerification,
+                    newStatus,
+                    newRemark,
+                    newDelegated,
+                    newCompletionDate
+                ];
+
+                if (isSandbox) {
+                    const sheetId = directive.spreadsheetId;
+                    const sheetRows = [...(mockDb[sheetId] || [])];
+                    sheetRows[excelRowNumber - 1] = updatedRowValues;
+                    
+                    setMockDb(prev => ({
+                        ...prev,
+                        [sheetId]: sheetRows
+                    }));
+
+                    setEditingDirective(null);
+                    showNotification(`Directive audited: ${auditAction === 'verify' ? 'Verified' : 'Reset'} (Sandbox)`, 'success');
+                    setTimeout(loadSpreadsheetData, 100);
+                    return;
+                }
+
+                if (!auth) return;
+                try {
+                    const response = await fetch(
+                        `https://sheets.googleapis.com/v4/spreadsheets/${directive.spreadsheetId}/values/${encodeURIComponent(sheetTabName)}!A${excelRowNumber}:J${excelRowNumber}?valueInputOption=USER_ENTERED`,
+                        {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${auth.accessToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                values: [updatedRowValues]
+                            })
+                        }
+                    );
+
+                    if (!response.ok) {
+                        throw new Error(`Failed to update row: ${response.statusText}`);
+                    }
+
+                    showNotification(`Directive audited: ${auditAction === 'verify' ? 'Verified' : 'Reset'}`);
+                    loadSpreadsheetData();
+                } catch (err) {
+                    showNotification('Audit failed: ' + err.message, 'error');
+                } finally {
+                    setEditingDirective(null);
+                    setLoading(false);
+                }
+            };
+
+            // Trigger edit dialog
+            const openEditModal = (directive) => {
+                setEditingDirective(directive);
+                setEditStatus(directive.status);
+                setEditRemark(directive.remark);
+                setEditDelegated(directive.delegatedTo);
+            };
+
+            // Filtering calculations
+            const filteredDirectives = directives.filter(d => {
+                const matchesSearch = 
+                    (d.description && d.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                    (d.remark && d.remark.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                    (d.delegatedTo && d.delegatedTo.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                    (d.headName && d.headName.toLowerCase().includes(searchTerm.toLowerCase()));
+                
+                const matchesDept = filterDept === 'All' || d.departmentId === filterDept;
+                const matchesStatus = filterStatus === 'All' || d.status === filterStatus;
+                const matchesPriority = filterPriority === 'All' || d.priority === filterPriority;
+                const matchesType = filterType === 'All' || d.type === filterType;
+
+                return matchesSearch && matchesDept && matchesStatus && matchesPriority && matchesType;
+            });
+
+            // Metrics calculation
+            const metrics = React.useMemo(() => {
+                const total = directives.length;
+                // Active status = Not Seen, Pending, In Progress, On Hold
+                const active = directives.filter(d => ['Not Seen', 'Pending', 'In Progress', 'On Hold'].includes(d.status)).length;
+                // Critical/Urgent status
+                const urgent = directives.filter(d => (d.priority === 'Urgent' || d.priority === 'Very Urgent') && d.status !== 'Checked & Confirmed' && d.status !== 'Completed').length;
+                // Completed Audits (MD verified Done)
+                const verified = directives.filter(d => d.verification === 'Done').length;
+
+                return { total, active, urgent, verified };
+            }, [directives]);
+
+            return (
+                <div className="flex-grow flex flex-col min-h-screen">
+                    {/* Header */}
+                    <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 text-white shadow-lg py-4 px-6 transition-all duration-300">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                            {/* Brand Logo & Name */}
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-teal-400 to-indigo-500 flex items-center justify-center shadow-md shadow-indigo-500/10">
+                                    <Icon name="sheet" className="w-5 h-5 text-slate-900" />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-200 via-indigo-205 to-white">
+                                        PCIL Command Canvas
+                                    </h1>
+                                    <p className="text-xs text-slate-400 font-medium">Google Sheets Engine</p>
+                                </div>
+                            </div>
+
+                            {/* Active Persona Banner for Sandbox */}
+                            {isSandbox && (
+                                <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 px-4 py-1.5 rounded-full flex items-center gap-2 text-xs font-semibold shadow-inner">
+                                    <span className="h-2 w-2 rounded-full bg-amber-505 animate-pulse"></span>
+                                    Demo Sandbox Active
+                                    <span className="text-slate-500 font-normal">|</span>
+                                    <span className="text-slate-100 flex items-center gap-1">
+                                        Role: 
+                                        <select 
+                                            value={sandboxRole}
+                                            onChange={(e) => setSandboxRole(e.target.value)}
+                                            className="bg-slate-800 text-amber-350 border-none outline-none font-bold cursor-pointer rounded px-1.5 py-0.5"
+                                        >
+                                            <option value="MD">Managing Director</option>
+                                            {mappings.map(m => (
+                                                <option key={m.id} value={`DH:${m.headEmail.toLowerCase()}`}>
+                                                    DH: {m.headName} ({m.deptName})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* User Authentication Profile & Controls */}
+                            <div className="flex items-center gap-4">
+                                {activeRole ? (
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-right hidden sm:block">
+                                            <div className="text-sm font-semibold text-slate-100">{activeRole.name}</div>
+                                            <div className="text-xs text-slate-405 flex items-center justify-end gap-1 font-medium">
+                                                {activeRole.isMD ? (
+                                                    <span className="text-teal-400 font-bold flex items-center gap-0.5">
+                                                        <Icon name="shield" className="w-3.5 h-3.5" /> Managing Director
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-indigo-400 font-semibold">
+                                                        Dept Head: {activeRole.mapping?.deptName}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {isSandbox ? (
+                                            <div className="h-9 w-9 rounded-full bg-indigo-650 flex items-center justify-center font-bold text-white shadow border border-indigo-400/20">
+                                                {activeRole.name.charAt(0)}
+                                            </div>
+                                        ) : (
+                                            auth?.picture ? (
+                                                <img src={auth.picture} alt="Avatar" className="h-9 w-9 rounded-full border border-slate-700 shadow" />
+                                            ) : (
+                                                <div className="h-9 w-9 rounded-full bg-slate-800 flex items-center justify-center font-bold text-teal-450 shadow border border-slate-700">
+                                                    {activeRole.name.charAt(0)}
+                                                </div>
+                                            )
+                                        )}
+                                        <button 
+                                            onClick={handleLogout} 
+                                            title="Logout"
+                                            className="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 hover:border-rose-900/30 transition-all cursor-pointer shadow-sm"
+                                        >
+                                            <Icon name="logout" className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <button 
+                                            onClick={() => {
+                                                setIsSandbox(true);
+                                                setSandboxRole('MD');
+                                                showNotification('Entered Demo Sandbox Mode. No real Google updates will occur.', 'info');
+                                            }}
+                                            className="px-4 py-2 text-xs font-semibold text-teal-400 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 rounded-xl transition-all cursor-pointer shadow-sm"
+                                        >
+                                            Demo Sandbox
+                                        </button>
+                                        
+                                        {clientId ? (
+                                            <button 
+                                                onClick={triggerGoogleLogin}
+                                                className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/50 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-indigo-500/15"
+                                            >
+                                                <Icon name="globe" className="w-3.5 h-3.5" /> Sign In with Google
+                                            </button>
+                                        ) : (
+                                            <span className="text-xs text-slate-500 font-medium px-2 italic">Credentials Pending</span>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Admin Settings Button */}
+                                <button 
+                                    onClick={() => setIsSettingsOpen(true)}
+                                    title="Administrative Settings"
+                                    className="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-teal-400 hover:border-teal-900/30 transition-all cursor-pointer shadow-sm"
+                                >
+                                    <Icon name="settings" className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Notification Alert Bar */}
+                    {notification && (
+                        <div className="fixed top-20 right-6 z-50 animate-bounce">
+                            <div className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl border shadow-2xl backdrop-blur-md ${
+                                notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
+                                notification.type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' :
+                                'bg-slate-50 border-slate-200 text-slate-800'
+                            }`}>
+                                <Icon name={notification.type === 'error' ? 'alert' : 'check'} className="w-5 h-5 flex-shrink-0" />
+                                <span className="text-sm font-semibold">{notification.message}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Main Workspace Area */}
+                    <main className="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
+                        {!activeRole ? (
+                            /* Guest Landing Portal */
+                            <div className="flex-grow flex items-center justify-center py-12">
+                                <div className="max-w-md w-full glass-panel border border-slate-200 rounded-3xl p-8 shadow-xl text-center flex flex-col items-center gap-6 relative overflow-hidden bg-white/80">
+                                    {/* Glowing accent circle */}
+                                    <div className="absolute -top-16 -left-16 w-36 h-36 rounded-full bg-teal-500/5 blur-3xl"></div>
+                                    <div className="absolute -bottom-16 -right-16 w-36 h-36 rounded-full bg-indigo-500/5 blur-3xl"></div>
+                                    
+                                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-teal-450 to-indigo-650 flex items-center justify-center shadow-xl shadow-indigo-500/10 mb-2">
+                                        <Icon name="shield" className="w-8 h-8 text-white" strokeWidth={1.5} />
+                                    </div>
+                                    
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-slate-800">Access Secure Dashboard</h2>
+                                        <p className="text-slate-500 text-sm mt-2 Hindi-text px-2">
+                                            Manage and synchronize Managing Director directives in real-time. Please sign in or use the demo sandbox.
+                                        </p>
+                                    </div>
+
+                                    {!clientId && (
+                                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 w-full text-left flex items-start gap-3">
+                                            <Icon name="info" className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                            <p className="text-xs text-slate-600 font-medium">
+                                                <strong className="text-slate-800">System Setup:</strong> If this is your first time deploying, open the administrative settings (cog icon in top right) to input your Google Cloud Client ID.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div className="w-full flex flex-col gap-3">
+                                        {clientId && (
+                                            <button 
+                                                onClick={triggerGoogleLogin}
+                                                className="w-full py-3 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-450 hover:to-teal-550 text-white font-bold rounded-xl transition-all shadow-lg shadow-teal-500/20 flex items-center justify-center gap-2 cursor-pointer text-sm"
+                                            >
+                                                <Icon name="globe" className="w-4 h-4" /> Sign In with Google Account
+                                            </button>
+                                        )}
+                                        <button 
+                                            onClick={() => {
+                                                setIsSandbox(true);
+                                                setSandboxRole('MD');
+                                                showNotification('Entered Demo Sandbox Mode.', 'info');
+                                            }}
+                                            className="w-full py-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer text-sm shadow-sm"
+                                        >
+                                            Launch Demo Sandbox
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : activeRole.isUnregistered ? (
+                            /* Unregistered User Portal */
+                            <div className="flex-grow flex items-center justify-center py-12">
+                                <div className="max-w-md w-full glass-panel border border-slate-200 rounded-3xl p-8 shadow-xl text-center flex flex-col items-center gap-6 bg-white/80">
+                                    <div className="h-16 w-16 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 mb-2">
+                                        <Icon name="alert" className="w-8 h-8" />
+                                    </div>
+                                    
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-rose-600">Unauthorized Email</h2>
+                                        <p className="text-slate-700 text-sm mt-3 font-semibold">
+                                            Logged in as: <span className="text-teal-650 font-mono">{activeRole.email}</span>
+                                        </p>
+                                        <p className="text-slate-500 text-sm mt-4 Hindi-text px-1">
+                                            आपकी ईमेल आईडी वर्तमान में अधिकृत नहीं है। कृपया मैनेजिंग डायरेक्टर (MD) से संपर्क करें ताकि वे इस ईमेल को सेटिंग्स में मैप कर सकें।
+                                        </p>
+                                    </div>
+
+                                    <button 
+                                        onClick={handleLogout}
+                                        className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl border border-slate-200 transition-all cursor-pointer text-sm"
+                                    >
+                                        Log Out or Switch Account
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            /* Logged In Dashboard View */
+                            <div className="flex flex-col gap-6">
+                                
+                                {/* Metrics Cards (Top Panel) */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="glass-panel p-5 rounded-2xl shadow border border-slate-200 bg-white/85 flex items-center gap-4 relative overflow-hidden group">
+                                        <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600">
+                                            <Icon name="sheet" className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-black tracking-tight text-slate-800">{loading ? '...' : metrics.total}</div>
+                                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Directives</div>
+                                        </div>
+                                    </div>
+                                    <div className="glass-panel p-5 rounded-2xl shadow border border-slate-200 bg-white/85 flex items-center gap-4 relative overflow-hidden group">
+                                        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600">
+                                            <Icon name="refresh" className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-black tracking-tight text-slate-800">{loading ? '...' : metrics.active}</div>
+                                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Tasks</div>
+                                        </div>
+                                    </div>
+                                    <div className="glass-panel p-5 rounded-2xl shadow border border-slate-200 bg-white/85 flex items-center gap-4 relative overflow-hidden group">
+                                        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600">
+                                            <Icon name="alert" className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-black tracking-tight text-rose-600">{loading ? '...' : metrics.urgent}</div>
+                                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Urgent Escalations</div>
+                                        </div>
+                                    </div>
+                                    <div className="glass-panel p-5 rounded-2xl shadow border border-slate-200 bg-white/85 flex items-center gap-4 relative overflow-hidden group">
+                                        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600">
+                                            <Icon name="check" className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-black tracking-tight text-emerald-650">{loading ? '...' : metrics.verified}</div>
+                                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Completed Audits</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Consolidated Mappings Status Panel (MD view only) */}
+                                {activeRole.isMD && (
+                                    <div className="glass-panel p-4 rounded-2xl border border-slate-200 bg-white/85 shadow flex flex-wrap gap-3 items-center text-xs">
+                                        <span className="font-bold text-slate-400">Sync Status:</span>
+                                        {mappings.map(map => {
+                                            const status = syncStatuses[map.spreadsheetId];
+                                            return (
+                                                <div 
+                                                    key={map.id} 
+                                                    className={`px-3 py-1 rounded-full border flex items-center gap-1.5 ${
+                                                        !status ? 'bg-slate-100 border-slate-200 text-slate-500' :
+                                                        status.status === 'success' ? 'bg-teal-50 border-teal-200 text-teal-700' :
+                                                        'bg-rose-50 border-rose-200 text-rose-705'
+                                                    }`}
+                                                    title={status?.status === 'error' ? status.error : `Synchronized successfully`}
+                                                >
+                                                    <span className={`h-1.5 w-1.5 rounded-full ${
+                                                        !status ? 'bg-slate-400' :
+                                                        status.status === 'success' ? 'bg-teal-555' : 'bg-rose-500 animate-pulse'
+                                                    }`}></span>
+                                                    <span className="font-bold text-slate-700">{map.headName} ({map.deptName})</span>
+                                                    {status?.status === 'error' && <Icon name="alert" className="w-3 h-3 text-rose-600 flex-shrink-0" />}
+                                                </div>
+                                            );
+                                        })}
+                                        
+                                        <button 
+                                            onClick={loadSpreadsheetData}
+                                            disabled={loading}
+                                            className="ml-auto flex items-center gap-1.5 px-3 py-1 text-slate-705 hover:text-teal-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-all cursor-pointer font-bold disabled:opacity-50 text-xs"
+                                        >
+                                            <Icon name="refresh" className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Sync All Sheets
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Main Console Grid */}
+                                <div className={`grid grid-cols-1 ${activeRole.isMD ? 'lg:grid-cols-3' : ''} gap-6`}>
+                                    
+                                    {/* Dispatch Control Form (MD Role only) */}
+                                    {activeRole.isMD && (
+                                        <div className="lg:col-span-1 glass-panel p-6 rounded-3xl border border-slate-250/80 shadow-xl flex flex-col gap-5 h-fit bg-white/90 sticky top-28">
+                                            <div>
+                                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                                    <span className="p-1.5 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-650">
+                                                        <Icon name="plus" className="w-4 h-4" />
+                                                    </span>
+                                                    MD Dispatch Console
+                                                </h3>
+                                                <p className="text-xs text-slate-400 font-medium mt-1">Issue fresh directives to department sheets</p>
+                                            </div>
+
+                                            <form onSubmit={handleDispatchSubmit} className="flex flex-col gap-4">
+                                                {/* Select Department */}
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Recipient Department</label>
+                                                    <select
+                                                        required
+                                                        value={dispatchDeptId}
+                                                        onChange={(e) => setDispatchDeptId(e.target.value)}
+                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                    >
+                                                        <option value="">-- Choose Recipient Head --</option>
+                                                        {mappings.map(m => (
+                                                            <option key={m.id} value={m.id}>{m.headName} ({m.deptName})</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    {/* Directive Type */}
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type</label>
+                                                        <select
+                                                            value={dispatchType}
+                                                            onChange={(e) => setDispatchType(e.target.value)}
+                                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                                        >
+                                                            <option value="Work">Work</option>
+                                                            <option value="Deficiency">Deficiency</option>
+                                                            <option value="Instruction">Instruction</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {/* Priority */}
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Priority</label>
+                                                        <select
+                                                            value={dispatchPriority}
+                                                            onChange={(e) => setDispatchPriority(e.target.value)}
+                                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                                        >
+                                                            <option value="Normal">Normal</option>
+                                                            <option value="Urgent">Urgent</option>
+                                                            <option value="Very Urgent">Very Urgent</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                {/* Description (Hindi/English) */}
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                                                        <span>Directive Details</span>
+                                                        <span className="text-[10px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 font-bold">Hindi & Eng Ok</span>
+                                                    </label>
+                                                    <textarea
+                                                        required
+                                                        rows={4}
+                                                        value={dispatchDesc}
+                                                        onChange={(e) => setDispatchDesc(e.target.value)}
+                                                        placeholder="निर्देश यहाँ दर्ज करें... (e.g. नई पैकेजिंग डिजाइन तैयार करवानी है)"
+                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 hindi-text placeholder:text-slate-400"
+                                                    />
+                                                </div>
+
+                                                {/* Target Date */}
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Target Completion Date</label>
+                                                    <input
+                                                        type="date"
+                                                        value={dispatchTargetDate}
+                                                        onChange={(e) => setDispatchTargetDate(e.target.value)}
+                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-805 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                    />
+                                                </div>
+
+                                                <button
+                                                    type="submit"
+                                                    disabled={dispatchLoading}
+                                                    className={`w-full py-3 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg ${
+                                                        dispatchSuccess 
+                                                        ? 'bg-emerald-500 text-white shadow-emerald-500/10' 
+                                                        : 'bg-teal-500 hover:bg-teal-400 text-slate-950 hover:shadow-teal-500/10'
+                                                    }`}
+                                                >
+                                                    {dispatchLoading ? (
+                                                        <span className="h-4 w-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                                                    ) : dispatchSuccess ? (
+                                                        <>
+                                                            <Icon name="check" className="w-4 h-4 text-white" /> Dispatched Successfully
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Icon name="plus" className="w-4 h-4" /> Dispatch Directive
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </form>
+                                        </div>
+                                    )}
+
+                                    {/* Consolidated Canvas Table (MD and DH Workspace) */}
+                                    <div className={`${activeRole.isMD ? 'lg:col-span-2' : 'w-full'} flex flex-col gap-4`}>
+                                        
+                                        {/* Filter Panel */}
+                                        <div className="glass-panel p-5 rounded-3xl border border-slate-250/80 shadow-xl flex flex-col gap-4 bg-white/90">
+                                            {/* Search and Main Filters */}
+                                            <div className="flex flex-col md:flex-row items-center gap-3">
+                                                <div className="w-full md:flex-grow relative">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                                        <Icon name="search" className="w-4 h-4" />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        value={searchTerm}
+                                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                                        placeholder="Search directives, remarks, departments..."
+                                                        className="w-full bg-slate-50 border border-slate-205 rounded-2xl pl-10 pr-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                    />
+                                                </div>
+
+                                                <div className="flex gap-2 w-full md:w-auto">
+                                                    <button 
+                                                        onClick={() => {
+                                                            setSearchTerm('');
+                                                            setFilterDept('All');
+                                                            setFilterStatus('All');
+                                                            setFilterPriority('All');
+                                                            setFilterType('All');
+                                                            showNotification('Filters reset.');
+                                                        }}
+                                                        className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all cursor-pointer shadow-sm ml-auto"
+                                                    >
+                                                        Clear
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Multi-select filter inputs */}
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                {/* Dept Filter */}
+                                                {activeRole.isMD && (
+                                                    <div className="flex flex-col gap-1">
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Department</label>
+                                                        <select
+                                                            value={filterDept}
+                                                            onChange={(e) => setFilterDept(e.target.value)}
+                                                            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 text-xs focus:outline-none"
+                                                        >
+                                                            <option value="All">All Departments</option>
+                                                            {mappings.map(m => (
+                                                                <option key={m.id} value={m.id}>{m.headName} ({m.deptName})</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                )}
+
+                                                {/* Status Filter */}
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</label>
+                                                    <select
+                                                        value={filterStatus}
+                                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 text-xs focus:outline-none"
+                                                    >
+                                                        <option value="All">All Statuses</option>
+                                                        <option value="Pending">Pending</option>
+                                                        <option value="Not Seen">Not Seen</option>
+                                                        <option value="In Progress">In Progress</option>
+                                                        <option value="On Hold">On Hold</option>
+                                                        <option value="Completed">Completed</option>
+                                                        <option value="Checked & Confirmed">Checked & Confirmed</option>
+                                                    </select>
+                                                </div>
+
+                                                {/* Priority Filter */}
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Priority</label>
+                                                    <select
+                                                        value={filterPriority}
+                                                        onChange={(e) => setFilterPriority(e.target.value)}
+                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 text-xs focus:outline-none"
+                                                    >
+                                                        <option value="All">All Priorities</option>
+                                                        <option value="Normal">Normal</option>
+                                                        <option value="Urgent">Urgent</option>
+                                                        <option value="Very Urgent">Very Urgent</option>
+                                                    </select>
+                                                </div>
+
+                                                {/* Type Filter */}
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Type</label>
+                                                    <select
+                                                        value={filterType}
+                                                        onChange={(e) => setFilterType(e.target.value)}
+                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 text-xs focus:outline-none"
+                                                    >
+                                                        <option value="All">All Types</option>
+                                                        <option value="Work">Work</option>
+                                                        <option value="Deficiency">Deficiency</option>
+                                                        <option value="Instruction">Instruction</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Table Canvas Panel */}
+                                        <div className="glass-panel rounded-3xl border border-slate-250/80 shadow-xl overflow-hidden flex flex-col min-h-[400px] bg-white/90">
+                                            <div className="overflow-x-auto flex-grow">
+                                                <table className="w-full border-collapse text-left text-sm text-slate-700">
+                                                    <thead>
+                                                        <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                                            {activeRole.isMD && <th className="py-3.5 px-4 font-bold">Dept Head</th>}
+                                                            <th className="py-3.5 px-4 font-bold w-24">Date</th>
+                                                            <th className="py-3.5 px-3 font-bold w-24">Type / Priority</th>
+                                                            <th className="py-3.5 px-4 font-bold min-w-[200px]">Directive Details</th>
+                                                            <th className="py-3.5 px-4 font-bold w-28">Status / Audit</th>
+                                                            <th className="py-3.5 px-4 font-bold min-w-[150px]">Remarks / Logs</th>
+                                                            <th className="py-3.5 px-4 font-bold">Delegated</th>
+                                                            <th className="py-3.5 px-4 font-bold">Done Date</th>
+                                                            <th className="py-3.5 px-4 font-bold text-right">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {loading ? (
+                                                            <tr>
+                                                                <td colSpan={10} className="py-16 text-center text-slate-400 font-semibold">
+                                                                    <div className="flex items-center justify-center gap-3">
+                                                                        <span className="h-5 w-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></span>
+                                                                        <span>Synchronizing Google Sheets data in real-time...</span>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ) : filteredDirectives.length === 0 ? (
+                                                            <tr>
+                                                                <td colSpan={10} className="py-16 text-center text-slate-400 font-medium">
+                                                                    No matching directives found in synchronized sheets.
+                                                                </td>
+                                                            </tr>
+                                                        ) : (
+                                                            filteredDirectives.map((d, index) => {
+                                                                // Badges calculations
+                                                                const typeColors = {
+                                                                    Work: 'bg-indigo-50 border-indigo-100 text-indigo-700',
+                                                                    Deficiency: 'bg-rose-50 border-rose-100 text-rose-700',
+                                                                    Instruction: 'bg-amber-50 border-amber-100 text-amber-700'
+                                                                };
+                                                                const priorityColors = {
+                                                                    Normal: 'bg-slate-100 border-slate-200 text-slate-500',
+                                                                    Urgent: 'bg-rose-50 border-rose-200 text-rose-700 font-bold',
+                                                                    'Very Urgent': 'bg-rose-600 text-white font-black animate-pulse border-none'
+                                                                };
+                                                                const statusColors = {
+                                                                    Pending: 'bg-slate-105 border border-slate-200 text-slate-600',
+                                                                    'Not Seen': 'bg-slate-50 border border-slate-150 text-slate-400',
+                                                                    'In Progress': 'bg-indigo-50 border border-indigo-150 text-indigo-700',
+                                                                    'On Hold': 'bg-amber-50 border border-amber-150 text-amber-750',
+                                                                    Completed: 'bg-emerald-50 border border-emerald-150 text-emerald-700',
+                                                                    'Checked & Confirmed': 'bg-emerald-500 border-none text-white font-bold'
+                                                                };
+
+                                                                return (
+                                                                    <tr key={index} className="hover:bg-slate-50/50 transition-all group">
+                                                                        {/* Department mapping info */}
+                                                                        {activeRole.isMD && (
+                                                                            <td className="py-4 px-4 align-top">
+                                                                                <div className="font-bold text-slate-800 text-xs">{d.headName}</div>
+                                                                                <div className="text-[10px] text-slate-400 font-bold">{d.departmentName}</div>
+                                                                            </td>
+                                                                        )}
+
+                                                                        {/* Date */}
+                                                                        <td className="py-4 px-4 align-top text-xs text-slate-500 font-mono font-medium">
+                                                                            {d.date}
+                                                                        </td>
+
+                                                                        {/* Type / Priority */}
+                                                                        <td className="py-4 px-3 align-top flex flex-col gap-1.5">
+                                                                            <span className={`text-[10px] px-2 py-0.5 rounded border ${typeColors[d.type] || 'bg-slate-100'} font-bold w-fit`}>
+                                                                                {d.type}
+                                                                            </span>
+                                                                            <span className={`text-[10px] px-2 py-0.5 rounded border ${priorityColors[d.priority] || 'bg-slate-100'} font-bold w-fit`}>
+                                                                                {d.priority}
+                                                                            </span>
+                                                                        </td>
+
+                                                                        {/* Description */}
+                                                                        <td className="py-4 px-4 align-top">
+                                                                            <div className="text-slate-800 text-sm font-medium hindi-text break-words">
+                                                                                {d.description}
+                                                                            </div>
+                                                                            {d.targetDate && (
+                                                                                <div className="mt-1.5 flex items-center gap-1 text-[11px] text-amber-600 font-bold">
+                                                                                    <span className="text-slate-400 font-normal">Target:</span>
+                                                                                    {d.targetDate}
+                                                                                </div>
+                                                                            )}
+                                                                        </td>
+
+                                                                        {/* Status & Verification Audit info */}
+                                                                        <td className="py-4 px-4 align-top flex flex-col gap-1.5">
+                                                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold w-fit ${statusColors[d.status] || 'bg-slate-100'}`}>
+                                                                                {d.status}
+                                                                            </span>
+                                                                            
+                                                                            <div className="flex items-center gap-1.5">
+                                                                                <span className="text-[10px] font-bold text-slate-400">Audit:</span>
+                                                                                {d.verification === 'Done' ? (
+                                                                                    <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
+                                                                                        <Icon name="check" className="w-3 h-3" /> Verified
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    <span className="text-[10px] font-semibold text-amber-500">
+                                                                                        Pending
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </td>
+
+                                                                        {/* Remark Action logs */}
+                                                                        <td className="py-4 px-4 align-top text-xs text-slate-500 hindi-text max-w-[200px] break-words">
+                                                                            {d.remark || <span className="text-slate-400 italic">No logs yet</span>}
+                                                                        </td>
+
+                                                                        {/* Delegated To */}
+                                                                        <td className="py-4 px-4 align-top text-xs font-bold text-slate-600">
+                                                                            {d.delegatedTo || '-'}
+                                                                        </td>
+
+                                                                        {/* Completion Date */}
+                                                                        <td className="py-4 px-4 align-top text-xs text-slate-400 font-mono">
+                                                                            {d.completionDate || '-'}
+                                                                        </td>
+
+                                                                        {/* Edit Actions */}
+                                                                        <td className="py-4 px-4 align-top text-right text-xs">
+                                                                            <div className="flex items-center justify-end gap-1.5">
+                                                                                {/* MD Quick Audit Actions */}
+                                                                                {activeRole.isMD && (
+                                                                                    <>
+                                                                                        <button
+                                                                                            onClick={() => handleQuickAudit(d, 'verify')}
+                                                                                            disabled={d.verification === 'Done' && d.status === 'Checked & Confirmed'}
+                                                                                            title="Verify (Approve)"
+                                                                                            className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-350 text-emerald-700 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+                                                                                        >
+                                                                                            <Icon name="check" className="w-3.5 h-3.5" />
+                                                                                        </button>
+                                                                                        <button
+                                                                                            onClick={() => handleQuickAudit(d, 'reset')}
+                                                                                            disabled={d.verification === 'Pending' && d.status !== 'Checked & Confirmed'}
+                                                                                            title="Reset (Reject/Audit Fail)"
+                                                                                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 hover:border-rose-350 text-rose-700 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+                                                                                        >
+                                                                                            <Icon name="undo" className="w-3.5 h-3.5" />
+                                                                                        </button>
+                                                                                    </>
+                                                                                )}
+
+                                                                                {/* Edit form trigger */}
+                                                                                <button
+                                                                                    onClick={() => openEditModal(d)}
+                                                                                    title="Edit Row Details"
+                                                                                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
+                                                                                >
+                                                                                    <Icon name="edit" className="w-3.5 h-3.5" />
+                                                                                </button>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            {/* Table footer info */}
+                                            <div className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex items-center justify-between text-xs text-slate-450 font-bold">
+                                                <span>Showing {filteredDirectives.length} of {directives.length} directives.</span>
+                                                <span className="flex items-center gap-1 text-teal-650">
+                                                    <span className="h-2 w-2 rounded-full bg-teal-500 animate-pulse"></span> Live Connected
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Edit Directive Modal */}
+                    {editingDirective && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-fade-in">
+                            <div className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl flex flex-col gap-5 relative text-slate-800">
+                                <button
+                                    onClick={() => setEditingDirective(null)}
+                                    className="absolute top-5 right-5 p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all"
+                                >
+                                    <Icon name="close" className="w-5 h-5" />
+                                </button>
+
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <Icon name="edit" className="w-5 h-5 text-teal-650" />
+                                        Update Directive Details
+                                    </h3>
+                                    <p className="text-xs text-slate-405 font-medium mt-0.5">
+                                        Row {editingDirective.excelRowNumber} &bull; {editingDirective.headName} ({editingDirective.departmentName})
+                                    </p>
+                                </div>
+
+                                {/* Directive read-only details */}
+                                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-xs flex flex-col gap-2.5">
+                                    <div>
+                                        <span className="text-slate-450 font-bold uppercase tracking-wider block">Directive Description</span>
+                                        <span className="text-slate-800 font-semibold text-sm mt-1 block hindi-text">
+                                            {editingDirective.description}
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-2.5 mt-1">
+                                        <div>
+                                            <span className="text-slate-450 font-bold uppercase tracking-wider">Date Issued</span>
+                                            <span className="text-slate-700 font-bold block mt-0.5">{editingDirective.date}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-slate-450 font-bold uppercase tracking-wider">Target Date</span>
+                                            <span className="text-slate-700 font-bold block mt-0.5">{editingDirective.targetDate || '-'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-4">
+                                    {/* Edit Status */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</label>
+                                        <select
+                                            value={editStatus}
+                                            onChange={(e) => setEditStatus(e.target.value)}
+                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                        >
+                                            <option value="Pending">Pending</option>
+                                            <option value="Not Seen">Not Seen</option>
+                                            <option value="In Progress">In Progress</option>
+                                            <option value="On Hold">On Hold</option>
+                                            <option value="Completed">Completed</option>
+                                            {activeRole.isMD && <option value="Checked & Confirmed">Checked & Confirmed</option>}
+                                        </select>
+                                    </div>
+
+                                    {/* Delegated To */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-slate-505 uppercase tracking-wider">Delegated To (Assignee)</label>
+                                        <input
+                                            type="text"
+                                            value={editDelegated}
+                                            onChange={(e) => setEditDelegated(e.target.value)}
+                                            placeholder="Enter sub-assignee name (optional)"
+                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                        />
+                                    </div>
+
+                                    {/* Action Logs / Remarks */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-slate-505 uppercase tracking-wider">Remarks / Action Log</label>
+                                        <textarea
+                                            rows={3}
+                                            value={editRemark}
+                                            onChange={(e) => setEditRemark(e.target.value)}
+                                            placeholder="Enter progress reports, roadblocks, updates..."
+                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 hindi-text"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 mt-2">
+                                    <button
+                                        onClick={() => setEditingDirective(null)}
+                                        className="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-500 font-semibold rounded-xl border border-slate-200 transition-all cursor-pointer text-sm"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={() => handleUpdateRow({
+                                            status: editStatus,
+                                            remark: editRemark,
+                                            delegatedTo: editDelegated
+                                        })}
+                                        disabled={editLoading}
+                                        className="w-1/2 py-3 bg-teal-555 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-teal-500/10 flex items-center justify-center gap-2 cursor-pointer text-sm"
+                                    >
+                                        {editLoading ? (
+                                            <span className="h-4 w-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                                        ) : (
+                                            'Save Changes'
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Admin Settings Modal */}
+                    {isSettingsOpen && (
+                        <SettingsModal 
+                            clientId={clientId}
+                            mdEmail={mdEmail}
+                            sheetTabName={sheetTabName}
+                            mappings={mappings}
+                            onClose={() => setIsSettingsOpen(false)}
+                            onSave={saveSettings}
+                            onResetMockDb={() => {
+                                if (confirm('Are you sure you want to reset the Sandbox mock database to default values?')) {
+                                    localStorage.removeItem('pcil_mockDb');
+                                    setMockDb(DEFAULT_MOCK_DATA);
+                                    showNotification('Sandbox database reset to defaults.', 'info');
+                                    setTimeout(loadSpreadsheetData, 100);
+                                }
+                            }}
+                        />
+                    )}
+
+                    {/* Dynamic Footer */}
+                    <footer className="bg-slate-100 border-t border-slate-200 text-slate-400 py-6 px-6 text-center text-xs font-semibold mt-auto">
+                        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <p>&copy; 2026 PCIL Command Canvas. Client-Side Zero-Trust Sheets Engine.</p>
+                            <p className="flex items-center gap-1.5">
+                                <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></span> 
+                                Powered by Google Cloud GIS & Sheets API REST v4
+                            </p>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        // Isolated Settings Modal React Component for clean state separation
+        function SettingsModal({ clientId, mdEmail, sheetTabName, mappings, onClose, onSave, onResetMockDb }) {
+            const [localClientId, setLocalClientId] = React.useState(clientId);
+            const [localMdEmail, setLocalMdEmail] = React.useState(mdEmail);
+            const [localSheetTabName, setLocalSheetTabName] = React.useState(sheetTabName);
+            const [localMappings, setLocalMappings] = React.useState(mappings);
+            const [activeTab, setActiveTab] = React.useState('general'); // 'general' | 'mappings' | 'json'
+
+            // Mapping inputs helpers
+            const handleMappingChange = (index, field, value) => {
+                const updated = [...localMappings];
+                updated[index][field] = value;
+                setLocalMappings(updated);
+            };
+
+            const addMappingRow = () => {
+                setLocalMappings([
+                    ...localMappings,
+                    {
+                        id: String(Date.now()),
+                        deptName: '',
+                        headName: '',
+                        headEmail: '',
+                        spreadsheetId: ''
+                    }
+                ]);
+            };
+
+            const removeMappingRow = (index) => {
+                const updated = localMappings.filter((_, i) => i !== index);
+                setLocalMappings(updated);
+            };
+
+            // JSON bulk editor
+            const [jsonString, setJsonString] = React.useState(() => JSON.stringify(mappings, null, 2));
+            const handleJsonSave = () => {
+                try {
+                    const parsed = JSON.parse(jsonString);
+                    if (!Array.isArray(parsed)) {
+                        alert('JSON config must be an array of department mapping objects.');
+                        return;
+                    }
+                    const isValid = parsed.every(item => 
+                        item.hasOwnProperty('deptName') && 
+                        item.hasOwnProperty('headName') && 
+                        item.hasOwnProperty('headEmail') && 
+                        item.hasOwnProperty('spreadsheetId')
+                    );
+                    if (!isValid) {
+                        alert('Each object must contain keys: deptName, headName, headEmail, spreadsheetId');
+                        return;
+                    }
+                    const sanitized = parsed.map((item, idx) => ({
+                        ...item,
+                        id: item.id || String(idx + 1)
+                    }));
+                    setLocalMappings(sanitized);
+                    alert('JSON mappings parsed and loaded into table below!');
+                } catch (e) {
+                    alert('Invalid JSON structure: ' + e.message);
+                }
+            };
+
+            const handleSave = () => {
+                const trimmedClientId = (localClientId || '').trim();
+                if (trimmedClientId && !trimmedClientId.endsWith('.apps.googleusercontent.com')) {
+                    alert('Warning: Google OAuth Client ID usually ends with ".apps.googleusercontent.com". Please check for typos or extra trailing characters.');
+                    return;
+                }
+                onSave(trimmedClientId, localMdEmail, localSheetTabName, localMappings);
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm animate-fade-in">
+                    <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl flex flex-col gap-6 max-h-[90vh] relative text-slate-800">
+                        <button
+                            onClick={onClose}
+                            className="absolute top-5 right-5 p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all"
+                        >
+                            <Icon name="close" className="w-5 h-5" />
+                        </button>
+
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <Icon name="settings" className="w-5 h-5 text-teal-500" />
+                                Administrative Configurations
+                            </h3>
+                            <p className="text-xs text-slate-400 font-medium mt-0.5">Configure OAuth credentials, MD access parameters, and spreadsheet mappings</p>
+                        </div>
+
+                        {/* Settings Tabs Selector */}
+                        <div className="border-b border-slate-200 flex gap-4 text-sm">
+                            <button
+                                onClick={() => setActiveTab('general')}
+                                className={`pb-2.5 font-bold transition-all border-b-2 cursor-pointer ${
+                                    activeTab === 'general' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+                                }`}
+                            >
+                                General Settings
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('mappings')}
+                                className={`pb-2.5 font-bold transition-all border-b-2 cursor-pointer ${
+                                    activeTab === 'mappings' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+                                }`}
+                            >
+                                Spreadsheet Mappings ({localMappings.length})
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('json')}
+                                className={`pb-2.5 font-bold transition-all border-b-2 cursor-pointer ${
+                                    activeTab === 'json' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+                                }`}
+                            >
+                                Bulk JSON Config
+                            </button>
+                        </div>
+
+                        {/* Tabs Contents */}
+                        <div className="flex-grow overflow-y-auto pr-1 flex flex-col gap-4 min-h-[250px]">
+                            {activeTab === 'general' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 py-2">
+                                    {/* Client ID */}
+                                    <div className="flex flex-col gap-1.5 md:col-span-2">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                            <Icon name="key" className="w-3.5 h-3.5 text-teal-505" /> Google OAuth Client ID
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={localClientId}
+                                            onChange={(e) => setLocalClientId(e.target.value)}
+                                            placeholder="Enter your Google Cloud Web OAuth Client ID (e.g. 12345-abcde.apps.googleusercontent.com)"
+                                            className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-mono"
+                                        />
+                                        <p className="text-[10px] text-slate-450 font-medium">Get this client ID from the Google Cloud Console APIs & Credentials page.</p>
+                                    </div>
+
+                                    {/* MD Email */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                            <Icon name="shield" className="w-3.5 h-3.5 text-teal-505" /> Managing Director Email
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={localMdEmail}
+                                            onChange={(e) => setLocalMdEmail(e.target.value)}
+                                            placeholder="e.g. managingdirector@pcil.com"
+                                            className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                        />
+                                        <p className="text-[10px] text-slate-450 font-medium">When a user logs in with this Google account, the MD Console will unlock.</p>
+                                    </div>
+
+                                    {/* Sheet tab name */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                            <Icon name="sheet" className="w-3.5 h-3.5 text-teal-505" /> Sheets Tab/Worksheet Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={localSheetTabName}
+                                            onChange={(e) => setLocalSheetTabName(e.target.value)}
+                                            placeholder="e.g. MD Directives"
+                                            className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                        />
+                                        <p className="text-[10px] text-slate-450 font-medium">The specific worksheet name in each Spreadsheet. Must match exactly.</p>
+                                    </div>
+
+                                    {/* Sandbox Controls */}
+                                    <div className="md:col-span-2 border-t border-slate-100 pt-5 mt-2 flex flex-col gap-3">
+                                        <h4 className="text-sm font-bold text-slate-700">Demo Sandbox Maintenance</h4>
+                                        <div className="flex items-center gap-4">
+                                            <button
+                                                onClick={onResetMockDb}
+                                                className="px-4 py-2.5 text-xs font-bold text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 hover:border-rose-600 rounded-xl transition-all cursor-pointer shadow-sm"
+                                            >
+                                                Reset Sandbox database
+                                            </button>
+                                            <p className="text-[10px] text-slate-450 font-medium max-w-md">Resets mock values to default structures (useful to restore mock sheets for CFO, Printing Head, Support Center, etc.)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'mappings' && (
+                                <div className="flex flex-col gap-4 py-2">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-sm font-bold text-slate-700">Spreadsheet to Department Head Mappings</h4>
+                                        <button
+                                            onClick={addMappingRow}
+                                            className="px-3.5 py-1.5 bg-teal-500 hover:bg-teal-400 text-slate-950 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow shadow-teal-500/10"
+                                        >
+                                            <Icon name="plus" className="w-3.5 h-3.5" /> Add Department
+                                        </button>
+                                    </div>
+
+                                    {/* Mapping Table */}
+                                    <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/50 shadow">
+                                        <table className="w-full text-left text-xs border-collapse">
+                                            <thead>
+                                                <tr className="bg-slate-100 border-b border-slate-200 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                                                    <th className="p-3 w-1/4 font-bold">Department Name</th>
+                                                    <th className="p-3 w-1/5 font-bold">Head Name</th>
+                                                    <th className="p-3 w-1/4 font-bold">Head Google Email</th>
+                                                    <th className="p-3 w-1/3 font-bold">Spreadsheet ID</th>
+                                                    <th className="p-3 text-right font-bold">Delete</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {localMappings.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={5} className="p-8 text-center text-slate-400 italic">No department mappings configured. Add a row above.</td>
+                                                    </tr>
+                                                ) : (
+                                                    localMappings.map((m, idx) => (
+                                                        <tr key={m.id} className="hover:bg-slate-50/50">
+                                                            {/* Dept Name */}
+                                                            <td className="p-2">
+                                                                <input
+                                                                    type="text"
+                                                                    required
+                                                                    value={m.deptName}
+                                                                    onChange={(e) => handleMappingChange(idx, 'deptName', e.target.value)}
+                                                                    placeholder="e.g. Support Center"
+                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                                                />
+                                                            </td>
+                                                            {/* Head Name */}
+                                                            <td className="p-2">
+                                                                <input
+                                                                    type="text"
+                                                                    required
+                                                                    value={m.headName}
+                                                                    onChange={(e) => handleMappingChange(idx, 'headName', e.target.value)}
+                                                                    placeholder="e.g. Ramesh Panwar"
+                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                                                />
+                                                            </td>
+                                                            {/* Head Email */}
+                                                            <td className="p-2">
+                                                                <input
+                                                                    type="email"
+                                                                    required
+                                                                    value={m.headEmail}
+                                                                    onChange={(e) => handleMappingChange(idx, 'headEmail', e.target.value.toLowerCase())}
+                                                                    placeholder="e.g. ramesh@pcil.com"
+                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none font-mono text-[11px] focus:ring-1 focus:ring-teal-500"
+                                                                />
+                                                            </td>
+                                                            {/* Sheet ID */}
+                                                            <td className="p-2">
+                                                                <input
+                                                                    type="text"
+                                                                    required
+                                                                    value={m.spreadsheetId}
+                                                                    onChange={(e) => handleMappingChange(idx, 'spreadsheetId', e.target.value)}
+                                                                    placeholder="Enter spreadsheet ID"
+                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none font-mono text-[11px] focus:ring-1 focus:ring-teal-500"
+                                                                />
+                                                            </td>
+                                                            {/* Delete */}
+                                                            <td className="p-2 text-right">
+                                                                <button
+                                                                    onClick={() => removeMappingRow(idx)}
+                                                                    className="p-2 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-400 hover:text-rose-600 transition-all cursor-pointer"
+                                                                >
+                                                                    <Icon name="trash" className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 font-medium">To configure mappings: locate your department's private spreadsheet on Google Drive, copy the ID from the URL (the characters between `/d/` and `/edit` in: `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit`), and map it to their Google Login email.</p>
+                                </div>
+                            )}
+
+                            {activeTab === 'json' && (
+                                <div className="flex flex-col gap-4 py-2">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-sm font-bold text-slate-700">Bulk Configuration Import / Export</h4>
+                                        <button
+                                            onClick={handleJsonSave}
+                                            className="px-3.5 py-1.5 bg-teal-500 hover:bg-teal-400 text-slate-955 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                                        >
+                                            <Icon name="check" className="w-3.5 h-3.5" /> Apply JSON Mappings
+                                        </button>
+                                    </div>
+
+                                    <textarea
+                                        rows={10}
+                                        value={jsonString}
+                                        onChange={(e) => setJsonString(e.target.value)}
+                                        className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-700 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                    />
+                                    <p className="text-[10px] text-slate-500 font-medium">Export/Copy this JSON to back up mappings, or modify and apply to bulk-update sheets and credentials.</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-2 border-t border-slate-200 pt-5">
+                            <button
+                                onClick={onClose}
+                                className="w-1/2 py-3 bg-slate-105 bg-slate-100 hover:bg-slate-200 text-slate-650 font-semibold rounded-xl border border-slate-200 transition-all cursor-pointer text-sm"
+                            >
+                                Close Settings
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                className="w-1/2 py-3 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-teal-500/10 flex items-center justify-center gap-2 cursor-pointer text-sm"
+                            >
+                                Save Configuration
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Render React DOM Hook
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+    </script>
+</body>
+</html>
