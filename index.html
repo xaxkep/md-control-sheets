@@ -44,6 +44,20 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(16px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.18s ease-out forwards;
+        }
+        .animate-slide-up {
+            animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
     </style>
 </head>
 <body class="text-slate-800 bg-[#f8fafc] min-h-screen flex flex-col selection:bg-teal-500/20 selection:text-teal-900">
@@ -292,6 +306,7 @@
 
             // Row editing state (DH or MD edit)
             const [editingDirective, setEditingDirective] = React.useState(null);
+            const [selectedDirective, setSelectedDirective] = React.useState(null);
             const [editStatus, setEditStatus] = React.useState('');
             const [editRemark, setEditRemark] = React.useState('');
             const [editDelegated, setEditDelegated] = React.useState('');
@@ -299,6 +314,19 @@
 
             // Notification message state
             const [notification, setNotification] = React.useState(null);
+
+            // Close modals on Escape key press
+            React.useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (e.key === 'Escape') {
+                        setSelectedDirective(null);
+                        setEditingDirective(null);
+                        setIsSettingsOpen(false);
+                    }
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, []);
 
             // Setup GIS Client
             React.useEffect(() => {
@@ -1506,7 +1534,7 @@
                                                                 };
 
                                                                 return (
-                                                                    <tr key={index} className="hover:bg-slate-50/50 transition-all group">
+                                                                    <tr key={index} onClick={() => setSelectedDirective(d)} className="hover:bg-slate-50/50 transition-all group cursor-pointer">
                                                                         {/* Department mapping info */}
                                                                         {activeRole.isMD && (
                                                                             <td className="py-4 px-4 align-top">
@@ -1585,7 +1613,7 @@
                                                                                 {activeRole.isMD && (
                                                                                     <>
                                                                                         <button
-                                                                                            onClick={() => handleQuickAudit(d, 'verify')}
+                                                                                            onClick={(e) => { e.stopPropagation(); handleQuickAudit(d, 'verify'); }}
                                                                                             disabled={d.verification === 'Done' && d.status === 'Checked & Confirmed'}
                                                                                             title="Verify (Approve)"
                                                                                             className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-350 text-emerald-700 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
@@ -1593,7 +1621,7 @@
                                                                                             <Icon name="check" className="w-3.5 h-3.5" />
                                                                                         </button>
                                                                                         <button
-                                                                                            onClick={() => handleQuickAudit(d, 'reset')}
+                                                                                            onClick={(e) => { e.stopPropagation(); handleQuickAudit(d, 'reset'); }}
                                                                                             disabled={d.verification === 'Pending' && d.status !== 'Checked & Confirmed'}
                                                                                             title="Reset (Reject/Audit Fail)"
                                                                                             className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 hover:border-rose-350 text-rose-700 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
@@ -1605,7 +1633,7 @@
 
                                                                                 {/* Edit form trigger */}
                                                                                 <button
-                                                                                    onClick={() => openEditModal(d)}
+                                                                                    onClick={(e) => { e.stopPropagation(); openEditModal(d); }}
                                                                                     title="Edit Row Details"
                                                                                     className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
                                                                                 >
@@ -1739,6 +1767,203 @@
                                         ) : (
                                             'Save Changes'
                                         )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Directive Detailed Record Popup Modal */}
+                    {selectedDirective && (
+                        <div 
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm animate-fade-in"
+                            onClick={() => setSelectedDirective(null)}
+                        >
+                            <div 
+                                className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col gap-6 relative text-slate-800 animate-slide-up max-h-[90vh] overflow-y-auto"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {/* Close Button */}
+                                <button
+                                    onClick={() => setSelectedDirective(null)}
+                                    className="absolute top-6 right-6 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all cursor-pointer"
+                                >
+                                    <Icon name="close" className="w-5 h-5" />
+                                </button>
+
+                                {/* Header */}
+                                <div className="border-b border-slate-100 pb-4">
+                                    <div className="flex items-center gap-2 text-teal-600 font-bold text-sm uppercase tracking-wider mb-1">
+                                        <Icon name="info" className="w-5 h-5 text-teal-650" />
+                                        <span>Directive Detailed Record</span>
+                                    </div>
+                                    <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">
+                                        {selectedDirective.departmentName}
+                                    </h3>
+                                    <p className="text-xs text-slate-450 font-semibold mt-1">
+                                        Head: <span className="text-slate-750">{selectedDirective.headName}</span> &bull; Email: <span className="text-slate-700 font-mono">{selectedDirective.headEmail}</span>
+                                    </p>
+                                </div>
+
+                                {/* Main Description Panel */}
+                                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col gap-2 relative">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Description / निर्देश</span>
+                                        <button 
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(selectedDirective.description);
+                                                showNotification('Description copied to clipboard!', 'success');
+                                            }}
+                                            className="text-[10px] text-teal-600 hover:text-teal-700 font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                                        >
+                                            Copy Text
+                                        </button>
+                                    </div>
+                                    <div className="text-slate-800 text-base md:text-lg font-medium leading-relaxed hindi-text whitespace-pre-wrap select-all mt-1">
+                                        {selectedDirective.description}
+                                    </div>
+                                </div>
+
+                                {/* Metadata Grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm border-t border-slate-100 pt-5">
+                                    {/* Issue Date */}
+                                    <div className="flex justify-between border-b border-slate-100 pb-2.5">
+                                        <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Date Issued</span>
+                                        <span className="font-bold text-slate-700 font-mono">{selectedDirective.date}</span>
+                                    </div>
+
+                                    {/* Target Date */}
+                                    <div className="flex justify-between border-b border-slate-100 pb-2.5">
+                                        <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Target Date</span>
+                                        <span className={`font-bold font-mono ${selectedDirective.targetDate === 'Immediate' ? 'text-rose-600 font-black animate-pulse' : 'text-slate-700'}`}>
+                                            {selectedDirective.targetDate || '-'}
+                                        </span>
+                                    </div>
+
+                                    {/* Type */}
+                                    <div className="flex justify-between border-b border-slate-100 pb-2.5 items-center">
+                                        <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Type</span>
+                                        <span className={`text-[10px] px-2.5 py-0.5 rounded border font-bold ${
+                                            selectedDirective.type === 'Work' ? 'bg-indigo-50 border-indigo-100 text-indigo-700' :
+                                            selectedDirective.type === 'Deficiency' ? 'bg-rose-50 border-rose-100 text-rose-700' :
+                                            selectedDirective.type === 'Instruction' ? 'bg-amber-50 border-amber-100 text-amber-700' :
+                                            'bg-slate-100 border-slate-200 text-slate-500'
+                                        }`}>
+                                            {selectedDirective.type}
+                                        </span>
+                                    </div>
+
+                                    {/* Priority */}
+                                    <div className="flex justify-between border-b border-slate-100 pb-2.5 items-center">
+                                        <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Priority</span>
+                                        <span className={`text-[10px] px-2.5 py-0.5 rounded border font-bold ${
+                                            selectedDirective.priority === 'Normal' ? 'bg-slate-100 border-slate-200 text-slate-500' :
+                                            selectedDirective.priority === 'Urgent' ? 'bg-rose-50 border-rose-200 text-rose-700' :
+                                            selectedDirective.priority === 'Very Urgent' ? 'bg-rose-600 text-white border-none animate-pulse' :
+                                            'bg-slate-100 border-slate-200 text-slate-500'
+                                        }`}>
+                                            {selectedDirective.priority}
+                                        </span>
+                                    </div>
+
+                                    {/* Status */}
+                                    <div className="flex justify-between border-b border-slate-100 pb-2.5 items-center">
+                                        <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Status</span>
+                                        <span className={`text-[10px] px-2.5 py-0.5 rounded border font-bold ${
+                                            selectedDirective.status === 'Pending' ? 'bg-slate-100 border border-slate-200 text-slate-650' :
+                                            selectedDirective.status === 'Not Seen' ? 'bg-slate-50 border border-slate-150 text-slate-400' :
+                                            selectedDirective.status === 'In Progress' ? 'bg-indigo-50 border border-indigo-150 text-indigo-700' :
+                                            selectedDirective.status === 'On Hold' ? 'bg-amber-50 border border-amber-150 text-amber-750' :
+                                            selectedDirective.status === 'Completed' ? 'bg-emerald-50 border border-emerald-150 text-emerald-700' :
+                                            selectedDirective.status === 'Checked & Confirmed' ? 'bg-emerald-500 border-none text-white' :
+                                            'bg-slate-100'
+                                        }`}>
+                                            {selectedDirective.status}
+                                        </span>
+                                    </div>
+
+                                    {/* Audit / Verification */}
+                                    <div className="flex justify-between border-b border-slate-100 pb-2.5 items-center">
+                                        <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Audit status</span>
+                                        <span className={`text-[10px] px-2.5 py-0.5 rounded font-bold ${
+                                            selectedDirective.verification === 'Done' ? 'bg-emerald-100 text-emerald-700 border border-emerald-250' : 'bg-amber-100 text-amber-700 border border-amber-250'
+                                        }`}>
+                                            {selectedDirective.verification === 'Done' ? 'Done (Verified)' : 'Pending'}
+                                        </span>
+                                    </div>
+
+                                    {/* Worksheet Tab */}
+                                    <div className="flex justify-between border-b border-slate-100 pb-2.5">
+                                        <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Worksheet Tab</span>
+                                        <span className="font-bold text-slate-600 font-mono">{selectedDirective.sheetTabName}</span>
+                                    </div>
+
+                                    {/* Row Number in Google Sheet */}
+                                    <div className="flex justify-between border-b border-slate-100 pb-2.5">
+                                        <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Spreadsheet Row</span>
+                                        <span className="font-bold text-slate-600 font-mono">Row {selectedDirective.excelRowNumber}</span>
+                                    </div>
+
+                                    {/* Delegated To */}
+                                    <div className="flex justify-between border-b border-slate-100 pb-2.5 sm:col-span-2">
+                                        <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Delegated To</span>
+                                        <span className="font-bold text-slate-700">{selectedDirective.delegatedTo || 'Not delegated'}</span>
+                                    </div>
+
+                                    {/* Completion Date */}
+                                    <div className="flex justify-between border-b border-slate-100 pb-2.5 sm:col-span-2">
+                                        <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Completion Date</span>
+                                        <span className="font-bold text-slate-700 font-mono">{selectedDirective.completionDate || 'Not completed yet'}</span>
+                                    </div>
+                                </div>
+
+                                {/* Remarks & Progress Logs */}
+                                <div className="flex flex-col gap-2 border-t border-slate-100 pt-5">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Remarks & Progress Logs / रिमार्क</span>
+                                        {selectedDirective.remark && (
+                                            <button 
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(selectedDirective.remark);
+                                                    showNotification('Remarks copied to clipboard!', 'success');
+                                                }}
+                                                className="text-[10px] text-teal-650 hover:text-teal-700 font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                                            >
+                                                Copy Text
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 min-h-[70px] flex items-center justify-start">
+                                        {selectedDirective.remark ? (
+                                            <p className="text-slate-700 text-sm font-medium leading-relaxed hindi-text break-words w-full">
+                                                {selectedDirective.remark}
+                                            </p>
+                                        ) : (
+                                            <p className="text-slate-400 italic text-xs font-medium w-full text-center">
+                                                No action logs or progress updates recorded yet.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Action buttons */}
+                                <div className="flex items-center gap-3 mt-2 border-t border-slate-100 pt-5">
+                                    <button
+                                        onClick={() => setSelectedDirective(null)}
+                                        className="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-500 font-semibold rounded-xl border border-slate-200 transition-all cursor-pointer text-sm"
+                                    >
+                                        Close Details
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            const d = selectedDirective;
+                                            setSelectedDirective(null);
+                                            openEditModal(d);
+                                        }}
+                                        className="w-1/2 py-3 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-teal-500/10 flex items-center justify-center gap-2 cursor-pointer text-sm"
+                                    >
+                                        <Icon name="edit" className="w-4 h-4" />
+                                        <span>Edit Directive</span>
                                     </button>
                                 </div>
                             </div>
