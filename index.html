@@ -1781,6 +1781,11 @@
             const [localMappings, setLocalMappings] = React.useState(mappings);
             const [activeTab, setActiveTab] = React.useState('general'); // 'general' | 'mappings' | 'json'
 
+            const isMdEmailLocked = React.useMemo(() => {
+                const saved = localStorage.getItem('pcil_mdEmail');
+                return saved && saved.trim() !== "";
+            }, []);
+
             // Mapping inputs helpers
             const handleMappingChange = (index, field, value) => {
                 const updated = [...localMappings];
@@ -1929,15 +1934,28 @@
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                                             <Icon name="shield" className="w-3.5 h-3.5 text-teal-505" /> Managing Director Email
+                                            {isMdEmailLocked && (
+                                                <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-bold ml-auto flex items-center gap-1">
+                                                    🔒 Fixed & Locked
+                                                </span>
+                                            )}
                                         </label>
                                         <input
                                             type="email"
                                             value={localMdEmail}
                                             onChange={(e) => setLocalMdEmail(e.target.value)}
+                                            disabled={isMdEmailLocked}
                                             placeholder="e.g. managingdirector@pcil.com"
-                                            className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                            className={`bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20 ${
+                                                isMdEmailLocked ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200' : ''
+                                            }`}
                                         />
-                                        <p className="text-[10px] text-slate-450 font-medium">When a user logs in with this Google account, the MD Console will unlock.</p>
+                                        <p className="text-[10px] text-slate-450 font-medium">
+                                            {isMdEmailLocked 
+                                                ? "This email is fixed and locked to prevent unauthorized console takeover." 
+                                                : "When a user logs in with this Google account, the MD Console will unlock."
+                                            }
+                                        </p>
                                     </div>
 
                                     {/* Sheet tab name */}
