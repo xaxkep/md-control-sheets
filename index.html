@@ -303,6 +303,7 @@
             const [dispatchTargetDate, setDispatchTargetDate] = React.useState('');
             const [dispatchSuccess, setDispatchSuccess] = React.useState(false);
             const [dispatchLoading, setDispatchLoading] = React.useState(false);
+            const [isDispatchOpen, setIsDispatchOpen] = React.useState(false);
 
             // Row editing state (DH or MD edit)
             const [editingDirective, setEditingDirective] = React.useState(null);
@@ -322,6 +323,7 @@
                         setSelectedDirective(null);
                         setEditingDirective(null);
                         setIsSettingsOpen(false);
+                        setIsDispatchOpen(false);
                     }
                 };
                 window.addEventListener('keydown', handleKeyDown);
@@ -667,7 +669,10 @@
                     setDispatchTargetDate('');
                     showNotification(`Directive successfully dispatched to ${targetDept.headName} (Sandbox Mode)`, 'success');
                     setDispatchSuccess(true);
-                    setTimeout(() => setDispatchSuccess(false), 3000);
+                    setTimeout(() => {
+                        setDispatchSuccess(false);
+                        setIsDispatchOpen(false);
+                    }, 1200);
                     setDispatchLoading(false);
                     // Reload data
                     setTimeout(loadSpreadsheetData, 100);
@@ -708,7 +713,10 @@
                     setDispatchTargetDate('');
                     showNotification(`Directive successfully dispatched to ${targetDept.headName}!`, 'success');
                     setDispatchSuccess(true);
-                    setTimeout(() => setDispatchSuccess(false), 3000);
+                    setTimeout(() => {
+                        setDispatchSuccess(false);
+                        setIsDispatchOpen(false);
+                    }, 1200);
                     loadSpreadsheetData();
                 } catch (err) {
                     showNotification('Dispatch failed: ' + err.message, 'error');
