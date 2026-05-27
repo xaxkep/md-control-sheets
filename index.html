@@ -1247,133 +1247,29 @@
                                             );
                                         })}
                                         
-                                        <button 
-                                            onClick={loadSpreadsheetData}
-                                            disabled={loading}
-                                            className="ml-auto flex items-center gap-1.5 px-3 py-1 text-slate-705 hover:text-teal-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-all cursor-pointer font-bold disabled:opacity-50 text-xs"
-                                        >
-                                            <Icon name="refresh" className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Sync All Sheets
-                                        </button>
+                                        <div className="ml-auto flex flex-wrap gap-2">
+                                            <button 
+                                                onClick={() => setIsDispatchOpen(true)}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-slate-700 hover:text-teal-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-all cursor-pointer font-bold text-xs"
+                                            >
+                                                <Icon name="plus" className="w-3.5 h-3.5 text-teal-600" /> Issue New Directive
+                                            </button>
+                                            <button 
+                                                onClick={loadSpreadsheetData}
+                                                disabled={loading}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-slate-700 hover:text-teal-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-all cursor-pointer font-bold disabled:opacity-50 text-xs"
+                                            >
+                                                <Icon name="refresh" className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Sync All Sheets
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
 
                                 {/* Main Console Grid */}
-                                <div className={`grid grid-cols-1 ${activeRole.isMD ? 'lg:grid-cols-3' : ''} gap-6`}>
+                                <div className="flex flex-col gap-6">
                                     
-                                    {/* Dispatch Control Form (MD Role only) */}
-                                    {activeRole.isMD && (
-                                        <div className="lg:col-span-1 glass-panel p-6 rounded-3xl border border-slate-250/80 shadow-xl flex flex-col gap-5 h-fit bg-white/90 sticky top-28">
-                                            <div>
-                                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                                    <span className="p-1.5 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-650">
-                                                        <Icon name="plus" className="w-4 h-4" />
-                                                    </span>
-                                                    MD Dispatch Console
-                                                </h3>
-                                                <p className="text-xs text-slate-400 font-medium mt-1">Issue fresh directives to department sheets</p>
-                                            </div>
-
-                                            <form onSubmit={handleDispatchSubmit} className="flex flex-col gap-4">
-                                                {/* Select Department */}
-                                                <div className="flex flex-col gap-1.5">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Recipient Department</label>
-                                                    <select
-                                                        required
-                                                        value={dispatchDeptId}
-                                                        onChange={(e) => setDispatchDeptId(e.target.value)}
-                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                                                    >
-                                                        <option value="">-- Choose Recipient Head --</option>
-                                                        {mappings.map(m => (
-                                                            <option key={m.id} value={m.id}>{m.headName} ({m.deptName})</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    {/* Directive Type */}
-                                                    <div className="flex flex-col gap-1.5">
-                                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type</label>
-                                                        <select
-                                                            value={dispatchType}
-                                                            onChange={(e) => setDispatchType(e.target.value)}
-                                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
-                                                        >
-                                                            <option value="Work">Work</option>
-                                                            <option value="Deficiency">Deficiency</option>
-                                                            <option value="Instruction">Instruction</option>
-                                                        </select>
-                                                    </div>
-
-                                                    {/* Priority */}
-                                                    <div className="flex flex-col gap-1.5">
-                                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Priority</label>
-                                                        <select
-                                                            value={dispatchPriority}
-                                                            onChange={(e) => setDispatchPriority(e.target.value)}
-                                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
-                                                        >
-                                                            <option value="Normal">Normal</option>
-                                                            <option value="Urgent">Urgent</option>
-                                                            <option value="Very Urgent">Very Urgent</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-
-                                                {/* Description (Hindi/English) */}
-                                                <div className="flex flex-col gap-1.5">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                                                        <span>Directive Details</span>
-                                                        <span className="text-[10px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 font-bold">Hindi & Eng Ok</span>
-                                                    </label>
-                                                    <textarea
-                                                        required
-                                                        rows={4}
-                                                        value={dispatchDesc}
-                                                        onChange={(e) => setDispatchDesc(e.target.value)}
-                                                        placeholder="निर्देश यहाँ दर्ज करें... (e.g. नई पैकेजिंग डिजाइन तैयार करवानी है)"
-                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 hindi-text placeholder:text-slate-400"
-                                                    />
-                                                </div>
-
-                                                {/* Target Date */}
-                                                <div className="flex flex-col gap-1.5">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Target Completion Date</label>
-                                                    <input
-                                                        type="date"
-                                                        value={dispatchTargetDate}
-                                                        onChange={(e) => setDispatchTargetDate(e.target.value)}
-                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-805 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                                                    />
-                                                </div>
-
-                                                <button
-                                                    type="submit"
-                                                    disabled={dispatchLoading}
-                                                    className={`w-full py-3 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg ${
-                                                        dispatchSuccess 
-                                                        ? 'bg-emerald-500 text-white shadow-emerald-500/10' 
-                                                        : 'bg-teal-500 hover:bg-teal-400 text-slate-950 hover:shadow-teal-500/10'
-                                                    }`}
-                                                >
-                                                    {dispatchLoading ? (
-                                                        <span className="h-4 w-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
-                                                    ) : dispatchSuccess ? (
-                                                        <>
-                                                            <Icon name="check" className="w-4 h-4 text-white" /> Dispatched Successfully
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Icon name="plus" className="w-4 h-4" /> Dispatch Directive
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </form>
-                                        </div>
-                                    )}
-
                                     {/* Consolidated Canvas Table (MD and DH Workspace) */}
-                                    <div className={`${activeRole.isMD ? 'lg:col-span-2' : 'w-full'} flex flex-col gap-4`}>
+                                    <div className="w-full flex flex-col gap-4">
                                         
                                         {/* Filter Panel */}
                                         <div className="glass-panel p-5 rounded-3xl border border-slate-250/80 shadow-xl flex flex-col gap-4 bg-white/90">
@@ -1966,6 +1862,142 @@
                                         <span>Edit Directive</span>
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MD Dispatch Console Popup Modal */}
+                    {isDispatchOpen && (
+                        <div 
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-fade-in"
+                            onClick={() => setIsDispatchOpen(false)}
+                        >
+                            <div 
+                                className="w-full max-w-lg bg-white border border-slate-205 rounded-3xl p-6 shadow-2xl flex flex-col gap-5 relative text-slate-800 animate-slide-up"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <button
+                                    onClick={() => setIsDispatchOpen(false)}
+                                    className="absolute top-5 right-5 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all cursor-pointer"
+                                >
+                                    <Icon name="close" className="w-5 h-5" />
+                                </button>
+
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <span className="p-1.5 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-600">
+                                            <Icon name="plus" className="w-4 h-4" />
+                                        </span>
+                                        MD Dispatch Console
+                                    </h3>
+                                    <p className="text-xs text-slate-450 font-medium mt-1">Issue fresh directives to department sheets</p>
+                                </div>
+
+                                <form onSubmit={handleDispatchSubmit} className="flex flex-col gap-4">
+                                    {/* Select Department */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Recipient Department</label>
+                                        <select
+                                            required
+                                            value={dispatchDeptId}
+                                            onChange={(e) => setDispatchDeptId(e.target.value)}
+                                            className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                        >
+                                            <option value="">-- Choose Recipient Head --</option>
+                                            {mappings.map(m => (
+                                                <option key={m.id} value={m.id}>{m.headName} ({m.deptName})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {/* Directive Type */}
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type</label>
+                                            <select
+                                                value={dispatchType}
+                                                onChange={(e) => setDispatchType(e.target.value)}
+                                                className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                            >
+                                                <option value="Work">Work</option>
+                                                <option value="Deficiency">Deficiency</option>
+                                                <option value="Instruction">Instruction</option>
+                                            </select>
+                                        </div>
+
+                                        {/* Priority */}
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Priority</label>
+                                            <select
+                                                value={dispatchPriority}
+                                                onChange={(e) => setDispatchPriority(e.target.value)}
+                                                className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                            >
+                                                <option value="Normal">Normal</option>
+                                                <option value="Urgent">Urgent</option>
+                                                <option value="Very Urgent">Very Urgent</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* Description (Hindi/English) */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                                            <span>Directive Details</span>
+                                            <span className="text-[10px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 font-bold">Hindi & Eng Ok</span>
+                                        </label>
+                                        <textarea
+                                            required
+                                            rows={4}
+                                            value={dispatchDesc}
+                                            onChange={(e) => setDispatchDesc(e.target.value)}
+                                            placeholder="निर्देश यहाँ दर्ज करें... (e.g. नई पैकेजिंग डिजाइन तैयार करवानी है)"
+                                            className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 hindi-text placeholder:text-slate-400"
+                                        />
+                                    </div>
+
+                                    {/* Target Date */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-slate-505 uppercase tracking-wider">Target Completion Date</label>
+                                        <input
+                                            type="date"
+                                            value={dispatchTargetDate}
+                                            onChange={(e) => setDispatchTargetDate(e.target.value)}
+                                            className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center gap-3 mt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsDispatchOpen(false)}
+                                            className="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-500 font-semibold rounded-xl border border-slate-200 transition-all cursor-pointer text-sm"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={dispatchLoading}
+                                            className={`w-1/2 py-3 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg ${
+                                                dispatchSuccess 
+                                                ? 'bg-emerald-500 text-white shadow-emerald-500/10' 
+                                                : 'bg-teal-500 hover:bg-teal-400 text-slate-950 hover:shadow-teal-500/10'
+                                            }`}
+                                        >
+                                            {dispatchLoading ? (
+                                                <span className="h-4 w-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                                            ) : dispatchSuccess ? (
+                                                <>
+                                                    <Icon name="check" className="w-4 h-4 text-white" /> Dispatched
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Icon name="plus" className="w-4 h-4" /> Dispatch Directive
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     )}
