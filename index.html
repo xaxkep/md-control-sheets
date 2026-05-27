@@ -342,7 +342,8 @@
                     deptName: (m.deptName || '').trim(),
                     headName: (m.headName || '').trim(),
                     headEmail: (m.headEmail || '').trim().toLowerCase(),
-                    spreadsheetId: (m.spreadsheetId || '').trim()
+                    spreadsheetId: (m.spreadsheetId || '').trim(),
+                    sheetTabName: (m.sheetTabName || '').trim()
                 }));
                 
                 localStorage.setItem('pcil_clientId', trimmedClientId);
@@ -481,7 +482,8 @@
                     
                     const fetchPromises = sheetsToFetch.map(async (map) => {
                         try {
-                            const quotedTab = `'${sheetTabName.replace(/'/g, "''")}'`;
+                            const activeTabName = (map.sheetTabName || sheetTabName).trim();
+                            const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
                             const response = await fetch(
                                 `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A1:J1000?valueRenderOption=FORMATTED_VALUE`,
                                 {
@@ -571,6 +573,7 @@
                     parsedDirectives.push({
                         excelRowNumber: i + 1, // 1-indexed row number in the actual Google Sheet
                         spreadsheetId: mapping.spreadsheetId,
+                        sheetTabName: (mapping.sheetTabName || sheetTabName).trim(),
                         departmentId: mapping.id,
                         departmentName: mapping.deptName,
                         headName: mapping.headName,
@@ -646,7 +649,8 @@
                 // Google Sheets API append request
                 if (!auth) return;
                 try {
-                    const quotedTab = `'${sheetTabName.replace(/'/g, "''")}'`;
+                    const activeTabName = targetDept.sheetTabName || sheetTabName;
+                    const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
                     const response = await fetch(
                         `https://sheets.googleapis.com/v4/spreadsheets/${targetDept.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A:J:append?valueInputOption=USER_ENTERED`,
                         {
@@ -756,7 +760,8 @@
                 // Google Sheets API update row request
                 if (!auth) return;
                 try {
-                    const quotedTab = `'${sheetTabName.replace(/'/g, "''")}'`;
+                    const activeTabName = currentDirective.sheetTabName || sheetTabName;
+                    const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
                     const response = await fetch(
                         `https://sheets.googleapis.com/v4/spreadsheets/${currentDirective.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A${excelRowNumber}:J${excelRowNumber}?valueInputOption=USER_ENTERED`,
                         {
@@ -857,7 +862,8 @@
 
                 if (!auth) return;
                 try {
-                    const quotedTab = `'${sheetTabName.replace(/'/g, "''")}'`;
+                    const activeTabName = directive.sheetTabName || sheetTabName;
+                    const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
                     const response = await fetch(
                         `https://sheets.googleapis.com/v4/spreadsheets/${directive.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A${excelRowNumber}:J${excelRowNumber}?valueInputOption=USER_ENTERED`,
                         {
@@ -1801,7 +1807,8 @@
                         deptName: '',
                         headName: '',
                         headEmail: '',
-                        spreadsheetId: ''
+                        spreadsheetId: '',
+                        sheetTabName: ''
                     }
                 ]);
             };
@@ -1836,6 +1843,7 @@
                         headName: (item.headName || '').trim(),
                         headEmail: (item.headEmail || '').trim().toLowerCase(),
                         spreadsheetId: (item.spreadsheetId || '').trim(),
+                        sheetTabName: (item.sheetTabName || '').trim(),
                         id: item.id || String(idx + 1)
                     }));
                     setLocalMappings(sanitized);
@@ -1858,7 +1866,8 @@
                     deptName: (m.deptName || '').trim(),
                     headName: (m.headName || '').trim(),
                     headEmail: (m.headEmail || '').trim().toLowerCase(),
-                    spreadsheetId: (m.spreadsheetId || '').trim()
+                    spreadsheetId: (m.spreadsheetId || '').trim(),
+                    sheetTabName: (m.sheetTabName || '').trim()
                 }));
                 
                 onSave(trimmedClientId, localMdEmail, localSheetTabName, trimmedMappings);
@@ -2006,17 +2015,18 @@
                                         <table className="w-full text-left text-xs border-collapse">
                                             <thead>
                                                 <tr className="bg-slate-100 border-b border-slate-200 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                                                    <th className="p-3 w-1/4 font-bold">Department Name</th>
-                                                    <th className="p-3 w-1/5 font-bold">Head Name</th>
-                                                    <th className="p-3 w-1/4 font-bold">Head Google Email</th>
-                                                    <th className="p-3 w-1/3 font-bold">Spreadsheet ID</th>
+                                                    <th className="p-3 w-[20%] font-bold">Department Name</th>
+                                                    <th className="p-3 w-[15%] font-bold">Head Name</th>
+                                                    <th className="p-3 w-[20%] font-bold">Head Google Email</th>
+                                                    <th className="p-3 w-[25%] font-bold">Spreadsheet ID</th>
+                                                    <th className="p-3 w-[15%] font-bold">Sheet Tab (Opt)</th>
                                                     <th className="p-3 text-right font-bold">Delete</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
                                                 {localMappings.length === 0 ? (
                                                     <tr>
-                                                        <td colSpan={5} className="p-8 text-center text-slate-400 italic">No department mappings configured. Add a row above.</td>
+                                                        <td colSpan={6} className="p-8 text-center text-slate-400 italic">No department mappings configured. Add a row above.</td>
                                                     </tr>
                                                 ) : (
                                                     localMappings.map((m, idx) => (
@@ -2062,6 +2072,16 @@
                                                                     value={m.spreadsheetId}
                                                                     onChange={(e) => handleMappingChange(idx, 'spreadsheetId', e.target.value)}
                                                                     placeholder="Enter spreadsheet ID"
+                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none font-mono text-[11px] focus:ring-1 focus:ring-teal-500"
+                                                                />
+                                                            </td>
+                                                            {/* Sheet Tab Name override */}
+                                                            <td className="p-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={m.sheetTabName || ''}
+                                                                    onChange={(e) => handleMappingChange(idx, 'sheetTabName', e.target.value)}
+                                                                    placeholder="Default"
                                                                     className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none font-mono text-[11px] focus:ring-1 focus:ring-teal-500"
                                                                 />
                                                             </td>
