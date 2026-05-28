@@ -598,14 +598,72 @@
             const parseSheetRows = (values, mapping) => {
                 if (!values || values.length === 0) return [];
                 
-                // Scan rows to find headers containing Date and Description
+                // Scan rows to find headers dynamically
                 let headerIndex = -1;
                 for (let i = 0; i < Math.min(10, values.length); i++) {
                     const row = values[i];
-                    if (row && row.some(cell => typeof cell === 'string' && cell.toLowerCase().includes('date')) &&
-                              row.some(cell => typeof cell === 'string' && cell.toLowerCase().includes('description'))) {
+                    if (row && 
+                        row.some(cell => typeof cell === 'string' && cell.toLowerCase().includes('date')) &&
+                        row.some(cell => typeof cell === 'string' && (
+                            cell.toLowerCase().includes('description') || 
+                            cell.toLowerCase().includes('task') || 
+                            cell.toLowerCase().includes('project') || 
+                            cell.toLowerCase().includes('directive') || 
+                            cell.toLowerCase().includes('details') || 
+                            cell.toLowerCase().includes('work')
+                        ))
+                    ) {
                         headerIndex = i;
                         break;
+                    }
+                }
+
+                // Default column indices (fallback to standard layout)
+                let dateIdx = 0;
+                let typeIdx = 1;
+                let descIdx = 2;
+                let priorityIdx = 3;
+                let targetDateIdx = 4;
+                let verificationIdx = 5;
+                let statusIdx = 6;
+                let remarkIdx = 7;
+                let delegatedIdx = 8;
+                let completionDateIdx = 9;
+
+                let generalRemarksIdx = -1;
+
+                if (headerIndex !== -1) {
+                    const headerRow = values[headerIndex];
+                    headerRow.forEach((cell, idx) => {
+                        if (!cell || typeof cell !== 'string') return;
+                        const name = cell.toLowerCase().trim();
+                        if (name.includes('date') && !name.includes('target') && !name.includes('completion') && !name.includes('done')) {
+                            dateIdx = idx;
+                        } else if (name.includes('type')) {
+                            typeIdx = idx;
+                        } else if (name.includes('description') || name.includes('task') || name.includes('project') || name.includes('directive') || name.includes('details') || name.includes('work')) {
+                            descIdx = idx;
+                        } else if (name.includes('priority')) {
+                            priorityIdx = idx;
+                        } else if (name.includes('target') && name.includes('date')) {
+                            targetDateIdx = idx;
+                        } else if (name.includes('verification') || name.includes('audit')) {
+                            verificationIdx = idx;
+                        } else if (name.includes('status')) {
+                            statusIdx = idx;
+                        } else if (name.includes('team remark') || name.includes('it team remark') || name.includes('action log') || name.includes('response')) {
+                            remarkIdx = idx;
+                        } else if (name.includes('remarks') || name.includes('remark')) {
+                            generalRemarksIdx = idx;
+                        } else if (name.includes('delegated') || name.includes('assignee') || name.includes('updated by') || name.includes('head')) {
+                            delegatedIdx = idx;
+                        } else if (name.includes('completion') || name.includes('done')) {
+                            completionDateIdx = idx;
+                        }
+                    });
+
+                    if (remarkIdx === -1 && generalRemarksIdx !== -1) {
+                        remarkIdx = generalRemarksIdx;
                     }
                 }
 
@@ -618,6 +676,33 @@
                     const isRowEmpty = !row || row.length === 0 || row.every(cell => cell === undefined || String(cell).trim() === "");
                     if (isRowEmpty) continue;
 
+                    // Extrapolate values dynamically
+                    const parsedDate = dateIdx !== -1 && row[dateIdx] ? parseExcelDate(row[dateIdx]) : '';
+                    
+                    let parsedType = 'Work';
+                    if (typeIdx !== -1 && row[typeIdx]) {
+                        parsedType = row[typeIdx];
+                    }
+
+                    let parsedDesc = '';
+                    if (descIdx !== -1 && row[descIdx]) {
+                        parsedDesc = row[descIdx];
+                    }
+                    if (generalRemarksIdx !== -1 && generalRemarksIdx !== descIdx && generalRemarksIdx !== remarkIdx && row[generalRemarksIdx]) {
+                        const val = String(row[generalRemarksIdx]).trim();
+                        if (val) {
+                            parsedDesc = parsedDesc ? `${parsedDesc}\n\nTask Details:\n${val}` : val;
+                        }
+                    }
+
+                    const parsedPriority = priorityIdx !== -1 && row[priorityIdx] ? row[priorityIdx] : 'Normal';
+                    const parsedTargetDate = targetDateIdx !== -1 && row[targetDateIdx] ? parseExcelDate(row[targetDateIdx]) : '';
+                    const parsedVerification = verificationIdx !== -1 && row[verificationIdx] ? row[verificationIdx] : 'Pending';
+                    const parsedStatus = statusIdx !== -1 && row[statusIdx] ? row[statusIdx] : 'Pending';
+                    const parsedRemark = remarkIdx !== -1 && row[remarkIdx] ? row[remarkIdx] : '';
+                    const parsedDelegated = delegatedIdx !== -1 && row[delegatedIdx] ? row[delegatedIdx] : '';
+                    const parsedCompletion = completionDateIdx !== -1 && row[completionDateIdx] ? parseExcelDate(row[completionDateIdx]) : '';
+
                     parsedDirectives.push({
                         excelRowNumber: i + 1, // 1-indexed row number in the actual Google Sheet
                         spreadsheetId: mapping.spreadsheetId,
@@ -627,16 +712,16 @@
                         headName: mapping.headName,
                         headEmail: mapping.headEmail,
                         
-                        date: parseExcelDate(row[0]) || '',
-                        type: row[1] || 'Work',
-                        description: row[2] || '',
-                        priority: row[3] || 'Normal',
-                        targetDate: parseExcelDate(row[4]) || '',
-                        verification: row[5] || 'Pending',
-                        status: row[6] || 'Pending',
-                        remark: row[7] || '',
-                        delegatedTo: row[8] || '',
-                        completionDate: row[9] || ''
+                        date: parsedDate,
+                        type: parsedType,
+                        description: parsedDesc,
+                        priority: parsedPriority,
+                        targetDate: parsedTargetDate,
+                        verification: parsedVerification,
+                        status: parsedStatus,
+                        remark: parsedRemark,
+                        delegatedTo: parsedDelegated,
+                        completionDate: parsedCompletion
                     });
                 }
                 return parsedDirectives;
