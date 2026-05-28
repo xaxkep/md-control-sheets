@@ -493,40 +493,21 @@
 
             const activeRole = getActiveUserRole();
 
-            // Helper to send email notification using Gmail API
-            const sendGmailNotification = async (recipientEmail, recipientName, deptName, directiveDetails, priority, targetDate) => {
+            // Generic helper to send email using Gmail API
+            const sendEmailViaGmail = async (toEmail, subject, bodyText) => {
                 if (!auth || !auth.accessToken) {
-                    console.warn('Cannot send email notification: auth token is missing.');
+                    console.warn('Cannot send email: auth token is missing.');
                     return;
                 }
 
                 try {
-                    const subject = `[PCIL Command Canvas] New Directive Issued - ${deptName}`;
-                    const bodyLines = [
-                        `Dear ${recipientName},`,
-                        ``,
-                        `A new directive has been issued to your department (${deptName}) on the PCIL Command Canvas.`,
-                        ``,
-                        `--- Directive Details ---`,
-                        `Description: ${directiveDetails}`,
-                        `Priority: ${priority}`,
-                        `Target Date: ${targetDate || 'Not Specified'}`,
-                        `--------------------------`,
-                        ``,
-                        `Please log in to the PCIL Command Canvas to review and update the status of this directive.`,
-                        ``,
-                        `Regards,`,
-                        `MD Office`,
-                        `PCIL Group`
-                    ];
-
                     const emailContent = [
-                        `To: ${recipientEmail}`,
+                        `To: ${toEmail}`,
                         `Subject: ${subject}`,
                         `Content-Type: text/plain; charset="UTF-8"`,
                         `MIME-Version: 1.0`,
                         ``,
-                        bodyLines.join('\n')
+                        bodyText
                     ].join('\r\n');
 
                     // Base64url encode the raw MIME message
@@ -554,11 +535,60 @@
                         console.error('Gmail API Error response:', errText);
                         throw new Error(`Gmail API returned status ${response.status}`);
                     }
-                    console.log(`Email notification successfully sent to ${recipientEmail}`);
+                    console.log(`Email successfully sent to ${toEmail}`);
                 } catch (err) {
-                    console.error('Failed to send email notification:', err);
+                    console.error('Failed to send email:', err);
                     showNotification(`Could not send email notification: ${err.message}`, 'error');
                 }
+            };
+
+            // Helper to send email notification to coordinator when a new directive is issued
+            const sendGmailNotification = async (recipientEmail, recipientName, deptName, directiveDetails, priority, targetDate) => {
+                const subject = `[PCIL Command Canvas] New Directive Issued - ${deptName}`;
+                const bodyText = [
+                    `Dear ${recipientName},`,
+                    ``,
+                    `A new directive has been issued to your department (${deptName}) on the PCIL Command Canvas.`,
+                    ``,
+                    `--- Directive Details ---`,
+                    `Description: ${directiveDetails}`,
+                    `Priority: ${priority}`,
+                    `Target Date: ${targetDate || 'Not Specified'}`,
+                    `--------------------------`,
+                    ``,
+                    `Please log in to the PCIL Command Canvas to review and update the status of this directive.`,
+                    ``,
+                    `Regards,`,
+                    `MD Office`,
+                    `PCIL Group`
+                ].join('\n');
+
+                await sendEmailViaGmail(recipientEmail, subject, bodyText);
+            };
+
+            // Helper to notify MD when an Urgent/Very Urgent directive is updated to On Hold or Completed by coordinator
+            const sendMDStatusNotification = async (mdEmailAddr, currentDirective, newStatus, newRemark) => {
+                const subject = `[PCIL Command Canvas] Urgent Status Update: ${newStatus} (${currentDirective.deptName})`;
+                const bodyText = [
+                    `Dear MD Sir,`,
+                    ``,
+                    `The status of an urgent directive for department "${currentDirective.deptName}" has been updated by the coordinator (${currentDirective.headName}).`,
+                    ``,
+                    `--- Directive Details ---`,
+                    `Description: ${currentDirective.description}`,
+                    `Priority: ${currentDirective.priority}`,
+                    `Old Status: ${currentDirective.status}`,
+                    `New Status: ${newStatus}`,
+                    `Coordinator Remarks: ${newRemark || 'None'}`,
+                    `--------------------------`,
+                    ``,
+                    `Please log in to the PCIL Command Canvas to review this update.`,
+                    ``,
+                    `Regards,`,
+                    `PCIL Command Canvas System`
+                ].join('\n');
+
+                await sendEmailViaGmail(mdEmailAddr, subject, bodyText);
             };
 
 
@@ -976,6 +1006,14 @@
 
                     setEditingDirective(null);
                     showNotification('Directive updated successfully (Sandbox Mode)', 'success');
+
+                    // Notify MD in Sandbox Mode
+                    const isUrgent = currentDirective.priority === 'Urgent' || currentDirective.priority === 'Very Urgent';
+                    const isStatusChangedToNotify = (newStatus === 'On Hold' || newStatus === 'Completed') && currentDirective.status !== newStatus;
+                    if (isUrgent && isStatusChangedToNotify && !activeRole.isMD) {
+                        showNotification(`Notification email simulated to MD sir (${mdEmail})`, 'info');
+                    }
+
                     setEditLoading(false);
                     setTimeout(loadSpreadsheetData, 100);
                     return;
@@ -1013,6 +1051,14 @@
 
                     setEditingDirective(null);
                     showNotification('Directive updated successfully!', 'success');
+
+                    // Notify MD in Production Mode
+                    const isUrgent = currentDirective.priority === 'Urgent' || currentDirective.priority === 'Very Urgent';
+                    const isStatusChangedToNotify = (newStatus === 'On Hold' || newStatus === 'Completed') && currentDirective.status !== newStatus;
+                    if (isUrgent && isStatusChangedToNotify && !activeRole.isMD) {
+                        sendMDStatusNotification(mdEmail, currentDirective, newStatus, newRemark);
+                    }
+
                     loadSpreadsheetData();
                 } catch (err) {
                     showNotification('Update failed: ' + err.message, 'error');
