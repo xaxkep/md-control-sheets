@@ -536,7 +536,7 @@
                         .replace(/=+$/, '');
 
                     const response = await fetch(
-                        'https://gmail.googleapis.com/v1/users/me/messages/send',
+                        'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
                         {
                             method: 'POST',
                             headers: {
