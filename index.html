@@ -983,16 +983,16 @@
 
             // Metrics calculation
             const metrics = React.useMemo(() => {
-                const total = directives.length;
+                const total = filteredDirectives.length;
                 // Active status = Not Seen, Pending, In Progress, On Hold
-                const active = directives.filter(d => ['Not Seen', 'Pending', 'In Progress', 'On Hold'].includes(d.status)).length;
+                const active = filteredDirectives.filter(d => ['Not Seen', 'Pending', 'In Progress', 'On Hold'].includes(d.status)).length;
                 // Critical/Urgent status
-                const urgent = directives.filter(d => (d.priority === 'Urgent' || d.priority === 'Very Urgent') && d.status !== 'Checked & Confirmed' && d.status !== 'Completed').length;
+                const urgent = filteredDirectives.filter(d => (d.priority === 'Urgent' || d.priority === 'Very Urgent') && d.status !== 'Checked & Confirmed' && d.status !== 'Completed').length;
                 // Completed Audits (MD verified Done)
-                const verified = directives.filter(d => d.verification === 'Done').length;
+                const verified = filteredDirectives.filter(d => d.verification === 'Done').length;
 
                 return { total, active, urgent, verified };
-            }, [directives]);
+            }, [filteredDirectives]);
 
             return (
                 <div className="flex-grow flex flex-col min-h-screen">
