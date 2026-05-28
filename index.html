@@ -242,6 +242,24 @@
             return `${dateStr} ${hours}:${minutes}`;
         }
 
+        function parseDateString(dateStr) {
+            if (!dateStr) return new Date(0);
+            const parts = String(dateStr).trim().split(/[\s\-\/]+/);
+            if (parts.length >= 3) {
+                const day = parseInt(parts[0], 10);
+                const monthStr = parts[1];
+                const year = parseInt(parts[2], 10);
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const monthIndex = months.findIndex(m => m.toLowerCase() === monthStr.toLowerCase());
+                if (monthIndex !== -1 && !isNaN(day) && !isNaN(year)) {
+                    const fullYear = year < 100 ? 2000 + year : year;
+                    return new Date(fullYear, monthIndex, day);
+                }
+            }
+            const parsed = Date.parse(dateStr);
+            return isNaN(parsed) ? new Date(0) : new Date(parsed);
+        }
+
         // Main App Wrapper
         function App() {
             // Settings states loaded from localStorage or initialized with defaults
@@ -957,6 +975,10 @@
                 const matchesType = filterType === 'All' || d.type === filterType;
 
                 return matchesSearch && matchesDept && matchesStatus && matchesPriority && matchesType;
+            }).sort((a, b) => {
+                const dateA = parseDateString(a.date);
+                const dateB = parseDateString(b.date);
+                return dateB - dateA; // Descending (latest first)
             });
 
             // Metrics calculation
