@@ -1201,7 +1201,7 @@
                 // Critical/Urgent status
                 const urgent = baseFilteredDirectives.filter(d => (d.priority === 'Urgent' || d.priority === 'Very Urgent') && d.status !== 'Checked & Confirmed' && d.status !== 'Completed').length;
                 // Completed Audits (MD verified Done)
-                const verified = baseFilteredDirectives.filter(d => d.verification === 'Done').length;
+                const verified = baseFilteredDirectives.filter(d => d.verification === 'Done' || d.verification === 'Verified').length;
 
                 return { total, active, urgent, verified };
             }, [baseFilteredDirectives]);
@@ -1214,7 +1214,7 @@
                 } else if (activeMetricTab === 'Urgent') {
                     list = list.filter(d => (d.priority === 'Urgent' || d.priority === 'Very Urgent') && d.status !== 'Checked & Confirmed' && d.status !== 'Completed');
                 } else if (activeMetricTab === 'Completed') {
-                    list = list.filter(d => d.verification === 'Done');
+                    list = list.filter(d => d.verification === 'Done' || d.verification === 'Verified');
                 }
                 return [...list].sort((a, b) => {
                     const dateA = parseDateString(a.date);
@@ -1813,7 +1813,7 @@
                                                                             
                                                                             <div className="flex items-center gap-1.5">
                                                                                 <span className="text-[10px] font-bold text-slate-400">Audit:</span>
-                                                                                {d.verification === 'Done' ? (
+                                                                                {(d.verification === 'Done' || d.verification === 'Verified') ? (
                                                                                     <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
                                                                                         <Icon name="check" className="w-3 h-3" /> Verified
                                                                                     </span>
@@ -1848,7 +1848,7 @@
                                                                                     <>
                                                                                         <button
                                                                                             onClick={(e) => { e.stopPropagation(); handleQuickAudit(d, 'verify'); }}
-                                                                                            disabled={d.verification === 'Done' && d.status === 'Checked & Confirmed'}
+                                                                                            disabled={(d.verification === 'Done' || d.verification === 'Verified') && d.status === 'Checked & Confirmed'}
                                                                                             title="Verify (Approve)"
                                                                                             className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-350 text-emerald-700 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
                                                                                         >
@@ -2120,9 +2120,9 @@
                                     <div className="flex justify-between border-b border-slate-100 pb-2.5 items-center">
                                         <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Audit status</span>
                                         <span className={`text-[10px] px-2.5 py-0.5 rounded font-bold ${
-                                            selectedDirective.verification === 'Done' ? 'bg-emerald-100 text-emerald-700 border border-emerald-250' : 'bg-amber-100 text-amber-700 border border-amber-250'
+                                            (selectedDirective.verification === 'Done' || selectedDirective.verification === 'Verified') ? 'bg-emerald-100 text-emerald-700 border border-emerald-250' : 'bg-amber-100 text-amber-700 border border-amber-250'
                                         }`}>
-                                            {selectedDirective.verification === 'Done' ? 'Done (Verified)' : 'Pending'}
+                                            {(selectedDirective.verification === 'Done' || selectedDirective.verification === 'Verified') ? 'Done (Verified)' : 'Pending'}
                                         </span>
                                     </div>
 
