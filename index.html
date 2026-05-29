@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCIL Command Canvas - Google Sheets Engine</title>
+    <title>MD Command Center - Google Sheets Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -544,11 +544,11 @@
 
             // Helper to send email notification to coordinator when a new directive is issued
             const sendGmailNotification = async (recipientEmail, recipientName, deptName, directiveDetails, priority, targetDate) => {
-                const subject = `[PCIL Command Canvas] New Directive Issued - ${deptName}`;
+                const subject = `[MD Command Center] New Directive Issued - ${deptName}`;
                 const bodyText = [
                     `Dear ${recipientName},`,
                     ``,
-                    `A new directive has been issued to your department (${deptName}) on the PCIL Command Canvas.`,
+                    `A new directive has been issued to your department (${deptName}) on the MD Command Center.`,
                     ``,
                     `--- Directive Details ---`,
                     `Description: ${directiveDetails}`,
@@ -556,7 +556,7 @@
                     `Target Date: ${targetDate || 'Not Specified'}`,
                     `--------------------------`,
                     ``,
-                    `Please log in to the PCIL Command Canvas to review and update the status of this directive.`,
+                    `Please log in to the MD Command Center to review and update the status of this directive.`,
                     ``,
                     `Regards,`,
                     `MD Office`,
@@ -568,7 +568,7 @@
 
             // Helper to notify MD when an Urgent/Very Urgent directive is updated to On Hold or Completed by coordinator
             const sendMDStatusNotification = async (mdEmailAddr, currentDirective, newStatus, newRemark) => {
-                const subject = `[PCIL Command Canvas] Urgent Status Update: ${newStatus} (${currentDirective.deptName})`;
+                const subject = `[MD Command Center] Urgent Status Update: ${newStatus} (${currentDirective.deptName})`;
                 const bodyText = [
                     `Dear MD Sir,`,
                     ``,
@@ -582,10 +582,10 @@
                     `Coordinator Remarks: ${newRemark || 'None'}`,
                     `--------------------------`,
                     ``,
-                    `Please log in to the PCIL Command Canvas to review this update.`,
+                    `Please log in to the MD Command Center to review this update.`,
                     ``,
                     `Regards,`,
-                    `PCIL Command Canvas System`
+                    `MD Command Center System`
                 ].join('\n');
 
                 await sendEmailViaGmail(mdEmailAddr, subject, bodyText);
@@ -1243,7 +1243,7 @@
                                 </div>
                                 <div>
                                     <h1 className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-200 via-indigo-205 to-white">
-                                        PCIL Command Canvas
+                                        MD Command Center
                                     </h1>
                                     <p className="text-xs text-slate-400 font-medium">Google Sheets Engine</p>
                                 </div>
@@ -2363,7 +2363,7 @@
                     {/* Dynamic Footer */}
                     <footer className="bg-slate-100 border-t border-slate-200 text-slate-400 py-6 px-6 text-center text-xs font-semibold mt-auto">
                         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <p>&copy; 2026 PCIL Command Canvas. Client-Side Zero-Trust Sheets Engine.</p>
+                            <p>&copy; 2026 MD Command Center. Client-Side Zero-Trust Sheets Engine.</p>
                             <p className="flex items-center gap-1.5">
                                 <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></span> 
                                 Powered by Google Cloud GIS & Sheets API REST v4
