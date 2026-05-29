@@ -2560,38 +2560,12 @@
             const [localClientId, setLocalClientId] = React.useState(clientId);
             const [localMdEmail, setLocalMdEmail] = React.useState(mdEmail);
             const [localMappings, setLocalMappings] = React.useState(mappings);
-            const [activeTab, setActiveTab] = React.useState('general'); // 'general' | 'mappings' | 'json'
+            const [activeTab, setActiveTab] = React.useState('general'); // 'general' | 'json'
 
             const isMdEmailLocked = React.useMemo(() => {
                 const saved = localStorage.getItem('pcil_mdEmail');
                 return saved && saved.trim() !== "";
             }, []);
-
-            // Mapping inputs helpers
-            const handleMappingChange = (index, field, value) => {
-                const updated = [...localMappings];
-                updated[index][field] = value;
-                setLocalMappings(updated);
-            };
-
-            const addMappingRow = () => {
-                setLocalMappings([
-                    ...localMappings,
-                    {
-                        id: String(Date.now()),
-                        deptName: '',
-                        headName: '',
-                        headEmail: '',
-                        spreadsheetId: '',
-                        sheetTabName: ''
-                    }
-                ]);
-            };
-
-            const removeMappingRow = (index) => {
-                const updated = localMappings.filter((_, i) => i !== index);
-                setLocalMappings(updated);
-            };
 
             // File upload state & handlers
             const [uploadStatus, setUploadStatus] = React.useState({ type: '', message: '' });
@@ -2685,14 +2659,6 @@
                                 General Settings
                             </button>
                             <button
-                                onClick={() => setActiveTab('mappings')}
-                                className={`pb-2.5 font-bold transition-all border-b-2 cursor-pointer ${
-                                    activeTab === 'mappings' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'
-                                }`}
-                            >
-                                Spreadsheet Mappings ({localMappings.length})
-                            </button>
-                            <button
                                 onClick={() => setActiveTab('json')}
                                 className={`pb-2.5 font-bold transition-all border-b-2 cursor-pointer ${
                                     activeTab === 'json' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -2765,111 +2731,7 @@
                                 </div>
                             )}
 
-                            {activeTab === 'mappings' && (
-                                <div className="flex flex-col gap-4 py-2">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="text-sm font-bold text-slate-700">Spreadsheet to Department Head Mappings</h4>
-                                        <button
-                                            onClick={addMappingRow}
-                                            className="px-3.5 py-1.5 bg-teal-500 hover:bg-teal-400 text-slate-950 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow shadow-teal-500/10"
-                                        >
-                                            <Icon name="plus" className="w-3.5 h-3.5" /> Add Department
-                                        </button>
-                                    </div>
-
-                                    {/* Mapping Table */}
-                                    <div className="border border-slate-200 rounded-2xl overflow-x-auto bg-slate-50/50 shadow">
-                                        <table className="w-full text-left text-[11px] md:text-xs border-collapse min-w-[800px]">
-                                            <thead>
-                                                <tr className="bg-slate-100 border-b border-slate-200 text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                                                    <th className="p-2 md:p-3 w-[20%] font-bold">Department Name</th>
-                                                    <th className="p-2 md:p-3 w-[15%] font-bold">Head Name</th>
-                                                    <th className="p-2 md:p-3 w-[20%] font-bold">Head Google Email</th>
-                                                    <th className="p-2 md:p-3 w-[25%] font-bold">Spreadsheet ID</th>
-                                                    <th className="p-2 md:p-3 w-[15%] font-bold">Sheet Tab (Opt)</th>
-                                                    <th className="p-2 md:p-3 text-right font-bold w-[10%]">Delete</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {localMappings.length === 0 ? (
-                                                    <tr>
-                                                        <td colSpan={6} className="p-8 text-center text-slate-400 italic">No department mappings configured. Add a row above.</td>
-                                                    </tr>
-                                                ) : (
-                                                    localMappings.map((m, idx) => (
-                                                        <tr key={m.id} className="hover:bg-slate-50/50">
-                                                            {/* Dept Name */}
-                                                            <td className="p-2">
-                                                                <input
-                                                                    type="text"
-                                                                    required
-                                                                    value={m.deptName}
-                                                                    onChange={(e) => handleMappingChange(idx, 'deptName', e.target.value)}
-                                                                    placeholder="e.g. Support Center"
-                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                                                                />
-                                                            </td>
-                                                            {/* Head Name */}
-                                                            <td className="p-2">
-                                                                <input
-                                                                    type="text"
-                                                                    required
-                                                                    value={m.headName}
-                                                                    onChange={(e) => handleMappingChange(idx, 'headName', e.target.value)}
-                                                                    placeholder="e.g. Ramesh Panwar"
-                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                                                                />
-                                                            </td>
-                                                            {/* Head Email */}
-                                                            <td className="p-2">
-                                                                <input
-                                                                    type="email"
-                                                                    required
-                                                                    value={m.headEmail}
-                                                                    onChange={(e) => handleMappingChange(idx, 'headEmail', e.target.value.toLowerCase())}
-                                                                    placeholder="e.g. ramesh@pcil.com"
-                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none font-mono text-[11px] focus:ring-1 focus:ring-teal-500"
-                                                                />
-                                                            </td>
-                                                            {/* Sheet ID */}
-                                                            <td className="p-2">
-                                                                <input
-                                                                    type="text"
-                                                                    required
-                                                                    value={m.spreadsheetId}
-                                                                    onChange={(e) => handleMappingChange(idx, 'spreadsheetId', e.target.value)}
-                                                                    placeholder="Enter spreadsheet ID"
-                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none font-mono text-[11px] focus:ring-1 focus:ring-teal-500"
-                                                                />
-                                                            </td>
-                                                            {/* Sheet Tab Name override */}
-                                                            <td className="p-2">
-                                                                <input
-                                                                    type="text"
-                                                                    value={m.sheetTabName || ''}
-                                                                    onChange={(e) => handleMappingChange(idx, 'sheetTabName', e.target.value)}
-                                                                    placeholder="Default"
-                                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-none font-mono text-[11px] focus:ring-1 focus:ring-teal-500"
-                                                                />
-                                                            </td>
-                                                            {/* Delete */}
-                                                            <td className="p-2 text-right">
-                                                                <button
-                                                                    onClick={() => removeMappingRow(idx)}
-                                                                    className="p-2 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-400 hover:text-rose-600 transition-all cursor-pointer"
-                                                                >
-                                                                    <Icon name="trash" className="w-3.5 h-3.5" />
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    ))
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <p className="text-[10px] text-slate-500 font-medium">To configure mappings: locate your department's private spreadsheet on Google Drive, copy the ID from the URL (the characters between `/d/` and `/edit` in: `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit`), and map it to their Google Login email.</p>
-                                </div>
-                            )}
+                            {/* Spreadsheet mappings tab block removed */}
 
                             {activeTab === 'json' && (
                                 <div className="flex flex-col gap-4 py-2">
