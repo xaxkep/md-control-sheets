@@ -607,26 +607,32 @@
             const getActiveUserRole = () => {
                 if (isSandbox) {
                     if (sandboxRole === 'MD') return { isMD: true, email: mdEmail.toLowerCase(), name: 'Managing Director (Demo)' };
-                    const mapping = mappings.find(m => `DH:${m.headEmail.toLowerCase()}` === sandboxRole);
-                    return {
-                        isMD: false,
-                        email: mapping?.headEmail.toLowerCase() || '',
-                        name: mapping?.headName || 'Department Head (Demo)',
-                        mapping: mapping
-                    };
+                    const targetEmail = sandboxRole.replace(/^DH:/, '').toLowerCase();
+                    const matchingMappings = mappings.filter(m => m.headEmail.toLowerCase() === targetEmail);
+                    if (matchingMappings.length > 0) {
+                        return {
+                            isMD: false,
+                            email: targetEmail,
+                            name: matchingMappings[0].headName || 'Department Head (Demo)',
+                            mappings: matchingMappings,
+                            mapping: matchingMappings[0]
+                        };
+                    }
+                    return null;
                 }
                 if (!auth) return null;
                 const userEmail = auth.email.toLowerCase();
                 if (userEmail === mdEmail.toLowerCase()) {
                     return { isMD: true, email: userEmail, name: auth.name };
                 }
-                const mapping = mappings.find(m => m.headEmail.toLowerCase() === userEmail);
-                if (mapping) {
+                const matchingMappings = mappings.filter(m => m.headEmail.toLowerCase() === userEmail);
+                if (matchingMappings.length > 0) {
                     return {
                         isMD: false,
                         email: userEmail,
                         name: auth.name,
-                        mapping: mapping
+                        mappings: matchingMappings,
+                        mapping: matchingMappings[0]
                     };
                 }
                 return { isUnregistered: true, email: userEmail, name: auth.name };
@@ -750,6 +756,13 @@
                             compiledDirectives = [...compiledDirectives, ...parsed];
                             statuses[map.spreadsheetId] = { status: 'success' };
                         });
+                    } else if (activeRole.mappings) {
+                        activeRole.mappings.forEach(map => {
+                            const sheetRows = mockDb[map.spreadsheetId] || [];
+                            const parsed = parseSheetRows(sheetRows, map);
+                            compiledDirectives = [...compiledDirectives, ...parsed];
+                            statuses[map.spreadsheetId] = { status: 'success' };
+                        });
                     } else if (activeRole.mapping) {
                         const map = activeRole.mapping;
                         const sheetRows = mockDb[map.spreadsheetId] || [];
@@ -766,7 +779,7 @@
                 if (!auth) return;
                 
                 try {
-                    const sheetsToFetch = activeRole.isMD ? mappings : [activeRole.mapping].filter(Boolean);
+                    const sheetsToFetch = activeRole.isMD ? mappings : (activeRole.mappings || [activeRole.mapping].filter(Boolean));
                     
                     const fetchPromises = sheetsToFetch.map(async (map) => {
                         try {
@@ -949,6 +962,7 @@
                         sheetTabName: (mapping.sheetTabName || 'MD Directives').trim(),
                         departmentId: mapping.id,
                         departmentName: mapping.deptName,
+                        deptName: mapping.deptName,
                         headName: mapping.headName,
                         headEmail: mapping.headEmail,
                         
@@ -1389,6 +1403,10 @@
                 return mappings.some(map => syncStatuses[map.spreadsheetId]?.status === 'error');
             }, [mappings, syncStatuses]);
 
+            const showDeptColumn = React.useMemo(() => {
+                return activeRole && (activeRole.isMD || (activeRole.mappings && activeRole.mappings.length > 1));
+            }, [activeRole]);
+
             return (
                 <div className="flex-grow flex flex-col min-h-screen">
                     {/* Hidden configuration uploader */}
@@ -1430,11 +1448,25 @@
                                             className="bg-slate-800 text-amber-350 border-none outline-none font-bold cursor-pointer rounded px-1.5 py-0.5"
                                         >
                                             <option value="MD">Managing Director</option>
-                                            {mappings.map(m => (
-                                                <option key={m.id} value={`DH:${m.headEmail.toLowerCase()}`}>
-                                                    DH: {m.headName} ({m.deptName})
-                                                </option>
-                                            ))}
+                                            {(() => {
+                                                const seen = new Set();
+                                                const list = [];
+                                                mappings.forEach(m => {
+                                                    const email = m.headEmail.toLowerCase();
+                                                    if (!seen.has(email)) {
+                                                        seen.add(email);
+                                                        list.push(m);
+                                                    }
+                                                });
+                                                return list.map(m => {
+                                                    const depts = mappings.filter(x => x.headEmail.toLowerCase() === m.headEmail.toLowerCase()).map(x => x.deptName).join(' & ');
+                                                    return (
+                                                        <option key={m.id} value={`DH:${m.headEmail.toLowerCase()}`}>
+                                                            DH: {m.headName} ({depts})
+                                                        </option>
+                                                    );
+                                                });
+                                            })()}
                                         </select>
                                     </span>
                                 </div>
@@ -1452,8 +1484,8 @@
                                                         <Icon name="shield" className="w-3.5 h-3.5" /> Managing Director
                                                     </span>
                                                 ) : (
-                                                    <span className="text-indigo-400 font-semibold">
-                                                        Dept Head: {activeRole.mapping?.deptName}
+                                                    <span className="text-indigo-400 font-semibold" title={activeRole.mappings ? activeRole.mappings.map(m => m.deptName).join(' & ') : (activeRole.mapping?.deptName || '')}>
+                                                        Dept Head: {activeRole.mappings ? activeRole.mappings.map(m => m.deptName).join(' & ') : (activeRole.mapping?.deptName || '')}
                                                     </span>
                                                 )}
                                             </div>
@@ -1821,7 +1853,7 @@
                                             {/* Multi-select filter inputs */}
                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                                 {/* Dept Filter */}
-                                                {activeRole.isMD && (
+                                                {(activeRole.isMD || (activeRole.mappings && activeRole.mappings.length > 1)) && (
                                                     <div>
                                                         <select
                                                             value={filterDept}
@@ -1829,8 +1861,10 @@
                                                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 text-xs focus:outline-none"
                                                         >
                                                             <option value="All">All Departments</option>
-                                                            {mappings.map(m => (
-                                                                <option key={m.id} value={m.id}>{m.headName} ({m.deptName})</option>
+                                                            {(activeRole.isMD ? mappings : activeRole.mappings).map(m => (
+                                                                <option key={m.id} value={m.id}>
+                                                                    {activeRole.isMD ? `${m.headName} (${m.deptName})` : m.deptName}
+                                                                </option>
                                                             ))}
                                                         </select>
                                                     </div>
@@ -1890,7 +1924,7 @@
                                                 <table className="w-full border-collapse text-left text-sm text-slate-700">
                                                     <thead>
                                                         <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                                                            {activeRole.isMD && <th className="py-3.5 px-4 font-bold">Dept Head</th>}
+                                                            {showDeptColumn && <th className="py-3.5 px-4 font-bold">Dept Head / Department</th>}
                                                             <th className="py-3.5 px-4 font-bold w-24">Date</th>
                                                             <th className="py-3.5 px-3 font-bold w-24">Type / Priority</th>
                                                             <th className="py-3.5 px-4 font-bold min-w-[200px]">Directive Details</th>
@@ -1904,7 +1938,7 @@
                                                     <tbody className="divide-y divide-slate-100">
                                                         {loading ? (
                                                             <tr>
-                                                                <td colSpan={10} className="py-16 text-center text-slate-400 font-semibold">
+                                                                <td colSpan={showDeptColumn ? 10 : 9} className="py-16 text-center text-slate-400 font-semibold">
                                                                     <div className="flex items-center justify-center gap-3">
                                                                         <span className="h-5 w-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></span>
                                                                         <span>Synchronizing Google Sheets data in real-time...</span>
@@ -1913,7 +1947,7 @@
                                                             </tr>
                                                         ) : filteredDirectives.length === 0 ? (
                                                             <tr>
-                                                                <td colSpan={10} className="py-16 text-center text-slate-400 font-medium">
+                                                                <td colSpan={showDeptColumn ? 10 : 9} className="py-16 text-center text-slate-400 font-medium">
                                                                     No matching directives found in synchronized sheets.
                                                                 </td>
                                                             </tr>
@@ -1942,10 +1976,16 @@
                                                                 return (
                                                                     <tr key={index} onClick={() => setSelectedDirective(d)} className="hover:bg-slate-50/50 transition-all group cursor-pointer">
                                                                         {/* Department mapping info */}
-                                                                        {activeRole.isMD && (
+                                                                        {showDeptColumn && (
                                                                             <td className="py-4 px-4 align-top">
-                                                                                <div className="font-bold text-slate-800 text-xs">{d.headName}</div>
-                                                                                <div className="text-[10px] text-slate-400 font-bold">{d.departmentName}</div>
+                                                                                {activeRole.isMD ? (
+                                                                                    <>
+                                                                                        <div className="font-bold text-slate-800 text-xs">{d.headName}</div>
+                                                                                        <div className="text-[10px] text-slate-400 font-bold">{d.departmentName}</div>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <div className="font-bold text-slate-800 text-xs">{d.departmentName}</div>
+                                                                                )}
                                                                             </td>
                                                                         )}
 
@@ -2103,7 +2143,12 @@
                                                                                 <div className="text-[8.5px] text-slate-400 font-bold truncate leading-tight">{d.departmentName}</div>
                                                                             </>
                                                                         ) : (
-                                                                            <div className="font-extrabold text-slate-800 text-[10px]">{d.type}</div>
+                                                                            <>
+                                                                                <div className="font-extrabold text-slate-800 text-[10px]">{d.type}</div>
+                                                                                {activeRole.mappings && activeRole.mappings.length > 1 && (
+                                                                                    <div className="text-[8.5px] text-indigo-650 font-bold truncate leading-tight mt-0.5">{d.departmentName}</div>
+                                                                                )}
+                                                                            </>
                                                                         )}
                                                                         <div className="text-[8px] text-slate-400 font-mono mt-0.5">{d.date}</div>
                                                                     </div>
