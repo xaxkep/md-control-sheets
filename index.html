@@ -311,8 +311,8 @@
                 return saved ? JSON.parse(saved) : DEFAULT_MOCK_DATA;
             });
 
-            // Settings Modal Open
-            const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+            // Settings Upload ref
+            const fileInputRef = React.useRef(null);
             
             // Data Loading States
             const [directives, setDirectives] = React.useState([]);
@@ -357,7 +357,6 @@
                     if (e.key === 'Escape') {
                         setSelectedDirective(null);
                         setEditingDirective(null);
-                        setIsSettingsOpen(false);
                         setIsDispatchOpen(false);
                     }
                 };
@@ -419,6 +418,67 @@
                 setMappings(trimmedMappings);
                 
                 showNotification('Settings saved successfully!', 'success');
+            };
+
+            // Hidden file uploader handler
+            const handleConfigUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const parsed = JSON.parse(event.target.result);
+                        
+                        // Check if unified format is uploaded
+                        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                            if (!parsed.clientId || typeof parsed.clientId !== 'string' || !parsed.clientId.trim()) {
+                                showNotification('Failed to configure: JSON must contain a valid "clientId" string.', 'error');
+                                return;
+                            }
+                            if (!parsed.mdEmail || typeof parsed.mdEmail !== 'string' || !parsed.mdEmail.trim()) {
+                                showNotification('Failed to configure: JSON must contain a valid "mdEmail" string.', 'error');
+                                return;
+                            }
+                            if (!parsed.mappings || !Array.isArray(parsed.mappings)) {
+                                showNotification('Failed to configure: JSON must contain a "mappings" array.', 'error');
+                                return;
+                            }
+                            
+                            const isValidMappings = parsed.mappings.every(item => 
+                                item.hasOwnProperty('deptName') && 
+                                item.hasOwnProperty('headName') && 
+                                item.hasOwnProperty('headEmail') && 
+                                item.spreadsheetId
+                            );
+                            if (!isValidMappings) {
+                                showNotification('Failed to configure: each mapping object must contain deptName, headName, headEmail, and spreadsheetId.', 'error');
+                                return;
+                            }
+                            
+                            const sanitizedMappings = parsed.mappings.map((item, idx) => ({
+                                id: item.id || String(Date.now() + idx),
+                                deptName: (item.deptName || '').trim(),
+                                headName: (item.headName || '').trim(),
+                                headEmail: (item.headEmail || '').trim().toLowerCase(),
+                                spreadsheetId: (item.spreadsheetId || '').trim(),
+                                sheetTabName: (item.sheetTabName || '').trim()
+                            }));
+                            
+                            saveSettings(parsed.clientId, parsed.mdEmail, sanitizedMappings);
+                            showNotification('Application successfully configured!', 'success');
+                            // Reload sheet data immediately after configuration
+                            setTimeout(loadSpreadsheetData, 100);
+                        } else {
+                            showNotification('Failed to configure: Uploaded JSON must be a configuration object with clientId, mdEmail, and mappings.', 'error');
+                        }
+                    } catch (err) {
+                        showNotification('Failed to parse configuration file: ' + err.message, 'error');
+                    }
+                };
+                reader.readAsText(file);
+                // Reset file input value to allow uploading the same file again
+                e.target.value = '';
             };
 
             // Trigger notification banner
@@ -1263,6 +1323,15 @@
 
             return (
                 <div className="flex-grow flex flex-col min-h-screen">
+                    {/* Hidden configuration uploader */}
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        accept=".json" 
+                        onChange={handleConfigUpload} 
+                        className="hidden" 
+                    />
+                    
                     {/* Header */}
                     <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 text-white shadow-lg py-4 px-6 transition-all duration-300">
                         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
@@ -1369,13 +1438,15 @@
                                 )}
 
                                 {/* Admin Settings Button */}
-                                <button 
-                                    onClick={() => setIsSettingsOpen(true)}
-                                    title="Administrative Settings"
-                                    className="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-teal-400 hover:border-teal-900/30 transition-all cursor-pointer shadow-sm"
-                                >
-                                    <Icon name="settings" className="w-4 h-4" />
-                                </button>
+                                {!clientId && (
+                                    <button 
+                                        onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                                        title="Configure Application (Upload JSON)"
+                                        className="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-teal-400 hover:border-teal-900/30 transition-all cursor-pointer shadow-sm animate-pulse"
+                                    >
+                                        <Icon name="settings" className="w-4 h-4" />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </header>
@@ -2522,25 +2593,6 @@
                         </div>
                     )}
 
-                    {/* Admin Settings Modal */}
-                    {isSettingsOpen && (
-                        <SettingsModal 
-                            clientId={clientId}
-                            mdEmail={mdEmail}
-                            mappings={mappings}
-                            onClose={() => setIsSettingsOpen(false)}
-                            onSave={saveSettings}
-                            onResetMockDb={() => {
-                                if (confirm('Are you sure you want to reset the Sandbox mock database to default values?')) {
-                                    localStorage.removeItem('pcil_mockDb');
-                                    setMockDb(DEFAULT_MOCK_DATA);
-                                    showNotification('Sandbox database reset to defaults.', 'info');
-                                    setTimeout(loadSpreadsheetData, 100);
-                                }
-                            }}
-                        />
-                    )}
-
                     {/* Dynamic Footer */}
                     <footer className="bg-slate-100 border-t border-slate-200 text-slate-400 py-6 px-6 text-center text-xs font-semibold mt-auto">
                         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -2555,236 +2607,6 @@
             );
         }
 
-        // Isolated Settings Modal React Component for clean state separation
-        function SettingsModal({ clientId, mdEmail, mappings, onClose, onSave, onResetMockDb }) {
-            const [localClientId, setLocalClientId] = React.useState(clientId);
-            const [localMdEmail, setLocalMdEmail] = React.useState(mdEmail);
-            const [localMappings, setLocalMappings] = React.useState(mappings);
-            const [activeTab, setActiveTab] = React.useState('general'); // 'general' | 'json'
-
-            const isMdEmailLocked = React.useMemo(() => {
-                const saved = localStorage.getItem('pcil_mdEmail');
-                return saved && saved.trim() !== "";
-            }, []);
-
-            // File upload state & handlers
-            const [uploadStatus, setUploadStatus] = React.useState({ type: '', message: '' });
-
-            const handleFileUpload = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const parsed = JSON.parse(event.target.result);
-                        if (!Array.isArray(parsed)) {
-                            setUploadStatus({ type: 'error', message: 'JSON configuration must be an array of department mapping objects.' });
-                            return;
-                        }
-                        const isValid = parsed.every(item => 
-                            item.hasOwnProperty('deptName') && 
-                            item.hasOwnProperty('headName') && 
-                            item.hasOwnProperty('headEmail') && 
-                            item.hasOwnProperty('spreadsheetId')
-                        );
-                        if (!isValid) {
-                            setUploadStatus({ type: 'error', message: 'Invalid structure: each mapping object must contain deptName, headName, headEmail, and spreadsheetId.' });
-                            return;
-                        }
-                        const sanitized = parsed.map((item, idx) => ({
-                            id: item.id || String(Date.now() + idx),
-                            deptName: (item.deptName || '').trim(),
-                            headName: (item.headName || '').trim(),
-                            headEmail: (item.headEmail || '').trim().toLowerCase(),
-                            spreadsheetId: (item.spreadsheetId || '').trim(),
-                            sheetTabName: (item.sheetTabName || '').trim()
-                        }));
-                        setLocalMappings(sanitized);
-                        setUploadStatus({ type: 'success', message: `Successfully loaded ${sanitized.length} department mappings. Click "Save Configuration" below to apply these settings.` });
-                    } catch (err) {
-                        setUploadStatus({ type: 'error', message: 'Failed to parse JSON file: ' + err.message });
-                    }
-                };
-                reader.readAsText(file);
-            };
-
-            const handleSave = () => {
-                const trimmedClientId = (localClientId || '').trim();
-                if (trimmedClientId && !trimmedClientId.endsWith('.apps.googleusercontent.com')) {
-                    alert('Warning: Google OAuth Client ID usually ends with ".apps.googleusercontent.com". Please check for typos or extra trailing characters.');
-                    return;
-                }
-                
-                // Trim local mappings
-                const trimmedMappings = localMappings.map(m => ({
-                    ...m,
-                    deptName: (m.deptName || '').trim(),
-                    headName: (m.headName || '').trim(),
-                    headEmail: (m.headEmail || '').trim().toLowerCase(),
-                    spreadsheetId: (m.spreadsheetId || '').trim(),
-                    sheetTabName: (m.sheetTabName || '').trim()
-                }));
-                
-                onSave(trimmedClientId, localMdEmail, trimmedMappings);
-                onClose();
-            };
-
-            return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm animate-fade-in">
-                    <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl flex flex-col gap-6 max-h-[90vh] relative text-slate-800">
-                        <button
-                            onClick={onClose}
-                            className="absolute top-5 right-5 p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all"
-                        >
-                            <Icon name="close" className="w-5 h-5" />
-                        </button>
-
-                        <div>
-                            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                <Icon name="settings" className="w-5 h-5 text-teal-500" />
-                                Administrative Configurations
-                            </h3>
-                            <p className="text-xs text-slate-400 font-medium mt-0.5">Configure OAuth credentials, MD access parameters, and spreadsheet mappings</p>
-                        </div>
-
-                        {/* Settings Tabs Selector */}
-                        <div className="border-b border-slate-200 flex gap-4 text-sm">
-                            <button
-                                onClick={() => setActiveTab('general')}
-                                className={`pb-2.5 font-bold transition-all border-b-2 cursor-pointer ${
-                                    activeTab === 'general' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'
-                                }`}
-                            >
-                                General Settings
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('json')}
-                                className={`pb-2.5 font-bold transition-all border-b-2 cursor-pointer ${
-                                    activeTab === 'json' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'
-                                }`}
-                            >
-                                Bulk JSON Config
-                            </button>
-                        </div>
-
-                        {/* Tabs Contents */}
-                        <div className="flex-grow overflow-y-auto pr-1 flex flex-col gap-4 min-h-[250px]">
-                            {activeTab === 'general' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 py-2">
-                                    {/* Client ID */}
-                                    <div className="flex flex-col gap-1.5 md:col-span-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                            <Icon name="key" className="w-3.5 h-3.5 text-teal-505" /> Google OAuth Client ID
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={localClientId}
-                                            onChange={(e) => setLocalClientId(e.target.value)}
-                                            placeholder="Enter your Google Cloud Web OAuth Client ID (e.g. 12345-abcde.apps.googleusercontent.com)"
-                                            className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-mono"
-                                        />
-                                        <p className="text-[10px] text-slate-450 font-medium">Get this client ID from the Google Cloud Console APIs & Credentials page.</p>
-                                    </div>
-
-                                    {/* MD Email */}
-                                    <div className="flex flex-col gap-1.5 md:col-span-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                            <Icon name="shield" className="w-3.5 h-3.5 text-teal-505" /> Managing Director Email
-                                            {isMdEmailLocked && (
-                                                <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-bold ml-auto flex items-center gap-1">
-                                                    🔒 Fixed & Locked
-                                                </span>
-                                            )}
-                                        </label>
-                                        <input
-                                            type="email"
-                                            value={localMdEmail}
-                                            onChange={(e) => setLocalMdEmail(e.target.value)}
-                                            disabled={isMdEmailLocked}
-                                            placeholder="e.g. managingdirector@pcil.com"
-                                            className={`bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20 ${
-                                                isMdEmailLocked ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200' : ''
-                                            }`}
-                                        />
-                                        <p className="text-[10px] text-slate-450 font-medium">
-                                            {isMdEmailLocked 
-                                                ? "This email is fixed and locked to prevent unauthorized console takeover." 
-                                                : "When a user logs in with this Google account, the MD Console will unlock."
-                                            }
-                                        </p>
-                                    </div>
-
-                                    {/* Sandbox Controls */}
-                                    <div className="md:col-span-2 border-t border-slate-100 pt-5 mt-2 flex flex-col gap-3">
-                                        <h4 className="text-sm font-bold text-slate-700">Demo Sandbox Maintenance</h4>
-                                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                                            <button
-                                                onClick={onResetMockDb}
-                                                className="px-4 py-2.5 text-xs font-bold text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 hover:border-rose-600 rounded-xl transition-all cursor-pointer shadow-sm w-full sm:w-auto text-center"
-                                            >
-                                                Reset Sandbox database
-                                            </button>
-                                            <p className="text-[10px] text-slate-450 font-medium max-w-md">Resets mock values to default structures (useful to restore mock sheets for CFO, Printing Head, Support Center, etc.)</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Spreadsheet mappings tab block removed */}
-
-                            {activeTab === 'json' && (
-                                <div className="flex flex-col gap-4 py-2">
-                                    <h4 className="text-sm font-bold text-slate-700">Bulk Configuration Upload</h4>
-                                    
-                                    <div className="border-2 border-dashed border-slate-200 hover:border-teal-500 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 bg-slate-50/50 hover:bg-teal-50/5 transition-all cursor-pointer relative group">
-                                        <input
-                                            type="file"
-                                            accept=".json"
-                                            onChange={handleFileUpload}
-                                            className="absolute inset-0 opacity-0 cursor-pointer"
-                                        />
-                                        <div className="p-3 bg-slate-100 group-hover:bg-teal-50 rounded-2xl transition-all">
-                                            <Icon name="upload" className="w-6 h-6 text-slate-400 group-hover:text-teal-500" />
-                                        </div>
-                                        <div className="text-center">
-                                            <p className="text-xs font-bold text-slate-700 group-hover:text-teal-600 transition-all">Upload JSON Configuration File</p>
-                                            <p className="text-[10px] text-slate-450 mt-1">Select a `.json` configuration file containing mapping arrays</p>
-                                        </div>
-                                    </div>
-
-                                    {uploadStatus.message && (
-                                        <div className={`p-4 rounded-xl border flex items-start gap-2.5 text-xs font-semibold ${
-                                            uploadStatus.type === 'success' 
-                                                ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
-                                                : 'bg-rose-50 border-rose-200 text-rose-800'
-                                        }`}>
-                                            <Icon name="alert" className={`w-4 h-4 mt-0.5 shrink-0 ${
-                                                uploadStatus.type === 'success' ? 'text-emerald-500' : 'text-rose-500'
-                                            }`} />
-                                            <div>
-                                                <p className="font-bold">{uploadStatus.type === 'success' ? 'Upload Successful' : 'Upload Failed'}</p>
-                                                <p className="mt-0.5 font-medium">{uploadStatus.message}</p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-[11px] text-slate-500 leading-relaxed flex flex-col gap-2">
-                                        <p className="font-bold text-slate-600">Expected JSON Format Schema:</p>
-                                        <pre className="bg-slate-100 border border-slate-200 rounded-lg p-3 text-[10px] font-mono text-slate-700 overflow-x-auto">
-{`[
-  {
-    "deptName": "Finance & Accounts",
-    "headName": "Lalit Kumawat",
-    "headEmail": "lalit@pcil.com",
-    "spreadsheetId": "spreadsheet_lalit_kumawat",
-    "sheetTabName": "MD Directives" // Optional: custom worksheet name override
-  }
-]`}
-                                        </pre>
-                                        <p className="mt-1">Note: Uploading a new JSON configuration will replace the list in your mappings tab. Click <strong>Save Configuration</strong> below to persist the changes.</p>
-                                    </div>
-                                </div>
                             )}
                         </div>
 
