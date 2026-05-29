@@ -260,6 +260,16 @@
             return isNaN(parsed) ? new Date(0) : new Date(parsed);
         }
 
+        // Parse input date string YYYY-MM-DD locally to avoid timezone issues
+        function parseInputDate(dateStr) {
+            if (!dateStr) return null;
+            const parts = String(dateStr).split('-');
+            if (parts.length === 3 && parts[0].length === 4) {
+                return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            }
+            return new Date(dateStr);
+        }
+
         // Main App Wrapper
         function App() {
             // Settings states loaded from localStorage or initialized with defaults
@@ -330,6 +340,8 @@
             const [editStatus, setEditStatus] = React.useState('');
             const [editRemark, setEditRemark] = React.useState('');
             const [editDelegated, setEditDelegated] = React.useState('');
+            const [editPriority, setEditPriority] = React.useState('Normal');
+            const [editTargetDate, setEditTargetDate] = React.useState('');
             const [editLoading, setEditLoading] = React.useState(false);
 
             // Notification message state
@@ -839,7 +851,7 @@
 
                 setDispatchLoading(true);
                 const todayStr = formatDateString(new Date());
-                const targetDateStr = dispatchTargetDate ? formatDateString(new Date(dispatchTargetDate)) : '';
+                const targetDateStr = dispatchTargetDate ? formatDateString(parseInputDate(dispatchTargetDate)) : '';
                 
                 // Sequence matches exactly: Date, Type, Description, Priority, Target Date, Verification, Status, Remark, Delegated To, Completion Date
                 const rowValues = [
@@ -955,8 +967,12 @@
                 const dateVal = currentDirective.date;
                 const typeVal = currentDirective.type;
                 const descVal = currentDirective.description;
-                const priorityVal = currentDirective.priority;
-                const targetDateVal = currentDirective.targetDate;
+                
+                const priorityVal = updatedFields.hasOwnProperty('priority') ? updatedFields.priority : currentDirective.priority;
+                let targetDateVal = currentDirective.targetDate;
+                if (updatedFields.hasOwnProperty('targetDate')) {
+                    targetDateVal = updatedFields.targetDate ? formatDateString(parseInputDate(updatedFields.targetDate)) : '';
+                }
 
                 const newVerification = updatedFields.hasOwnProperty('verification') ? updatedFields.verification : currentDirective.verification;
                 const newStatus = updatedFields.hasOwnProperty('status') ? updatedFields.status : currentDirective.status;
@@ -1175,6 +1191,19 @@
                 setEditStatus(directive.status);
                 setEditRemark(directive.remark);
                 setEditDelegated(directive.delegatedTo);
+                
+                setEditPriority(directive.priority || 'Normal');
+                let targetDateHtml = '';
+                if (directive.targetDate) {
+                    const parsed = parseDateString(directive.targetDate);
+                    if (parsed && !isNaN(parsed.getTime()) && parsed.getTime() > 0) {
+                        const year = parsed.getFullYear();
+                        const month = String(parsed.getMonth() + 1).padStart(2, '0');
+                        const day = String(parsed.getDate()).padStart(2, '0');
+                        targetDateHtml = `${year}-${month}-${day}`;
+                    }
+                }
+                setEditTargetDate(targetDateHtml);
             };
 
             // Filtering calculations (base filters excluding metrics tab)
@@ -1955,6 +1984,33 @@
                                         </select>
                                     </div>
 
+                                    {/* Edit Priority & Target Date (MD only) */}
+                                    {activeRole?.isMD && (
+                                        <>
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Priority</label>
+                                                <select
+                                                    value={editPriority}
+                                                    onChange={(e) => setEditPriority(e.target.value)}
+                                                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                >
+                                                    <option value="Normal">Normal</option>
+                                                    <option value="Urgent">Urgent</option>
+                                                    <option value="Very Urgent">Very Urgent</option>
+                                                </select>
+                                            </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Target Date</label>
+                                                <input
+                                                    type="date"
+                                                    value={editTargetDate}
+                                                    onChange={(e) => setEditTargetDate(e.target.value)}
+                                                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+
                                     {/* Delegated To */}
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-bold text-slate-505 uppercase tracking-wider">Delegated To (Assignee)</label>
@@ -1991,7 +2047,8 @@
                                         onClick={() => handleUpdateRow({
                                             status: editStatus,
                                             remark: editRemark,
-                                            delegatedTo: editDelegated
+                                            delegatedTo: editDelegated,
+                                            ...(activeRole?.isMD ? { priority: editPriority, targetDate: editTargetDate } : {})
                                         })}
                                         disabled={editLoading}
                                         className="w-1/2 py-3 bg-teal-555 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-teal-500/10 flex items-center justify-center gap-2 cursor-pointer text-sm"
