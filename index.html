@@ -219,6 +219,36 @@
             { id: "6", deptName: "Gifting Division", headName: "Dileep Yadav", headEmail: "dileep@pcil.com", spreadsheetId: "spreadsheet_dileep_yadav" }
         ];
 
+        // RC4 Encryption / Decryption Helper
+        function rc4Cipher(key, str) {
+            const s = [];
+            let j = 0;
+            let x;
+            let res = '';
+            for (let i = 0; i < 256; i++) {
+                s[i] = i;
+            }
+            for (let i = 0; i < 256; i++) {
+                j = (j + s[i] + key.charCodeAt(i % key.length)) % 256;
+                x = s[i];
+                s[i] = s[j];
+                s[j] = x;
+            }
+            let i = 0;
+            j = 0;
+            for (let y = 0; y < str.length; y++) {
+                i = (i + 1) % 256;
+                j = (j + s[i]) % 256;
+                x = s[i];
+                s[i] = s[j];
+                s[j] = x;
+                res += String.fromCharCode(str.charCodeAt(y) ^ s[(s[i] + s[j]) % 256]);
+            }
+            return res;
+        }
+
+        const CONFIG_KEY = "PCIL_MD_OFFICE_SECRET_KEY_2026";
+
         // Date helper functions
         function parseExcelDate(val) {
             if (!val) return '';
@@ -427,53 +457,91 @@
                 
                 const reader = new FileReader();
                 reader.onload = (event) => {
+                    const rawText = event.target.result || '';
+                    let configObject = null;
+                    let isEncrypted = false;
+                    
                     try {
-                        const parsed = JSON.parse(event.target.result);
-                        
-                        // Check if unified format is uploaded
-                        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-                            if (!parsed.clientId || typeof parsed.clientId !== 'string' || !parsed.clientId.trim()) {
-                                showNotification('Failed to configure: JSON must contain a valid "clientId" string.', 'error');
-                                return;
-                            }
-                            if (!parsed.mdEmail || typeof parsed.mdEmail !== 'string' || !parsed.mdEmail.trim()) {
-                                showNotification('Failed to configure: JSON must contain a valid "mdEmail" string.', 'error');
-                                return;
-                            }
-                            if (!parsed.mappings || !Array.isArray(parsed.mappings)) {
-                                showNotification('Failed to configure: JSON must contain a "mappings" array.', 'error');
-                                return;
-                            }
-                            
-                            const isValidMappings = parsed.mappings.every(item => 
-                                item.hasOwnProperty('deptName') && 
-                                item.hasOwnProperty('headName') && 
-                                item.hasOwnProperty('headEmail') && 
-                                item.spreadsheetId
-                            );
-                            if (!isValidMappings) {
-                                showNotification('Failed to configure: each mapping object must contain deptName, headName, headEmail, and spreadsheetId.', 'error');
-                                return;
-                            }
-                            
-                            const sanitizedMappings = parsed.mappings.map((item, idx) => ({
-                                id: item.id || String(Date.now() + idx),
-                                deptName: (item.deptName || '').trim(),
-                                headName: (item.headName || '').trim(),
-                                headEmail: (item.headEmail || '').trim().toLowerCase(),
-                                spreadsheetId: (item.spreadsheetId || '').trim(),
-                                sheetTabName: (item.sheetTabName || '').trim()
-                            }));
-                            
-                            saveSettings(parsed.clientId, parsed.mdEmail, sanitizedMappings);
-                            showNotification('Application successfully configured!', 'success');
-                            // Reload sheet data immediately after configuration
-                            setTimeout(loadSpreadsheetData, 100);
+                        const trimmed = rawText.trim();
+                        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                            // Plain text JSON
+                            configObject = JSON.parse(trimmed);
                         } else {
-                            showNotification('Failed to configure: Uploaded JSON must be a configuration object with clientId, mdEmail, and mappings.', 'error');
+                            // Encrypted config file
+                            isEncrypted = true;
+                            const decryptedText = rc4Cipher(CONFIG_KEY, atob(trimmed));
+                            configObject = JSON.parse(decryptedText);
                         }
                     } catch (err) {
                         showNotification('Failed to parse configuration file: ' + err.message, 'error');
+                        return;
+                    }
+                    
+                    if (configObject && typeof configObject === 'object' && !Array.isArray(configObject)) {
+                        if (!configObject.clientId || typeof configObject.clientId !== 'string' || !configObject.clientId.trim()) {
+                            showNotification('Failed to configure: Config must contain a valid "clientId" string.', 'error');
+                            return;
+                        }
+                        if (!configObject.mdEmail || typeof configObject.mdEmail !== 'string' || !configObject.mdEmail.trim()) {
+                            showNotification('Failed to configure: Config must contain a valid "mdEmail" string.', 'error');
+                            return;
+                        }
+                        if (!configObject.mappings || !Array.isArray(configObject.mappings)) {
+                            showNotification('Failed to configure: Config must contain a "mappings" array.', 'error');
+                            return;
+                        }
+                        
+                        const isValidMappings = configObject.mappings.every(item => 
+                            item.hasOwnProperty('deptName') && 
+                            item.hasOwnProperty('headName') && 
+                            item.hasOwnProperty('headEmail') && 
+                            item.spreadsheetId
+                        );
+                        if (!isValidMappings) {
+                            showNotification('Failed to configure: each mapping object must contain deptName, headName, headEmail, and spreadsheetId.', 'error');
+                            return;
+                        }
+                        
+                        const sanitizedMappings = configObject.mappings.map((item, idx) => ({
+                            id: item.id || String(Date.now() + idx),
+                            deptName: (item.deptName || '').trim(),
+                            headName: (item.headName || '').trim(),
+                            headEmail: (item.headEmail || '').trim().toLowerCase(),
+                            spreadsheetId: (item.spreadsheetId || '').trim(),
+                            sheetTabName: (item.sheetTabName || '').trim()
+                        }));
+                        
+                        saveSettings(configObject.clientId, configObject.mdEmail, sanitizedMappings);
+                        
+                        if (!isEncrypted) {
+                            // Download the encrypted version automatically for the admin
+                            try {
+                                const encryptedData = btoa(rc4Cipher(CONFIG_KEY, JSON.stringify({
+                                    clientId: configObject.clientId,
+                                    mdEmail: configObject.mdEmail,
+                                    mappings: sanitizedMappings
+                                }, null, 2)));
+                                
+                                const downloadAnchor = document.createElement('a');
+                                downloadAnchor.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(encryptedData));
+                                downloadAnchor.setAttribute("download", "md_config.json");
+                                document.body.appendChild(downloadAnchor);
+                                downloadAnchor.click();
+                                downloadAnchor.remove();
+                                
+                                showNotification('Configured! Encrypted configuration downloaded automatically.', 'success');
+                            } catch (downloadErr) {
+                                console.error('Failed to auto-download encrypted config:', downloadErr);
+                                showNotification('Configured successfully, but failed to download encrypted file.', 'success');
+                            }
+                        } else {
+                            showNotification('Application successfully configured!', 'success');
+                        }
+                        
+                        // Reload sheet data immediately after configuration
+                        setTimeout(loadSpreadsheetData, 100);
+                    } else {
+                        showNotification('Failed to configure: Configuration must be an object containing clientId, mdEmail, and mappings.', 'error');
                     }
                 };
                 reader.readAsText(file);
