@@ -162,6 +162,11 @@
                     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                     </svg>
+                ),
+                upload: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
                 )
             };
             return icons[name] || (
@@ -275,7 +280,6 @@
             // Settings states loaded from localStorage or initialized with defaults
             const [clientId, setClientId] = React.useState(() => localStorage.getItem('pcil_clientId') || '');
             const [mdEmail, setMdEmail] = React.useState(() => localStorage.getItem('pcil_mdEmail') || 'manan@pcil.com');
-            const [sheetTabName, setSheetTabName] = React.useState(() => localStorage.getItem('pcil_sheetTabName') || 'MD Directives');
             const [mappings, setMappings] = React.useState(() => {
                 const saved = localStorage.getItem('pcil_mappings');
                 return saved ? JSON.parse(saved) : DEFAULT_MAPPINGS;
@@ -394,10 +398,9 @@
             }, [gisLoaded, clientId]);
 
             // Save settings to localStorage helper
-            const saveSettings = (newClientId, newMdEmail, newTabName, newMappings) => {
+            const saveSettings = (newClientId, newMdEmail, newMappings) => {
                 const trimmedClientId = (newClientId || '').trim();
                 const trimmedMdEmail = (newMdEmail || '').trim();
-                const trimmedTabName = (newTabName || '').trim();
                 const trimmedMappings = newMappings.map(m => ({
                     ...m,
                     deptName: (m.deptName || '').trim(),
@@ -409,12 +412,10 @@
                 
                 localStorage.setItem('pcil_clientId', trimmedClientId);
                 localStorage.setItem('pcil_mdEmail', trimmedMdEmail);
-                localStorage.setItem('pcil_sheetTabName', trimmedTabName);
                 localStorage.setItem('pcil_mappings', JSON.stringify(trimmedMappings));
                 
                 setClientId(trimmedClientId);
                 setMdEmail(trimmedMdEmail);
-                setSheetTabName(trimmedTabName);
                 setMappings(trimmedMappings);
                 
                 showNotification('Settings saved successfully!', 'success');
@@ -641,7 +642,7 @@
                     
                     const fetchPromises = sheetsToFetch.map(async (map) => {
                         try {
-                            const activeTabName = (map.sheetTabName || sheetTabName).trim();
+                            const activeTabName = (map.sheetTabName || 'MD Directives').trim();
                             const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
                             const response = await fetch(
                                 `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A1:J1000?valueRenderOption=FORMATTED_VALUE`,
@@ -689,7 +690,7 @@
                 } finally {
                     setLoading(false);
                 }
-            }, [isSandbox, auth, activeRole, mappings, mockDb, sheetTabName]);
+            }, [isSandbox, auth, activeRole, mappings, mockDb]);
 
             // Load data when active role changes
             React.useEffect(() => {
@@ -817,7 +818,7 @@
                     parsedDirectives.push({
                         excelRowNumber: i + 1, // 1-indexed row number in the actual Google Sheet
                         spreadsheetId: mapping.spreadsheetId,
-                        sheetTabName: (mapping.sheetTabName || sheetTabName).trim(),
+                        sheetTabName: (mapping.sheetTabName || 'MD Directives').trim(),
                         departmentId: mapping.id,
                         departmentName: mapping.deptName,
                         headName: mapping.headName,
@@ -897,7 +898,7 @@
                 // Google Sheets API append request
                 if (!auth) return;
                 try {
-                    const activeTabName = targetDept.sheetTabName || sheetTabName;
+                    const activeTabName = targetDept.sheetTabName || 'MD Directives';
                     const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
                     const response = await fetch(
                         `https://sheets.googleapis.com/v4/spreadsheets/${targetDept.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A:J:append?valueInputOption=USER_ENTERED`,
@@ -1038,7 +1039,7 @@
                 // Google Sheets API update row request
                 if (!auth) return;
                 try {
-                    const activeTabName = currentDirective.sheetTabName || sheetTabName;
+                    const activeTabName = currentDirective.sheetTabName || 'MD Directives';
                     const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
                     const response = await fetch(
                         `https://sheets.googleapis.com/v4/spreadsheets/${currentDirective.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A${excelRowNumber}:J${excelRowNumber}?valueInputOption=USER_ENTERED`,
@@ -1148,7 +1149,7 @@
 
                 if (!auth) return;
                 try {
-                    const activeTabName = directive.sheetTabName || sheetTabName;
+                    const activeTabName = directive.sheetTabName || 'MD Directives';
                     const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
                     const response = await fetch(
                         `https://sheets.googleapis.com/v4/spreadsheets/${directive.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A${excelRowNumber}:J${excelRowNumber}?valueInputOption=USER_ENTERED`,
@@ -2526,7 +2527,6 @@
                         <SettingsModal 
                             clientId={clientId}
                             mdEmail={mdEmail}
-                            sheetTabName={sheetTabName}
                             mappings={mappings}
                             onClose={() => setIsSettingsOpen(false)}
                             onSave={saveSettings}
@@ -2556,10 +2556,9 @@
         }
 
         // Isolated Settings Modal React Component for clean state separation
-        function SettingsModal({ clientId, mdEmail, sheetTabName, mappings, onClose, onSave, onResetMockDb }) {
+        function SettingsModal({ clientId, mdEmail, mappings, onClose, onSave, onResetMockDb }) {
             const [localClientId, setLocalClientId] = React.useState(clientId);
             const [localMdEmail, setLocalMdEmail] = React.useState(mdEmail);
-            const [localSheetTabName, setLocalSheetTabName] = React.useState(sheetTabName);
             const [localMappings, setLocalMappings] = React.useState(mappings);
             const [activeTab, setActiveTab] = React.useState('general'); // 'general' | 'mappings' | 'json'
 
@@ -2594,39 +2593,46 @@
                 setLocalMappings(updated);
             };
 
-            // JSON bulk editor
-            const [jsonString, setJsonString] = React.useState(() => JSON.stringify(mappings, null, 2));
-            const handleJsonSave = () => {
-                try {
-                    const parsed = JSON.parse(jsonString);
-                    if (!Array.isArray(parsed)) {
-                        alert('JSON config must be an array of department mapping objects.');
-                        return;
+            // File upload state & handlers
+            const [uploadStatus, setUploadStatus] = React.useState({ type: '', message: '' });
+
+            const handleFileUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const parsed = JSON.parse(event.target.result);
+                        if (!Array.isArray(parsed)) {
+                            setUploadStatus({ type: 'error', message: 'JSON configuration must be an array of department mapping objects.' });
+                            return;
+                        }
+                        const isValid = parsed.every(item => 
+                            item.hasOwnProperty('deptName') && 
+                            item.hasOwnProperty('headName') && 
+                            item.hasOwnProperty('headEmail') && 
+                            item.hasOwnProperty('spreadsheetId')
+                        );
+                        if (!isValid) {
+                            setUploadStatus({ type: 'error', message: 'Invalid structure: each mapping object must contain deptName, headName, headEmail, and spreadsheetId.' });
+                            return;
+                        }
+                        const sanitized = parsed.map((item, idx) => ({
+                            id: item.id || String(Date.now() + idx),
+                            deptName: (item.deptName || '').trim(),
+                            headName: (item.headName || '').trim(),
+                            headEmail: (item.headEmail || '').trim().toLowerCase(),
+                            spreadsheetId: (item.spreadsheetId || '').trim(),
+                            sheetTabName: (item.sheetTabName || '').trim()
+                        }));
+                        setLocalMappings(sanitized);
+                        setUploadStatus({ type: 'success', message: `Successfully loaded ${sanitized.length} department mappings. Click "Save Configuration" below to apply these settings.` });
+                    } catch (err) {
+                        setUploadStatus({ type: 'error', message: 'Failed to parse JSON file: ' + err.message });
                     }
-                    const isValid = parsed.every(item => 
-                        item.hasOwnProperty('deptName') && 
-                        item.hasOwnProperty('headName') && 
-                        item.hasOwnProperty('headEmail') && 
-                        item.hasOwnProperty('spreadsheetId')
-                    );
-                    if (!isValid) {
-                        alert('Each object must contain keys: deptName, headName, headEmail, spreadsheetId');
-                        return;
-                    }
-                    const sanitized = parsed.map((item, idx) => ({
-                        ...item,
-                        deptName: (item.deptName || '').trim(),
-                        headName: (item.headName || '').trim(),
-                        headEmail: (item.headEmail || '').trim().toLowerCase(),
-                        spreadsheetId: (item.spreadsheetId || '').trim(),
-                        sheetTabName: (item.sheetTabName || '').trim(),
-                        id: item.id || String(idx + 1)
-                    }));
-                    setLocalMappings(sanitized);
-                    alert('JSON mappings parsed and loaded into table below!');
-                } catch (e) {
-                    alert('Invalid JSON structure: ' + e.message);
-                }
+                };
+                reader.readAsText(file);
             };
 
             const handleSave = () => {
@@ -2646,7 +2652,7 @@
                     sheetTabName: (m.sheetTabName || '').trim()
                 }));
                 
-                onSave(trimmedClientId, localMdEmail, localSheetTabName, trimmedMappings);
+                onSave(trimmedClientId, localMdEmail, trimmedMappings);
                 onClose();
             };
 
@@ -2716,7 +2722,7 @@
                                     </div>
 
                                     {/* MD Email */}
-                                    <div className="flex flex-col gap-1.5">
+                                    <div className="flex flex-col gap-1.5 md:col-span-2">
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                                             <Icon name="shield" className="w-3.5 h-3.5 text-teal-505" /> Managing Director Email
                                             {isMdEmailLocked && (
@@ -2741,21 +2747,6 @@
                                                 : "When a user logs in with this Google account, the MD Console will unlock."
                                             }
                                         </p>
-                                    </div>
-
-                                    {/* Sheet tab name */}
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                            <Icon name="sheet" className="w-3.5 h-3.5 text-teal-505" /> Sheets Tab/Worksheet Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={localSheetTabName}
-                                            onChange={(e) => setLocalSheetTabName(e.target.value)}
-                                            placeholder="e.g. MD Directives"
-                                            className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                                        />
-                                        <p className="text-[10px] text-slate-450 font-medium">The specific worksheet name in each Spreadsheet. Must match exactly.</p>
                                     </div>
 
                                     {/* Sandbox Controls */}
@@ -2882,23 +2873,55 @@
 
                             {activeTab === 'json' && (
                                 <div className="flex flex-col gap-4 py-2">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="text-sm font-bold text-slate-700">Bulk Configuration Import / Export</h4>
-                                        <button
-                                            onClick={handleJsonSave}
-                                            className="px-3.5 py-1.5 bg-teal-500 hover:bg-teal-400 text-slate-955 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer"
-                                        >
-                                            <Icon name="check" className="w-3.5 h-3.5" /> Apply JSON Mappings
-                                        </button>
+                                    <h4 className="text-sm font-bold text-slate-700">Bulk Configuration Upload</h4>
+                                    
+                                    <div className="border-2 border-dashed border-slate-200 hover:border-teal-500 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 bg-slate-50/50 hover:bg-teal-50/5 transition-all cursor-pointer relative group">
+                                        <input
+                                            type="file"
+                                            accept=".json"
+                                            onChange={handleFileUpload}
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                        />
+                                        <div className="p-3 bg-slate-100 group-hover:bg-teal-50 rounded-2xl transition-all">
+                                            <Icon name="upload" className="w-6 h-6 text-slate-400 group-hover:text-teal-500" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-xs font-bold text-slate-700 group-hover:text-teal-600 transition-all">Upload JSON Configuration File</p>
+                                            <p className="text-[10px] text-slate-450 mt-1">Select a `.json` configuration file containing mapping arrays</p>
+                                        </div>
                                     </div>
 
-                                    <textarea
-                                        rows={10}
-                                        value={jsonString}
-                                        onChange={(e) => setJsonString(e.target.value)}
-                                        className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-700 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
-                                    />
-                                    <p className="text-[10px] text-slate-500 font-medium">Export/Copy this JSON to back up mappings, or modify and apply to bulk-update sheets and credentials.</p>
+                                    {uploadStatus.message && (
+                                        <div className={`p-4 rounded-xl border flex items-start gap-2.5 text-xs font-semibold ${
+                                            uploadStatus.type === 'success' 
+                                                ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                                                : 'bg-rose-50 border-rose-200 text-rose-800'
+                                        }`}>
+                                            <Icon name="alert" className={`w-4 h-4 mt-0.5 shrink-0 ${
+                                                uploadStatus.type === 'success' ? 'text-emerald-500' : 'text-rose-500'
+                                            }`} />
+                                            <div>
+                                                <p className="font-bold">{uploadStatus.type === 'success' ? 'Upload Successful' : 'Upload Failed'}</p>
+                                                <p className="mt-0.5 font-medium">{uploadStatus.message}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-[11px] text-slate-500 leading-relaxed flex flex-col gap-2">
+                                        <p className="font-bold text-slate-600">Expected JSON Format Schema:</p>
+                                        <pre className="bg-slate-100 border border-slate-200 rounded-lg p-3 text-[10px] font-mono text-slate-700 overflow-x-auto">
+{`[
+  {
+    "deptName": "Finance & Accounts",
+    "headName": "Lalit Kumawat",
+    "headEmail": "lalit@pcil.com",
+    "spreadsheetId": "spreadsheet_lalit_kumawat",
+    "sheetTabName": "MD Directives" // Optional: custom worksheet name override
+  }
+]`}
+                                        </pre>
+                                        <p className="mt-1">Note: Uploading a new JSON configuration will replace the list in your mappings tab. Click <strong>Save Configuration</strong> below to persist the changes.</p>
+                                    </div>
                                 </div>
                             )}
                         </div>
