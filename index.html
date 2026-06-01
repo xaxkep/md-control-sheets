@@ -264,7 +264,7 @@
                         <div className="flex items-center gap-2.5 w-full sm:w-auto">
                             {/* Document selector dropdown/tabs if there are multiple SOPs */}
                             {activeSopDocs.length > 1 && (
-                                <div className="flex bg-slate-800 p-1 rounded-xl border border-slate-700 w-full sm:w-auto">
+                                <div className="flex flex-wrap gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700 w-full sm:w-auto">
                                     {activeSopDocs.map((doc, idx) => (
                                         <button
                                             key={doc.id}
@@ -786,7 +786,21 @@
                 const role = activeRole;
                 if (!role) return [];
                 if (role.isMD) {
-                    return mdSopDocId ? [{ name: 'MD Office SOP', id: mdSopDocId.trim() }] : [];
+                    const docs = [];
+                    if (mdSopDocId && mdSopDocId.trim()) {
+                        docs.push({ name: 'MD Office SOP', id: mdSopDocId.trim() });
+                    }
+                    if (mappings) {
+                        mappings.forEach(m => {
+                            if (m.sopDocId && m.sopDocId.trim()) {
+                                const docId = m.sopDocId.trim();
+                                if (!docs.some(d => d.id === docId)) {
+                                    docs.push({ name: `${m.deptName} SOP`, id: docId });
+                                }
+                            }
+                        });
+                    }
+                    return docs;
                 }
                 if (role.mappings) {
                     return role.mappings
