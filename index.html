@@ -423,23 +423,6 @@
                 return saved ? JSON.parse(saved) : DEFAULT_MAPPINGS;
             });
 
-            const activeSopDocs = React.useMemo(() => {
-                const role = getActiveUserRole();
-                if (!role) return [];
-                if (role.isMD) {
-                    return mdSopDocId ? [{ name: 'MD Office SOP', id: mdSopDocId.trim() }] : [];
-                }
-                if (role.mappings) {
-                    return role.mappings
-                        .filter(m => m.sopDocId && m.sopDocId.trim())
-                        .map(m => ({ name: `${m.deptName} SOP`, id: m.sopDocId.trim() }));
-                }
-                if (role.mapping && role.mapping.sopDocId && role.mapping.sopDocId.trim()) {
-                    return [{ name: `${role.mapping.deptName} SOP`, id: role.mapping.sopDocId.trim() }];
-                }
-                return [];
-            }, [clientId, mdEmail, mappings, auth, mdSopDocId, isSandbox, sandboxRole]);
-
             // Authentication state
             const [auth, setAuth] = React.useState(() => {
                 try {
@@ -771,6 +754,23 @@
             };
 
             const activeRole = getActiveUserRole();
+
+            const activeSopDocs = React.useMemo(() => {
+                const role = activeRole;
+                if (!role) return [];
+                if (role.isMD) {
+                    return mdSopDocId ? [{ name: 'MD Office SOP', id: mdSopDocId.trim() }] : [];
+                }
+                if (role.mappings) {
+                    return role.mappings
+                        .filter(m => m.sopDocId && m.sopDocId.trim())
+                        .map(m => ({ name: `${m.deptName} SOP`, id: m.sopDocId.trim() }));
+                }
+                if (role.mapping && role.mapping.sopDocId && role.mapping.sopDocId.trim()) {
+                    return [{ name: `${role.mapping.deptName} SOP`, id: role.mapping.sopDocId.trim() }];
+                }
+                return [];
+            }, [clientId, mdEmail, mappings, auth, mdSopDocId, isSandbox, sandboxRole, activeRole]);
 
             // Generic helper to send email using Gmail API
             const sendEmailViaGmail = async (toEmail, subject, bodyText) => {
