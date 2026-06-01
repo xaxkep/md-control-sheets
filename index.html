@@ -1912,6 +1912,8 @@
                                                         <option value="Work">Work</option>
                                                         <option value="Deficiency">Deficiency</option>
                                                         <option value="Instruction">Instruction</option>
+                                                        <option value="Growth/Idea">Growth/Idea</option>
+                                                        <option value="Management Summary">Management Summary</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -1957,7 +1959,9 @@
                                                                 const typeColors = {
                                                                     Work: 'bg-indigo-50 border-indigo-100 text-indigo-700',
                                                                     Deficiency: 'bg-rose-50 border-rose-100 text-rose-700',
-                                                                    Instruction: 'bg-amber-50 border-amber-100 text-amber-700'
+                                                                    Instruction: 'bg-amber-50 border-amber-100 text-amber-700',
+                                                                    'Growth/Idea': 'bg-teal-50 border-teal-100 text-teal-700',
+                                                                    'Management Summary': 'bg-violet-50 border-violet-100 text-violet-750'
                                                                 };
                                                                 const priorityColors = {
                                                                     Normal: 'bg-slate-100 border-slate-200 text-slate-500',
@@ -2113,7 +2117,9 @@
                                                         const typeColors = {
                                                             Work: 'bg-indigo-50 border-indigo-100 text-indigo-700',
                                                             Deficiency: 'bg-rose-50 border-rose-100 text-rose-700',
-                                                            Instruction: 'bg-amber-50 border-amber-100 text-amber-700'
+                                                            Instruction: 'bg-amber-50 border-amber-100 text-amber-700',
+                                                            'Growth/Idea': 'bg-teal-50 border-teal-100 text-teal-700',
+                                                            'Management Summary': 'bg-violet-50 border-violet-100 text-violet-750'
                                                         };
                                                         const priorityColors = {
                                                             Normal: 'bg-slate-100 border-slate-200 text-slate-500',
@@ -2447,6 +2453,8 @@
                                             selectedDirective.type === 'Work' ? 'bg-indigo-50 border-indigo-100 text-indigo-700' :
                                             selectedDirective.type === 'Deficiency' ? 'bg-rose-50 border-rose-100 text-rose-700' :
                                             selectedDirective.type === 'Instruction' ? 'bg-amber-50 border-amber-100 text-amber-700' :
+                                            selectedDirective.type === 'Growth/Idea' ? 'bg-teal-50 border-teal-100 text-teal-700' :
+                                            selectedDirective.type === 'Management Summary' ? 'bg-violet-50 border-violet-100 text-violet-750' :
                                             'bg-slate-100 border-slate-200 text-slate-500'
                                         }`}>
                                             {selectedDirective.type}
@@ -2626,6 +2634,8 @@
                                                 <option value="Work">Work</option>
                                                 <option value="Deficiency">Deficiency</option>
                                                 <option value="Instruction">Instruction</option>
+                                                <option value="Growth/Idea">Growth/Idea</option>
+                                                <option value="Management Summary">Management Summary</option>
                                             </select>
                                         </div>
 
