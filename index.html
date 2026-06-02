@@ -1861,7 +1861,8 @@
 
             // Metrics calculation based on the base filtered list
             const metrics = React.useMemo(() => {
-                const total = baseFilteredDirectives.length;
+                // Pending tasks = Pending or Not Seen
+                const pending = baseFilteredDirectives.filter(d => ['Pending', 'Not Seen'].includes(d.status)).length;
                 // Active status = Not Seen, Pending, In Progress, On Hold
                 const active = baseFilteredDirectives.filter(d => ['Not Seen', 'Pending', 'In Progress', 'On Hold'].includes(d.status)).length;
                 // Critical/Urgent status
@@ -1869,13 +1870,16 @@
                 // Completed Audits (MD verified Done)
                 const verified = baseFilteredDirectives.filter(d => d.verification === 'Done' || d.verification === 'Verified').length;
 
-                return { total, active, urgent, verified };
+                return { pending, active, urgent, verified };
             }, [baseFilteredDirectives]);
 
             // Final filtered directives after applying active metric tab toggle, sorted descending by date
             const filteredDirectives = React.useMemo(() => {
                 let list = baseFilteredDirectives;
-                if (activeMetricTab === 'Active') {
+                if (activeMetricTab === 'All') {
+                    // Filter by specific status "Pending" or "Not Seen" for the default tab
+                    list = list.filter(d => ['Pending', 'Not Seen'].includes(d.status));
+                } else if (activeMetricTab === 'Active') {
                     list = list.filter(d => ['Not Seen', 'Pending', 'In Progress', 'On Hold'].includes(d.status));
                 } else if (activeMetricTab === 'Urgent') {
                     list = list.filter(d => (d.priority === 'Urgent' || d.priority === 'Very Urgent') && d.status !== 'Checked & Confirmed' && d.status !== 'Completed');
@@ -2143,7 +2147,7 @@
                                 
                                 {/* Metrics Cards (Top Panel) */}
                                 <div className={`grid grid-cols-2 ${activeRole && !activeRole.isUnregistered ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-3 md:gap-4`}>
-                                    {/* Total Directives Card */}
+                                    {/* Pending Tasks Card */}
                                     <div 
                                         onClick={() => setActiveMetricTab('All')}
                                         className={`glass-panel p-3 md:p-5 rounded-2xl shadow border flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 md:gap-4 relative overflow-hidden group transition-all duration-200 cursor-pointer select-none ${
@@ -2156,8 +2160,8 @@
                                             <Icon name="sheet" className="w-4 h-4 md:w-6 md:h-6" />
                                         </div>
                                         <div>
-                                            <div className="text-lg md:text-2xl font-black tracking-tight text-slate-800">{loading ? '...' : metrics.total}</div>
-                                            <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">Total Directives</div>
+                                            <div className="text-lg md:text-2xl font-black tracking-tight text-slate-800">{loading ? '...' : metrics.pending}</div>
+                                            <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">Pending Tasks</div>
                                         </div>
                                     </div>
 
