@@ -1379,6 +1379,17 @@
                     
                     setDirectives(compiledDirectives);
                     setSyncStatuses(statuses);
+                    
+                    // Notify user of any failed syncs
+                    const failedSyncs = Object.entries(statuses).filter(([_, val]) => val.status === 'error');
+                    if (failedSyncs.length > 0) {
+                        const errorMsg = failedSyncs.map(([sheetId, val]) => {
+                            const mapping = sheetsToFetch.find(m => m.spreadsheetId === sheetId);
+                            return `${mapping ? mapping.deptName : 'Sheet'}: ${val.error}`;
+                        }).join(' | ');
+                        showNotification(`Sync Warning: ${errorMsg}`, 'error');
+                    }
+                    
                     checkAndSendBackgroundReminders(compiledDirectives);
                 } catch (err) {
                     showNotification('Error syncing Google Sheets: ' + err.message, 'error');
