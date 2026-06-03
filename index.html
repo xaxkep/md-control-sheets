@@ -345,7 +345,7 @@
         };
 
         const DEFAULT_MAPPINGS = [
-            { id: "1", deptName: "IT Project Management", headName: "Manan Mongia", headEmail: "manan@pcil.com", spreadsheetId: "spreadsheet_manan_mongia", sopDocId: "mock_it_project_management_sop" },
+            { id: "1", deptName: "IT Project Management", headName: "Manan Mongia", headEmail: "manan@pcil.com", spreadsheetId: "spreadsheet_manan_mongia", sopDocId: "IT Project SOP: mock_it_project_management_sop, Network Security SOP: mock_printing_sop" },
             { id: "2", deptName: "Product Management (Printing)", headName: "Kajal Sharma", headEmail: "kajal@pcil.com", spreadsheetId: "spreadsheet_kajal_sharma", sopDocId: "mock_printing_sop" },
             { id: "3", deptName: "Support Center", headName: "Ramesh Panwar", headEmail: "ramesh@pcil.com", spreadsheetId: "spreadsheet_ramesh_panwar", sopDocId: "mock_support_sop" },
             { id: "4", deptName: "PCIL CEO Office", headName: "Shahid Khan", headEmail: "shahid@pcil.com", spreadsheetId: "spreadsheet_shahid_khan", sopDocId: "mock_ceo_sop" },
@@ -752,15 +752,21 @@
                 const trimmedClientId = (newClientId || '').trim();
                 const trimmedMdEmail = (newMdEmail || '').trim();
                 const trimmedMdSopDocId = (newMdSopDocId || '').trim();
-                const trimmedMappings = newMappings.map(m => ({
-                    ...m,
-                    deptName: (m.deptName || '').trim(),
-                    headName: (m.headName || '').trim(),
-                    headEmail: (m.headEmail || '').trim().toLowerCase(),
-                    spreadsheetId: (m.spreadsheetId || '').trim(),
-                    sheetTabName: (m.sheetTabName || '').trim(),
-                    sopDocId: (m.sopDocId || '').trim()
-                }));
+                const trimmedMappings = newMappings.map(m => {
+                    const res = {
+                        ...m,
+                        deptName: (m.deptName || '').trim(),
+                        headName: (m.headName || '').trim(),
+                        headEmail: (m.headEmail || '').trim().toLowerCase(),
+                        spreadsheetId: (m.spreadsheetId || '').trim(),
+                        sheetTabName: (m.sheetTabName || '').trim(),
+                        sopDocId: (m.sopDocId || '').trim()
+                    };
+                    if (Array.isArray(m.sops)) {
+                        res.sops = m.sops;
+                    }
+                    return res;
+                });
                 
                 localStorage.setItem('pcil_clientId', trimmedClientId);
                 localStorage.setItem('pcil_mdEmail', trimmedMdEmail);
@@ -827,15 +833,21 @@
                             return;
                         }
                         
-                        const sanitizedMappings = configObject.mappings.map((item, idx) => ({
-                            id: item.id || String(Date.now() + idx),
-                            deptName: (item.deptName || '').trim(),
-                            headName: (item.headName || '').trim(),
-                            headEmail: (item.headEmail || '').trim().toLowerCase(),
-                            spreadsheetId: (item.spreadsheetId || '').trim(),
-                            sheetTabName: (item.sheetTabName || '').trim(),
-                            sopDocId: (item.sopDocId || '').trim()
-                        }));
+                        const sanitizedMappings = configObject.mappings.map((item, idx) => {
+                            const res = {
+                                id: item.id || String(Date.now() + idx),
+                                deptName: (item.deptName || '').trim(),
+                                headName: (item.headName || '').trim(),
+                                headEmail: (item.headEmail || '').trim().toLowerCase(),
+                                spreadsheetId: (item.spreadsheetId || '').trim(),
+                                sheetTabName: (item.sheetTabName || '').trim(),
+                                sopDocId: (item.sopDocId || '').trim()
+                            };
+                            if (Array.isArray(item.sops)) {
+                                res.sops = item.sops;
+                            }
+                            return res;
+                        });
                         
                         const mdSop = (configObject.mdSopDocId || configObject.sopDocId || '').trim();
                         saveSettings(configObject.clientId, configObject.mdEmail, sanitizedMappings, mdSop);
@@ -968,35 +980,100 @@
 
             const activeRole = getActiveUserRole();
 
-            const activeSopDocs = React.useMemo(() => {
-                const role = activeRole;
-                if (!role) return [];
-                if (role.isMD) {
-                    const docs = [];
-                    if (mdSopDocId && mdSopDocId.trim()) {
-                        docs.push({ name: 'MD Office SOP', id: mdSopDocId.trim() });
-                    }
-                    if (mappings) {
-                        mappings.forEach(m => {
-                            if (m.sopDocId && m.sopDocId.trim()) {
-                                const docId = m.sopDocId.trim();
-                                if (!docs.some(d => d.id === docId)) {
-                                    docs.push({ name: `${m.deptName} SOP`, id: docId });
+            // Parser helper to resolve multiple SOP formats (structured arrays, comma-separated lists, name-value pairs, or single doc IDs)
+            const parseSops = (mapping, defaultDeptName) => {
+                if (!mapping) return [];
+                const list = [];
+                
+                // 1. Structured 'sops' array of objects
+                if (Array.isArray(mapping.sops)) {
+                    mapping.sops.forEach(sop => {
+                        if (sop && sop.id && String(sop.id).trim()) {
+                            list.push({
+                                name: (sop.name || `${defaultDeptName} SOP`).trim(),
+                                id: String(sop.id).trim()
+                            });
+                        }
+                    });
+                }
+                
+                // 2. Parsed 'sopDocId' string (which might contain commas or colon formats)
+                if (mapping.sopDocId && String(mapping.sopDocId).trim()) {
+                    const rawSop = String(mapping.sopDocId).trim();
+                    if (rawSop.includes(',')) {
+                        const parts = rawSop.split(',');
+                        parts.forEach((part, index) => {
+                            const trimmedPart = part.trim();
+                            if (!trimmedPart) return;
+                            if (trimmedPart.includes(':')) {
+                                const subParts = trimmedPart.split(':');
+                                const id = subParts[subParts.length - 1].trim();
+                                const name = subParts.slice(0, -1).join(':').trim();
+                                if (id) {
+                                    list.push({ name: name || `${defaultDeptName} SOP ${index + 1}`, id });
                                 }
+                            } else {
+                                list.push({ name: `${defaultDeptName} SOP ${index + 1}`, id: trimmedPart });
                             }
                         });
+                    } else if (rawSop.includes(':')) {
+                        const subParts = rawSop.split(':');
+                        const id = subParts[subParts.length - 1].trim();
+                        const name = subParts.slice(0, -1).join(':').trim();
+                        if (id) {
+                            list.push({ name: name || `${defaultDeptName} SOP`, id });
+                        }
+                    } else {
+                        list.push({ name: `${defaultDeptName} SOP`, id: rawSop });
                     }
-                    return docs;
                 }
-                if (role.mappings) {
-                    return role.mappings
-                        .filter(m => m.sopDocId && m.sopDocId.trim())
-                        .map(m => ({ name: `${m.deptName} SOP`, id: m.sopDocId.trim() }));
+                
+                // Deduplicate by ID
+                const uniqueList = [];
+                const seenIds = new Set();
+                list.forEach(item => {
+                    if (!seenIds.has(item.id)) {
+                        seenIds.add(item.id);
+                        uniqueList.push(item);
+                    }
+                });
+                return uniqueList;
+            };
+
+            const activeSopDocs = React.useMemo(() => {
+                const role = activeRole;
+                if (!role || role.isUnregistered) return [];
+                
+                const docs = [];
+                
+                if (role.isMD) {
+                    // Add MD Office SOPs
+                    if (mdSopDocId && mdSopDocId.trim()) {
+                        const parsedMdSops = parseSops({ sopDocId: mdSopDocId }, 'MD Office');
+                        docs.push(...parsedMdSops);
+                    }
+                    
+                    // Aggregate all unique department SOPs
+                    if (mappings) {
+                        mappings.forEach(m => {
+                            const parsedDeptSops = parseSops(m, m.deptName);
+                            parsedDeptSops.forEach(d => {
+                                if (!docs.some(existing => existing.id === d.id)) {
+                                    docs.push(d);
+                                }
+                            });
+                        });
+                    }
+                } else {
+                    // Coordinators
+                    const coordinatorMappings = role.mappings || (role.mapping ? [role.mapping] : []);
+                    coordinatorMappings.forEach(m => {
+                        const parsedDeptSops = parseSops(m, m.deptName);
+                        docs.push(...parsedDeptSops);
+                    });
                 }
-                if (role.mapping && role.mapping.sopDocId && role.mapping.sopDocId.trim()) {
-                    return [{ name: `${role.mapping.deptName} SOP`, id: role.mapping.sopDocId.trim() }];
-                }
-                return [];
+                
+                return docs;
             }, [clientId, mdEmail, mappings, auth, mdSopDocId, isSandbox, sandboxRole, activeRole]);
 
             // Generic helper to send email using Gmail API
