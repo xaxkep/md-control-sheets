@@ -2114,15 +2114,13 @@
                                 )}
 
                                 {/* Admin Settings Button */}
-                                {!clientId && (
-                                    <button 
-                                        onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                                        title="Configure Application (Upload JSON)"
-                                        className="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-teal-400 hover:border-teal-900/30 transition-all cursor-pointer shadow-sm animate-pulse"
-                                    >
-                                        <Icon name="settings" className="w-4 h-4" />
-                                    </button>
-                                )}
+                                <button 
+                                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                                    title="Configure Application (Upload JSON)"
+                                    className={`p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-teal-400 hover:border-teal-900/30 transition-all cursor-pointer shadow-sm ${!clientId ? 'animate-pulse' : ''}`}
+                                >
+                                    <Icon name="settings" className="w-4 h-4" />
+                                </button>
                             </div>
                         </div>
                     </header>
