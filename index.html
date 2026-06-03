@@ -1028,12 +1028,13 @@
                     }
                 }
                 
-                // Deduplicate by ID
+                // Deduplicate by ID and Name
                 const uniqueList = [];
-                const seenIds = new Set();
+                const seenKeys = new Set();
                 list.forEach(item => {
-                    if (!seenIds.has(item.id)) {
-                        seenIds.add(item.id);
+                    const key = `${item.id}|${item.name}`;
+                    if (!seenKeys.has(key)) {
+                        seenKeys.add(key);
                         uniqueList.push(item);
                     }
                 });
@@ -1058,7 +1059,7 @@
                         mappings.forEach(m => {
                             const parsedDeptSops = parseSops(m, m.deptName);
                             parsedDeptSops.forEach(d => {
-                                if (!docs.some(existing => existing.id === d.id)) {
+                                if (!docs.some(existing => existing.id === d.id && existing.name === d.name)) {
                                     docs.push(d);
                                 }
                             });
@@ -1070,7 +1071,7 @@
                     coordinatorMappings.forEach(m => {
                         const parsedDeptSops = parseSops(m, m.deptName);
                         parsedDeptSops.forEach(d => {
-                            if (!docs.some(existing => existing.id === d.id)) {
+                            if (!docs.some(existing => existing.id === d.id && existing.name === d.name)) {
                                 docs.push(d);
                             }
                         });
