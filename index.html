@@ -1069,7 +1069,11 @@
                     const coordinatorMappings = role.mappings || (role.mapping ? [role.mapping] : []);
                     coordinatorMappings.forEach(m => {
                         const parsedDeptSops = parseSops(m, m.deptName);
-                        docs.push(...parsedDeptSops);
+                        parsedDeptSops.forEach(d => {
+                            if (!docs.some(existing => existing.id === d.id)) {
+                                docs.push(d);
+                            }
+                        });
                     });
                 }
                 
