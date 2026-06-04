@@ -1,0 +1,151 @@
+{
+  "clientId": "680867814154-rji8esp30qasc5c7nuhh0rkq6nd6d484.apps.googleusercontent.com",
+  "mdEmail": "rdb@super91.com",
+  "mappings": [
+    {
+    "id": "1",
+    "deptName": "IT Tasks",
+    "headName": "Manan Mongia",
+    "headEmail": "manan.mongia@super91.com",
+    "spreadsheetId": "191zjsAwBd6eLqeOGuV4ghR-wVCYhckNwg-7-92ySOfs",
+    "sheetTabName": "IT Tasks"
+  },
+  {
+    "id": "1779858919556",
+    "deptName": "IT Project Management",
+    "headName": "Manan Mongia",
+    "headEmail": "manan.mongia@super91.com",
+    "spreadsheetId": "191zjsAwBd6eLqeOGuV4ghR-wVCYhckNwg-7-92ySOfs",
+    "sheetTabName": "Master Data",
+    "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" }
+    ]
+  },
+  {
+    "id": "2",
+    "deptName": "Product Management (Printing)",
+    "headName": "Kajal Sharma",
+    "headEmail": "bh.printing@super91.com",
+    "spreadsheetId": "1_S5VOONNUUhBRmAKeqMaHXXFn_prPxHBa0ZTA4_bKhk",
+    "sheetTabName": "",
+    "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" }
+    ]
+
+  },
+  {
+    "id": "3",
+    "deptName": "Support Center",
+    "headName": "Ramesh Panwar",
+    "headEmail": "support@super91.com",
+    "spreadsheetId": "16TSZIktowgmnkhajbNXHpTtMS50SWGIOWiA063_NL_w",
+    "sheetTabName": "",
+    "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+        { "name": "SOP - Support Center", "id": "13mb9gLV9J_NtNp4FLgKqc160vavT9ZIphrW86EZtN1k" }
+    ]
+  },
+  {
+    "id": "4",
+    "deptName": "PCIL CEO Office",
+    "headName": "Shahid Khan",
+    "headEmail": "shahid.khan@super91.com",
+    "spreadsheetId": "1v57wmB6e4K9_9G4DlVCkvKV1e8p818HFaapUNT1y3mk",
+    "sheetTabName": "",
+    "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+        { "name": "SOP - NPH", "id": "1X8W7c-b7QR2VXUxosn65fBaxDuSwK3Q0Fggqlgr5RNQ" }
+    ]
+  },
+  {
+    "id": "5",
+    "deptName": "Finance & Accounts",
+    "headName": "Lalit Kumawat",
+    "headEmail": "lalit.kumawat@super91.com",
+    "spreadsheetId": "1DYjb1_KIfgQuReKdreawSg6OsGLSpFYvcHl8UdOFD-s",
+    "sheetTabName": "",
+    "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" }
+    ]
+  },
+  {
+    "id": "6",
+    "deptName": "Gifting Division",
+    "headName": "Dileep Yadav",
+    "headEmail": "bh.gifting@super91.com",
+    "spreadsheetId": "1LzcelGpnauKTox6p8na6pxC8aRxUvzR33DeMg76crRQ",
+    "sheetTabName": "",
+    "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+        { "name": "SOP - Membership Support & Training", "id": "1q6tZjv1O7b_62HCMgrllBwlSAJdJT_PpTxGD8Q6WBcU" }
+    ]
+  },
+  {
+    "id": "1779871052271",
+    "deptName": "Professional Director",
+    "headName": "RD Bhatnagar",
+    "headEmail": "rdb@super91.com",
+    "spreadsheetId": "1NRaZRTyVlWml9ocwlXSot6myOd-kjX478us7zbQTj8U",
+    "sheetTabName": "",
+    "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" }
+    ]
+  },
+  {
+    "id": "1779871622609",
+    "deptName": "SCM & Purchase",
+    "headName": "Sonu Dubey",
+    "headEmail": "purchase@super91.com",
+    "spreadsheetId": "1-azKKQs6lhGSdVgMpKSaFLZKT8aIR_arVthhbY-U7qg",
+    "sheetTabName": "",
+    "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" }
+    ]
+  },
+  {
+    "id": "1779873046490",
+    "deptName": "Administration",
+    "headName": "Mohit Sharma",
+    "headEmail": "cao@super91.com",
+    "spreadsheetId": "1cugXF8gzeE_HFNIUDv28KUn5sGR1zEAMZBLtjDdiCqE",
+    "sheetTabName": "",
+    "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" }
+    ]
+  },
+  {
+    "id": "1779873046491",
+    "deptName": "HR Manager",
+    "headName": "Harendra Singh",
+    "headEmail": "hr@super91.com",
+    "spreadsheetId": "17oEHZfQY-O94KUfrv6PolSgX_5r0UcxPGSA5I1HQkoM",
+    "sheetTabName": "",
+    "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+        { "name": "SOP - HR Manager", "id": "1uK0kwehgNOoLe_NSBI284T6-Nuw0TXb4N9vLK0tnCTs" }
+    ]
+  },
+  {
+    "id": "1779873046492",
+    "deptName": "Product Manager",
+    "headName": "Rahul Bhatra",
+    "headEmail": "product.manager@super91.com",
+    "spreadsheetId": "1a251zSXAQMICvZXKjQC443Ufv_ZTtQVbllfrJQFmUK0",
+    "sheetTabName": "",
+    "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" }
+    ]
+  },
+  {
+    "id": "1779873046493",
+    "deptName": "CMO",
+    "headName": "Aditya Singh",
+    "headEmail": "aditya.singh@super91.com",
+    "spreadsheetId": "1xoZnSgRjA8Gni0m-G2tFkkN959taX2yq4ntrHYSYhEY",
+    "sheetTabName": "",
+    "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" }
+    ]
+  }
+  ]
+}
