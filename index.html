@@ -313,34 +313,37 @@
         // Mock spreadsheets database matching the local files checked by node script
         const DEFAULT_MOCK_DATA = {
             "spreadsheet_kajal_sharma": [
-                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date"],
-                ["26-May-2026", "Work", "ग्लॉस विजिटिंग कार्ड के सभी प्रोडक्ट्स एवं NT/PVC विजिटिंग कार्ड बॉक्स की नई डिजाइन तैयार करवानी है, ताकि पैकेजिंग को अधिक आकर्षक एवं प्रोफेशनल बनाया जा सके।", "Urgent", "03-Jun-2026", "Pending", "In Progress", "डिजाइनर कार्य कर रहे हैं और 2 डिजाइन सिलेक्ट कर लिए गए हैं।", "Rahul Kumar", ""],
-                ["26-May-2026", "Work", "ग्लॉस विजिटिंग कार्ड के सभी प्रोडक्ट बॉक्स पर RICOH का Advertisement / Branding प्रदर्शित करनी है", "Urgent", "03-Jun-2026", "Pending", "In Progress", "RICOH की ओर से ब्रांडिंग गाइडलाइन्स का इंतजार है।", "", ""],
-                ["12-May-2026", "Work", "For the visiting card product, develop a short-format (mini) sample file as an alternative to the detailed sample file, and also suggest an appropriate standard name for it (e.g., Short-Format Sample File or Mini Sample File)", "Normal", "04-Jun-2026", "Pending", "On Hold", "Hold By MD - pending pricing confirmation", "", ""],
-                ["20-May-2026", "Instruction", "बिना MD सर के अप्रूवल के कोई भी प्रोडक्ट लॉन्च नहीं होंगे", "Very Urgent", "Immediate", "Done", "Checked & Confirmed", "सभी टीम मेम्बर्स को सूचित कर दिया गया है।", "Printing Team", "24-May-2026 11:30"]
+                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date", "Repetition"],
+                ["26-May-2026", "Work", "ग्लॉस विजिटिंग कार्ड के सभी प्रोडक्ट्स एवं NT/PVC विजिटिंग कार्ड बॉक्स की नई डिजाइन तैयार करवानी है, ताकि पैकेजिंग को अधिक आकर्षक एवं प्रोफेशनल बनाया जा सके।", "Urgent", "03-Jun-2026", "Pending", "In Progress", "डिजाइनर कार्य कर रहे हैं और 2 डिजाइन सिलेक्ट कर लिए गए हैं।", "Rahul Kumar", "", ""],
+                ["26-May-2026", "Work", "ग्लॉस विजिटिंग कार्ड के सभी प्रोडक्ट बॉक्स पर RICOH का Advertisement / Branding प्रदर्शित करनी है", "Urgent", "03-Jun-2026", "Pending", "In Progress", "RICOH की ओर से ब्रांडिंग गाइडलाइन्स का इंतजार है।", "", "", ""],
+                ["12-May-2026", "Work", "For the visiting card product, develop a short-format (mini) sample file as an alternative to the detailed sample file, and also suggest an appropriate standard name for it (e.g., Short-Format Sample File or Mini Sample File)", "Normal", "04-Jun-2026", "Pending", "On Hold", "Hold By MD - pending pricing confirmation", "", "", ""],
+                ["20-May-2026", "Instruction", "बिना MD सर के अप्रूवल के कोई भी प्रोडक्ट लॉन्च नहीं होंगे", "Very Urgent", "Immediate", "Done", "Checked & Confirmed", "सभी टीम मेम्बर्स को सूचित कर दिया गया है।", "Printing Team", "24-May-2026 11:30", ""],
+                ["26-May-2026", "Reports", "Report Name: Packaging Audit Report\nAudit of visiting card box packaging alignment and colors.", "Normal", "", "Pending", "Not Seen", "", "", "", "Weekly - Monday"]
             ],
             "spreadsheet_ramesh_panwar": [
-                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date"],
-                ["22-May-2026", "Deficiency", "No Proper solution to - complaint no 4565 (CRC customer escalation)", "Urgent", "25-May-2026", "Done", "Checked & Confirmed", "Customer was contacted, refund processed and case closed.", "Mohit", "24-May-2026 15:30"],
-                ["22-May-2026", "Deficiency", "छुट्टी करने की परमिशन नहीं ली, जबकि सुबह ही नई जिम्मेदारी दी थी", "Normal", "23-May-2026", "Done", "Checked & Confirmed", "इसकी जानकारी मेने मोहित जी को दे दी थी लेकिन MD सर से पेर्मिशन नहीं ली थी इसके लिए में माफ़ी चाहता हु और आगे से ऐसी गलती दुबारा नहीं की जाएगी।", "", "23-May-2026 10:00"],
-                ["24-May-2026", "Instruction", "आपके डिपार्टमेंट से संबंधित मेजर कम्प्लेंट्स की वीकली रिपोर्ट अब नए फॉर्मेट में प्रस्तुत करना अनिवार्य है। साथ ही, आपके डिपार्टमेंट की ओर से सबमिट की जाने वाली प्रत्येक रिपोर्ट पर आपके हस्ताक्षर होना आवश्यक है।", "Urgent", "01-Jun-2026", "Pending", "Pending", "नए टेम्पलेट का ड्राफ्ट तैयार किया जा रहा है।", "", ""]
+                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date", "Repetition"],
+                ["22-May-2026", "Deficiency", "No Proper solution to - complaint no 4565 (CRC customer escalation)", "Urgent", "25-May-2026", "Done", "Checked & Confirmed", "Customer was contacted, refund processed and case closed.", "Mohit", "24-May-2026 15:30", ""],
+                ["22-May-2026", "Deficiency", "छुट्टी करने की परमिशन नहीं ली, जबकि सुबह ही नई जिम्मेदारी दी थी", "Normal", "23-May-2026", "Done", "Checked & Confirmed", "इसकी जानकारी मेने मोहित जी को दे दी थी लेकिन MD सर से पेर्मिशन नहीं ली थी इसके लिए में माफ़ी चाहता हु और आगे से ऐसी गलती दुबारा नहीं की जाएगी।", "", "23-May-2026 10:00", ""],
+                ["24-May-2026", "Instruction", "आपके डिपार्टमेंट से संबंधित मेजर कम्प्लेंट्स की वीकली रिपोर्ट अब नए फॉर्मेट में प्रस्तुत करना अनिवार्य है। साथ ही, आपके डिपार्टमेंट की ओर से सबमिट की जाने वाली प्रत्येक रिपोर्ट पर आपके हस्ताक्षर होना आवश्यक है।", "Urgent", "01-Jun-2026", "Pending", "Pending", "नए टेम्पलेट का ड्राफ्ट तैयार किया जा रहा है।", "", "", ""],
+                ["26-May-2026", "Reports", "Report Name: Alloted Complaints Report\nMajor complaint metrics and unresolved tickets report.", "Normal", "", "Pending", "Not Seen", "", "", "", "Weekly - Monday"]
             ],
             "spreadsheet_manan_mongia": [
-                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date"],
-                ["25-May-2026", "Work", "Implement automated daily backup script for database and verify integrity.", "Normal", "30-May-2026", "Pending", "In Progress", "Backup script is running on cron job, verifying validation reports.", "IT Infra Team", ""],
-                ["26-May-2026", "Work", "Develop MD Multi-Sheet Control Canvas with real-time Google Sheets sync.", "Very Urgent", "27-May-2026", "Pending", "In Progress", "React Single-page app completed, ready for deployment to GitHub Pages.", "Self", ""]
+                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date", "Repetition"],
+                ["25-May-2026", "Work", "Implement automated daily backup script for database and verify integrity.", "Normal", "30-May-2026", "Pending", "In Progress", "Backup script is running on cron job, verifying validation reports.", "IT Infra Team", "", ""],
+                ["26-May-2026", "Work", "Develop MD Multi-Sheet Control Canvas with real-time Google Sheets sync.", "Very Urgent", "27-May-2026", "Pending", "In Progress", "React Single-page app completed, ready for deployment to GitHub Pages.", "Self", "", ""],
+                ["26-May-2026", "Reports", "Report Name: Daily Backup Verification Report\nReport verifying integrity of daily DB backup copies.", "Normal", "", "Pending", "Not Seen", "", "", "", "Monthly - 1"]
             ],
             "spreadsheet_shahid_khan": [
-                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date"],
-                ["20-May-2026", "Instruction", "Review Q1 sales projections and present efficiency strategy for printing division.", "Urgent", "28-May-2026", "Pending", "Pending", "Sales data compiled, drafting the presentation now.", "Sales Head", ""]
+                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date", "Repetition"],
+                ["20-May-2026", "Instruction", "Review Q1 sales projections and present efficiency strategy for printing division.", "Urgent", "28-May-2026", "Pending", "Pending", "Sales data compiled, drafting the presentation now.", "Sales Head", "", ""]
             ],
             "spreadsheet_lalit_kumawat": [
-                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date"],
-                ["18-May-2026", "Work", "Reconcile vendor payments for the logistics department for the past quarter.", "Normal", "25-May-2026", "Done", "Checked & Confirmed", "Logistics payments cleared, final statement sent to auditors.", "Accounts Team", "24-May-2026 18:00"]
+                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date", "Repetition"],
+                ["18-May-2026", "Work", "Reconcile vendor payments for the logistics department for the past quarter.", "Normal", "25-May-2026", "Done", "Checked & Confirmed", "Logistics payments cleared, final statement sent to auditors.", "Accounts Team", "24-May-2026 18:00", ""]
             ],
             "spreadsheet_dileep_yadav": [
-                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date"],
-                ["24-May-2026", "Work", "Prepare catalog for corporate corporate gifting orders for upcoming festival season.", "Normal", "05-Jun-2026", "Pending", "Not Seen", "Drafting corporate brochures and gifting collections.", "", ""]
+                ["Date", "Type", "Description", "Priority", "Target Date", "Verification", "Status", "Remark", "Delegated To", "Completion Date", "Repetition"],
+                ["24-May-2026", "Work", "Prepare catalog for corporate corporate gifting orders for upcoming festival season.", "Normal", "05-Jun-2026", "Pending", "Not Seen", "Drafting corporate brochures and gifting collections.", "", "", ""]
             ],
             "spreadsheet_kajal_sharma_WSR": [
                 ["Weekly Status Report\n\nSubmited By:_________________                      Sign: _________________                       Date: _______________"],
@@ -600,11 +603,20 @@
                 updatedRowValues[indices.typeIdx] = directive.type || '';
             }
 
-            // Update description if changed
-            if (indices.descIdx !== -1 && updatedFields.hasOwnProperty('description')) {
-                updatedRowValues[indices.descIdx] = updatedFields.description || '';
-            } else if (indices.descIdx !== -1 && !updatedRowValues[indices.descIdx]) {
-                updatedRowValues[indices.descIdx] = directive.description || '';
+            // Update description if changed (with Option A Report Name prefix for Reports type)
+            if (indices.descIdx !== -1) {
+                const currentType = updatedFields.type || directive.type;
+                if (currentType === 'Reports') {
+                    const finalReportName = updatedFields.hasOwnProperty('reportName') ? (updatedFields.reportName || '') : (directive.reportName || '');
+                    const finalDesc = updatedFields.hasOwnProperty('description') ? (updatedFields.description || '') : (directive.description || '');
+                    updatedRowValues[indices.descIdx] = `Report Name: ${finalReportName}\n${finalDesc}`;
+                } else {
+                    if (updatedFields.hasOwnProperty('description')) {
+                        updatedRowValues[indices.descIdx] = updatedFields.description || '';
+                    } else if (!updatedRowValues[indices.descIdx]) {
+                        updatedRowValues[indices.descIdx] = directive.description || '';
+                    }
+                }
             }
 
             if (indices.repetitionIdx !== -1 && !updatedRowValues[indices.repetitionIdx]) {
@@ -627,10 +639,10 @@
                 updatedRowValues[indices.verificationIdx] = updatedFields.verification || '';
             }
 
-            // Update status
+            // Update status (include completion timestamps for WSR and Reports)
             if (indices.statusIdx !== -1 && updatedFields.hasOwnProperty('status')) {
                 let statusVal = updatedFields.status || '';
-                if (directive.type === 'WSR') {
+                if (directive.type === 'WSR' || directive.type === 'Reports') {
                     if (statusVal === 'Completed') {
                         statusVal = `Completed (${formatDateTimeString(new Date())})`;
                     } else if (statusVal === 'Checked & Confirmed') {
@@ -739,6 +751,7 @@
             const [dispatchDeptId, setDispatchDeptId] = React.useState('');
             const [dispatchType, setDispatchType] = React.useState('Work');
             const [dispatchDesc, setDispatchDesc] = React.useState('');
+            const [dispatchReportName, setDispatchReportName] = React.useState('');
             const [dispatchPriority, setDispatchPriority] = React.useState('Normal');
             const [dispatchTargetDate, setDispatchTargetDate] = React.useState('');
             const [dispatchWsrDay, setDispatchWsrDay] = React.useState('Monday');
@@ -753,6 +766,7 @@
             const [editingDirective, setEditingDirective] = React.useState(null);
             const [selectedDirective, setSelectedDirective] = React.useState(null);
             const [editDescription, setEditDescription] = React.useState('');
+            const [editReportName, setEditReportName] = React.useState('');
             const [editDate, setEditDate] = React.useState('');
             const [editStatus, setEditStatus] = React.useState('');
             const [editRemark, setEditRemark] = React.useState('');
@@ -994,7 +1008,7 @@
                     showNotification('Google OAuth Client ID is missing or incorrect. Click settings (cog) to check.', 'error');
                     return;
                 }
-                tokenClient.requestAccessToken({ prompt: 'consent' });
+                tokenClient.requestAccessToken({ prompt: 'select_account' });
             };
 
             const handleLogout = () => {
@@ -1352,6 +1366,7 @@
                             ``,
                             `--- Report Details ---`,
                             `Type: ${d.type}`,
+                            d.reportName ? `Report Name: ${d.reportName}` : null,
                             `Schedule: ${scheduleLabel}`,
                             `Description: ${d.description}`,
                             `Priority: ${d.priority}`,
@@ -1362,7 +1377,7 @@
                             `Regards,`,
                             `MD Office`,
                             `PCIL Group`
-                        ].join('\n');
+                        ].filter(line => line !== null).join('\n');
 
                         await sendEmailViaGmail(d.headEmail, subject, bodyText);
 
@@ -1724,6 +1739,18 @@
                         }
                     }
 
+                    let parsedReportName = '';
+                    if (parsedType === 'Reports') {
+                        const match = String(parsedDesc).match(/^Report Name:\s*(.*?)(?:\r?\n\r?\n|\r?\n)([\s\S]*)$/i);
+                        if (match) {
+                            parsedReportName = match[1].trim();
+                            parsedDesc = match[2].trim();
+                        } else if (String(parsedDesc).startsWith('Report Name:')) {
+                            parsedReportName = String(parsedDesc).substring(12).trim();
+                            parsedDesc = '';
+                        }
+                    }
+
                     const parsedPriority = priorityIdx !== -1 && row[priorityIdx] ? row[priorityIdx] : 'Normal';
                     const parsedTargetDate = targetDateIdx !== -1 && row[targetDateIdx] ? parseExcelDate(row[targetDateIdx]) : '';
                     const parsedVerification = verificationIdx !== -1 && row[verificationIdx] ? row[verificationIdx] : 'Pending';
@@ -1764,6 +1791,7 @@
                         date: parsedDate,
                         type: parsedType,
                         description: parsedDesc,
+                        reportName: parsedReportName,
                         priority: parsedPriority,
                         targetDate: parsedTargetDate,
                         verification: parsedVerification,
@@ -1919,12 +1947,16 @@
                     appendValues = [nextSNo, dispatchDesc, 'Pending'];
                 } else {
                     activeTabName = targetDept.sheetTabName || 'Master Data';
+                    let finalDesc = dispatchDesc;
+                    if (dispatchType === 'Reports') {
+                        finalDesc = `Report Name: ${dispatchReportName}\n${dispatchDesc}`;
+                    }
                     appendValues = [
                         todayStr,
                         dispatchType,
-                        dispatchDesc,
+                        finalDesc,
                         dispatchPriority,
-                        targetDateStr,
+                        dispatchType === 'Reports' ? '' : targetDateStr,
                         'Pending',     // Verification
                         'Not Seen',    // Status
                         '',            // Remark
@@ -1965,6 +1997,7 @@
                     setDispatchWsrDay('Monday');
                     setDispatchReportTimeline('Weekly');
                     setDispatchReportDay('Monday');
+                    setDispatchReportName('');
                     
                     showNotification(`Directive successfully dispatched to ${targetDept.headName} (Sandbox Mode)`, 'success');
                     showNotification(`Notification email simulated to ${targetDept.headEmail}`, 'info');
@@ -2017,6 +2050,7 @@
                     setDispatchWsrDay('Monday');
                     setDispatchReportTimeline('Weekly');
                     setDispatchReportDay('Monday');
+                    setDispatchReportName('');
                     
                     showNotification(`Directive successfully dispatched to ${targetDept.headName}!`, 'success');
                     setDispatchSuccess(true);
@@ -2219,6 +2253,7 @@
                 setEditStatus(directive.status);
                 setEditRemark(directive.remark);
                 setEditDelegated(directive.delegatedTo);
+                setEditReportName(directive.reportName || '');
                 
                 setEditPriority(directive.priority || 'Normal');
                 
@@ -2336,7 +2371,7 @@
                                     <Icon name="sheet" className="w-5 h-5 text-slate-900" />
                                 </div>
                                 <div>
-                                    <h1 className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-200 via-indigo-205 to-white">
+                                    <h1 className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-200 via-indigo-200 to-white">
                                         MD Command Center
                                     </h1>
                                     <p className="text-xs text-slate-400 font-medium">Google Sheets Engine</p>
@@ -2346,7 +2381,7 @@
                             {/* Active Persona Banner for Sandbox */}
                             {isSandbox && (
                                 <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 px-4 py-1.5 rounded-full flex items-center gap-2 text-xs font-semibold shadow-inner">
-                                    <span className="h-2 w-2 rounded-full bg-amber-505 animate-pulse"></span>
+                                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
                                     Demo Sandbox Active
                                     <span className="text-slate-500 font-normal">|</span>
                                     <span className="text-slate-100 flex items-center gap-1">
@@ -2354,7 +2389,7 @@
                                         <select 
                                             value={sandboxRole}
                                             onChange={(e) => setSandboxRole(e.target.value)}
-                                            className="bg-slate-800 text-amber-350 border-none outline-none font-bold cursor-pointer rounded px-1.5 py-0.5"
+                                            className="bg-slate-800 text-amber-300 border-none outline-none font-bold cursor-pointer rounded px-1.5 py-0.5"
                                         >
                                             <option value="MD">Managing Director</option>
                                             {(() => {
@@ -2400,7 +2435,7 @@
                                             </div>
                                         </div>
                                         {isSandbox ? (
-                                            <div className="h-9 w-9 rounded-full bg-indigo-650 flex items-center justify-center font-bold text-white shadow border border-indigo-400/20">
+                                            <div className="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white shadow border border-indigo-400/20">
                                                 {activeRole.name.charAt(0)}
                                             </div>
                                         ) : (
@@ -2482,7 +2517,7 @@
                                     <div className="absolute -top-16 -left-16 w-36 h-36 rounded-full bg-teal-500/5 blur-3xl"></div>
                                     <div className="absolute -bottom-16 -right-16 w-36 h-36 rounded-full bg-indigo-500/5 blur-3xl"></div>
                                     
-                                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-teal-450 to-indigo-650 flex items-center justify-center shadow-xl shadow-indigo-500/10 mb-2">
+                                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-teal-400 to-indigo-600 flex items-center justify-center shadow-xl shadow-indigo-500/10 mb-2">
                                         <Icon name="shield" className="w-8 h-8 text-white" strokeWidth={1.5} />
                                     </div>
                                     
@@ -2506,7 +2541,7 @@
                                         {clientId && (
                                             <button 
                                                 onClick={triggerGoogleLogin}
-                                                className="w-full py-3 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-450 hover:to-teal-550 text-white font-bold rounded-xl transition-all shadow-lg shadow-teal-500/20 flex items-center justify-center gap-2 cursor-pointer text-sm"
+                                                className="w-full py-3 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-teal-500/20 flex items-center justify-center gap-2 cursor-pointer text-sm"
                                             >
                                                 <Icon name="globe" className="w-4 h-4" /> Sign In with Google Account
                                             </button>
@@ -2535,7 +2570,7 @@
                                     <div>
                                         <h2 className="text-2xl font-bold text-rose-600">Unauthorized Email</h2>
                                         <p className="text-slate-700 text-sm mt-3 font-semibold">
-                                            Logged in as: <span className="text-teal-650 font-mono">{activeRole.email}</span>
+                                            Logged in as: <span className="text-teal-600 font-mono">{activeRole.email}</span>
                                         </p>
                                         <p className="text-slate-500 text-sm mt-4 Hindi-text px-1">
                                             आपकी ईमेल आईडी वर्तमान में अधिकृत नहीं है। कृपया मैनेजिंग डायरेक्टर (MD) से संपर्क करें ताकि वे इस ईमेल को सेटिंग्स में मैप कर सकें।
@@ -2623,7 +2658,7 @@
                                             <Icon name="check" className="w-4 h-4 md:w-6 md:h-6" />
                                         </div>
                                         <div>
-                                            <div className="text-lg md:text-2xl font-black tracking-tight text-emerald-650">{loading ? '...' : metrics.verified}</div>
+                                            <div className="text-lg md:text-2xl font-black tracking-tight text-emerald-600">{loading ? '...' : metrics.verified}</div>
                                             <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">Completed Audits</div>
                                         </div>
                                     </div>
@@ -2641,7 +2676,7 @@
                                             <Icon name="book" className="w-4 h-4 md:w-6 md:h-6" />
                                         </div>
                                         <div>
-                                            <div className="text-lg md:text-2xl font-black tracking-tight text-teal-650">{activeSopDocs.length}</div>
+                                            <div className="text-lg md:text-2xl font-black tracking-tight text-teal-600">{activeSopDocs.length}</div>
                                             <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">My SOP</div>
                                         </div>
                                     </div>
@@ -2659,18 +2694,18 @@
                                                         <Icon name="refresh" className="w-3 h-3 md:w-3.5 md:h-3.5 animate-spin" />
                                                     </div>
                                                 ) : allSynced ? (
-                                                    <div className="flex items-center justify-center w-5.5 h-5.5 md:w-6 md:h-6 rounded-full bg-teal-50 border border-teal-200 text-teal-650 shadow-sm cursor-pointer hover:bg-teal-100 hover:border-teal-300 transition-all duration-205 animate-fade-in" title="All sheets synced successfully. Hover for details.">
+                                                    <div className="flex items-center justify-center w-5.5 h-5.5 md:w-6 md:h-6 rounded-full bg-teal-50 border border-teal-200 text-teal-600 shadow-sm cursor-pointer hover:bg-teal-100 hover:border-teal-300 transition-all duration-205 animate-fade-in" title="All sheets synced successfully. Hover for details.">
                                                         <Icon name="check" className="w-3 h-3 md:w-3.5 md:h-3.5 stroke-[3.5]" />
                                                     </div>
                                                 ) : anyFailed ? (
-                                                    <div className="flex items-center justify-center w-5.5 h-5.5 md:w-6 md:h-6 rounded-full bg-rose-50 border border-rose-200 text-rose-650 shadow-sm cursor-pointer hover:bg-rose-100 hover:border-rose-300 transition-all duration-205 flex-shrink-0" title="Some sheets failed to sync. Hover for details.">
+                                                    <div className="flex items-center justify-center w-5.5 h-5.5 md:w-6 md:h-6 rounded-full bg-rose-50 border border-rose-200 text-rose-600 shadow-sm cursor-pointer hover:bg-rose-100 hover:border-rose-300 transition-all duration-205 flex-shrink-0" title="Some sheets failed to sync. Hover for details.">
                                                         <span className="relative flex h-2.5 w-2.5">
                                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                                                             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600"></span>
                                                         </span>
                                                     </div>
                                                 ) : (
-                                                    <div className="flex items-center justify-center w-5.5 h-5.5 md:w-6 md:h-6 rounded-full bg-slate-50 border border-slate-200 text-slate-550 shadow-sm cursor-pointer hover:bg-slate-100 transition-all duration-205" title="Ready to sync. Hover for details.">
+                                                    <div className="flex items-center justify-center w-5.5 h-5.5 md:w-6 md:h-6 rounded-full bg-slate-50 border border-slate-200 text-slate-500 shadow-sm cursor-pointer hover:bg-slate-100 transition-all duration-205" title="Ready to sync. Hover for details.">
                                                         <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-slate-400"></span>
                                                     </div>
                                                 )}
@@ -2695,11 +2730,11 @@
                                                                     </div>
                                                                     <div className="flex-shrink-0">
                                                                         {isSuccess ? (
-                                                                            <span className="flex items-center gap-1 text-teal-650 font-bold bg-teal-50 px-1.5 py-0.5 rounded-md text-[9px] border border-teal-100">
+                                                                            <span className="flex items-center gap-1 text-teal-600 font-bold bg-teal-50 px-1.5 py-0.5 rounded-md text-[9px] border border-teal-100">
                                                                                 <Icon name="check" className="w-2.5 h-2.5 stroke-[3.5]" /> Active
                                                                             </span>
                                                                         ) : isError ? (
-                                                                            <span className="flex items-center gap-1 text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded-md text-[9px] border border-rose-105 cursor-help" title={status.error}>
+                                                                            <span className="flex items-center gap-1 text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded-md text-[9px] border border-rose-200 cursor-help" title={status.error}>
                                                                                 <Icon name="alert" className="w-2.5 h-2.5" /> Failed
                                                                             </span>
                                                                         ) : (
@@ -2744,7 +2779,7 @@
                                     <div className="w-full flex flex-col gap-4">
                                         
                                         {/* Filter Panel */}
-                                        <div className="glass-panel p-5 rounded-3xl border border-slate-250/80 shadow-xl flex flex-col gap-4 bg-white/90">
+                                        <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-xl flex flex-col gap-4 bg-white/90">
                                             {/* Search and Main Filters */}
                                             <div className="flex flex-col md:flex-row items-center gap-3">
                                                 <div className="w-full md:flex-grow relative">
@@ -2756,7 +2791,7 @@
                                                         value={searchTerm}
                                                         onChange={(e) => setSearchTerm(e.target.value)}
                                                         placeholder="Search directives, remarks, departments..."
-                                                        className="w-full bg-slate-50 border border-slate-205 rounded-2xl pl-10 pr-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
                                                     />
                                                 </div>
 
@@ -2850,7 +2885,7 @@
                                         </div>
 
                                         {/* Table Canvas Panel */}
-                                        <div className="glass-panel rounded-3xl border border-slate-250/80 shadow-xl overflow-hidden flex flex-col min-h-[350px] md:min-h-[400px] bg-white/90">
+                                        <div className="glass-panel rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden flex flex-col min-h-[350px] md:min-h-[400px] bg-white/90">
                                             {/* Desktop Table View */}
                                             <div className="hidden md:block overflow-x-auto flex-grow">
                                                 <table className="w-full border-collapse text-left text-sm text-slate-700">
@@ -2891,20 +2926,20 @@
                                                                     Deficiency: 'bg-rose-50 border-rose-100 text-rose-700',
                                                                     Instruction: 'bg-amber-50 border-amber-100 text-amber-700',
                                                                     'Growth/Idea': 'bg-teal-50 border-teal-100 text-teal-700',
-                                                                    'Management Summary': 'bg-violet-50 border-violet-100 text-violet-750',
+                                                                    'Management Summary': 'bg-violet-50 border-violet-100 text-violet-700',
                                                                     WSR: 'bg-pink-50 border-pink-100 text-pink-700',
                                                                     Reports: 'bg-sky-50 border-sky-100 text-sky-700'
                                                                 };
                                                                 const priorityColors = {
                                                                     Normal: 'bg-slate-100 border-slate-200 text-slate-500',
-                                                                    Urgent: 'bg-rose-50 border-rose-205 text-rose-700 font-bold',
+                                                                    Urgent: 'bg-rose-50 border-rose-200 text-rose-700 font-bold',
                                                                     'Very Urgent': 'bg-rose-600 text-white font-black animate-pulse border-none'
                                                                 };
                                                                 const statusColors = {
-                                                                    Pending: 'bg-slate-105 border border-slate-200 text-slate-650',
+                                                                    Pending: 'bg-slate-100 border border-slate-200 text-slate-600',
                                                                     'Not Seen': 'bg-slate-50 border border-slate-150 text-slate-400',
                                                                     'In Progress': 'bg-indigo-50 border border-indigo-150 text-indigo-700',
-                                                                    'On Hold': 'bg-amber-50 border border-amber-150 text-amber-750',
+                                                                    'On Hold': 'bg-amber-50 border border-amber-200 text-amber-700',
                                                                     Completed: 'bg-emerald-50 border border-emerald-150 text-emerald-700',
                                                                     'Checked & Confirmed': 'bg-emerald-500 border-none text-white font-bold'
                                                                 };
@@ -2939,7 +2974,7 @@
                                                                                 {d.priority}
                                                                             </span>
                                                                             {d.repetition && (
-                                                                                <span className="text-[10px] px-2 py-0.5 rounded border bg-slate-50 border-slate-205 text-slate-500 font-semibold w-fit" title="Repetition Schedule">
+                                                                                <span className="text-[10px] px-2 py-0.5 rounded border bg-slate-50 border-slate-200 text-slate-500 font-semibold w-fit" title="Repetition Schedule">
                                                                                     🔄 {d.repetition}
                                                                                 </span>
                                                                             )}
@@ -2947,6 +2982,11 @@
 
                                                                         {/* Description */}
                                                                         <td className="py-4 px-4 align-top">
+                                                                            {d.type === 'Reports' && d.reportName && (
+                                                                                <div className="text-teal-700 font-bold text-xs mb-1 bg-teal-50 border border-teal-100 rounded px-2 py-0.5 w-fit">
+                                                                                    📊 {d.reportName}
+                                                                                </div>
+                                                                            )}
                                                                             <div className="text-slate-800 text-sm font-medium hindi-text break-words">
                                                                                 {d.description}
                                                                             </div>
@@ -3056,7 +3096,7 @@
                                                             Deficiency: 'bg-rose-50 border-rose-100 text-rose-700',
                                                             Instruction: 'bg-amber-50 border-amber-100 text-amber-700',
                                                             'Growth/Idea': 'bg-teal-50 border-teal-100 text-teal-700',
-                                                            'Management Summary': 'bg-violet-50 border-violet-100 text-violet-750',
+                                                            'Management Summary': 'bg-violet-50 border-violet-100 text-violet-700',
                                                             WSR: 'bg-pink-50 border-pink-100 text-pink-700',
                                                             Reports: 'bg-sky-50 border-sky-100 text-sky-700'
                                                         };
@@ -3069,7 +3109,7 @@
                                                             Pending: 'bg-slate-100 border border-slate-200 text-slate-600',
                                                             'Not Seen': 'bg-slate-50 border border-slate-150 text-slate-400',
                                                             'In Progress': 'bg-indigo-50 border border-indigo-150 text-indigo-700',
-                                                            'On Hold': 'bg-amber-50 border border-amber-150 text-amber-750',
+                                                            'On Hold': 'bg-amber-50 border border-amber-200 text-amber-700',
                                                             Completed: 'bg-emerald-50 border border-emerald-150 text-emerald-700',
                                                             'Checked & Confirmed': 'bg-emerald-500 border-none text-white'
                                                         };
@@ -3091,7 +3131,7 @@
                                                                             <>
                                                                                 <div className="font-extrabold text-slate-800 text-[10px]">{d.type}</div>
                                                                                 {activeRole.mappings && activeRole.mappings.length > 1 && (
-                                                                                    <div className="text-[8.5px] text-indigo-650 font-bold truncate leading-tight mt-0.5">{d.departmentName}</div>
+                                                                                    <div className="text-[8.5px] text-indigo-600 font-bold truncate leading-tight mt-0.5">{d.departmentName}</div>
                                                                                 )}
                                                                             </>
                                                                         )}
@@ -3112,12 +3152,17 @@
                                                                     </div>
                                                                 </div>
 
+                                                                {d.type === 'Reports' && d.reportName && (
+                                                                    <div className="text-teal-700 font-bold text-[10px] mb-1 bg-teal-50 border border-teal-100 rounded px-1.5 py-0.5 w-fit">
+                                                                        📊 {d.reportName}
+                                                                    </div>
+                                                                )}
                                                                 <div className="text-slate-800 text-[11px] font-semibold hindi-text leading-relaxed break-words line-clamp-3">
                                                                     {d.description}
                                                                 </div>
 
                                                                 {d.targetDate && (
-                                                                    <div className="flex items-center gap-1 text-[8.5px] text-amber-600 font-extrabold bg-amber-50/50 border border-amber-105 px-1.5 py-0.5 rounded-lg w-fit">
+                                                                    <div className="flex items-center gap-1 text-[8.5px] text-amber-600 font-extrabold bg-amber-50/50 border border-amber-200 px-1.5 py-0.5 rounded-lg w-fit">
                                                                         <span className="text-slate-400 font-normal">Target:</span>
                                                                         {d.targetDate}
                                                                     </div>
@@ -3125,13 +3170,13 @@
 
                                                                 <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-0.5 gap-2">
                                                                     <div className="flex items-center gap-1.5">
-                                                                        <span className={`text-[8px] px-2 py-0.5 rounded-full font-bold ${statusColors[d.status] || 'bg-slate-105'}`}>
+                                                                        <span className={`text-[8px] px-2 py-0.5 rounded-full font-bold ${statusColors[d.status] || 'bg-slate-100'}`}>
                                                                             {d.status}
                                                                         </span>
                                                                         <span className="text-[8px] font-bold text-slate-400 flex items-center">
                                                                             Audit: 
                                                                             {(d.verification === 'Done' || d.verification === 'Verified') ? (
-                                                                                <span className="text-emerald-655 flex items-center font-extrabold ml-0.5">
+                                                                                <span className="text-emerald-600 flex items-center font-extrabold ml-0.5">
                                                                                     <Icon name="check" className="w-2 h-2" /> Verified
                                                                                 </span>
                                                                             ) : (
@@ -3161,7 +3206,7 @@
                                                                         )}
                                                                         <button
                                                                             onClick={() => openEditModal(d)}
-                                                                            className="p-1 rounded-md bg-slate-50 border border-slate-205 text-slate-600 cursor-pointer"
+                                                                            className="p-1 rounded-md bg-slate-50 border border-slate-200 text-slate-600 cursor-pointer"
                                                                         >
                                                                             <Icon name="edit" className="w-3 h-3" />
                                                                         </button>
@@ -3176,7 +3221,7 @@
                                             {/* Table footer info */}
                                             <div className="bg-slate-50 border-t border-slate-200 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between text-[10px] md:text-xs text-slate-450 font-bold">
                                                 <span>Showing {filteredDirectives.length} of {directives.length} directives.</span>
-                                                <span className="flex items-center gap-1 text-teal-655 text-teal-650">
+                                                <span className="flex items-center gap-1 text-teal-600 text-teal-600">
                                                     <span className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-teal-500 animate-pulse"></span> Live Connected
                                                 </span>
                                             </div>
@@ -3201,7 +3246,7 @@
 
                                 <div>
                                     <h3 className="text-base md:text-lg font-bold text-slate-800 flex items-center gap-2">
-                                        <Icon name="edit" className="w-5 h-5 text-teal-655" />
+                                        <Icon name="edit" className="w-5 h-5 text-teal-600" />
                                         Update Directive Details
                                     </h3>
                                     <p className="text-[10px] md:text-xs text-slate-405 font-medium mt-0.5">
@@ -3212,6 +3257,12 @@
                                 {/* Directive details (read-only for DH coordinators, editable for MD) */}
                                 {!activeRole?.isMD && (
                                     <div className="bg-slate-50 border border-slate-150 rounded-2xl p-3 md:p-4 flex flex-col gap-2.5 md:gap-3 text-[11px] md:text-xs max-h-[25vh] overflow-y-auto">
+                                        {editingDirective.type === 'Reports' && editingDirective.reportName && (
+                                            <div>
+                                                <span className="text-slate-450 font-bold uppercase tracking-wider text-[9px] md:text-[10px]">Report Name</span>
+                                                <span className="text-slate-800 font-bold block mt-0.5">{editingDirective.reportName}</span>
+                                            </div>
+                                        )}
                                         <div className="text-slate-800 font-semibold leading-relaxed hindi-text whitespace-pre-wrap">
                                             {editingDirective.description}
                                         </div>
@@ -3220,10 +3271,12 @@
                                                 <span className="text-slate-450 font-bold uppercase tracking-wider text-[9px] md:text-[10px]">Date Issued</span>
                                                 <span className="text-slate-700 font-bold block mt-0.5 font-mono">{editingDirective.date}</span>
                                             </div>
-                                            <div>
-                                                <span className="text-slate-450 font-bold uppercase tracking-wider text-[9px] md:text-[10px]">Target Date</span>
-                                                <span className="text-slate-700 font-bold block mt-0.5 font-mono">{editingDirective.targetDate || '-'}</span>
-                                            </div>
+                                            {editingDirective.type !== 'WSR' && editingDirective.type !== 'Reports' && (
+                                                <div>
+                                                    <span className="text-slate-450 font-bold uppercase tracking-wider text-[9px] md:text-[10px]">Target Date</span>
+                                                    <span className="text-slate-700 font-bold block mt-0.5 font-mono">{editingDirective.targetDate || '-'}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -3231,16 +3284,30 @@
                                 <div className="flex flex-col gap-3.5 md:gap-4 overflow-y-auto max-h-[45vh] pr-1">
                                     {/* Edit Description (MD only) */}
                                     {activeRole?.isMD && (
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Directive Description</label>
-                                            <textarea
-                                                rows={4}
-                                                value={editDescription}
-                                                onChange={(e) => setEditDescription(e.target.value)}
-                                                placeholder="Enter directive description..."
-                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 hindi-text font-semibold"
-                                            />
-                                        </div>
+                                        <>
+                                            {editingDirective?.type === 'Reports' && (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Report Name</label>
+                                                    <input
+                                                        type="text"
+                                                        value={editReportName}
+                                                        onChange={(e) => setEditReportName(e.target.value)}
+                                                        placeholder="Enter report name..."
+                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-semibold"
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Directive Description</label>
+                                                <textarea
+                                                    rows={4}
+                                                    value={editDescription}
+                                                    onChange={(e) => setEditDescription(e.target.value)}
+                                                    placeholder="Enter directive description..."
+                                                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 hindi-text font-semibold"
+                                                />
+                                            </div>
+                                        </>
                                     )}
 
                                     {/* Edit Date Issued (MD only) */}
@@ -3304,7 +3371,7 @@
 
                                     {/* Delegated To */}
                                     <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-slate-550 uppercase tracking-wider">Delegated To (Assignee)</label>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Delegated To (Assignee)</label>
                                         <input
                                             type="text"
                                             value={editDelegated}
@@ -3316,7 +3383,7 @@
 
                                     {/* Action Logs / Remarks */}
                                     <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-slate-550 uppercase tracking-wider">Remarks / Action Log</label>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Remarks / Action Log</label>
                                         <textarea
                                             rows={3}
                                             value={editRemark}
@@ -3343,7 +3410,8 @@
                                                 priority: editPriority, 
                                                 targetDate: editTargetDate,
                                                 description: editDescription,
-                                                date: editDate
+                                                date: editDate,
+                                                reportName: editReportName
                                             } : {})
                                         })}
                                         disabled={editLoading}
@@ -3381,14 +3449,19 @@
                                 {/* Header */}
                                 <div className="border-b border-slate-100 pb-4">
                                     <div className="flex items-center gap-2 text-teal-600 font-bold text-sm uppercase tracking-wider mb-1">
-                                        <Icon name="info" className="w-5 h-5 text-teal-650" />
+                                        <Icon name="info" className="w-5 h-5 text-teal-600" />
                                         <span>Directive Detailed Record</span>
                                     </div>
+                                    {selectedDirective.type === 'Reports' && selectedDirective.reportName && (
+                                        <div className="text-teal-700 font-extrabold text-sm mb-2 bg-teal-50 border border-teal-100 rounded-lg px-3 py-1.5 w-fit">
+                                            Report Name: {selectedDirective.reportName}
+                                        </div>
+                                    )}
                                     <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">
                                         {selectedDirective.departmentName}
                                     </h3>
                                     <p className="text-xs text-slate-450 font-semibold mt-1">
-                                        Head: <span className="text-slate-750">{selectedDirective.headName}</span> &bull; Email: <span className="text-slate-700 font-mono">{selectedDirective.headEmail}</span>
+                                        Head: <span className="text-slate-700">{selectedDirective.headName}</span> &bull; Email: <span className="text-slate-700 font-mono">{selectedDirective.headEmail}</span>
                                     </p>
                                 </div>
 
@@ -3420,12 +3493,14 @@
                                     </div>
 
                                     {/* Target Date */}
-                                    <div className="flex justify-between border-b border-slate-100 pb-2.5">
-                                        <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Target Date</span>
-                                        <span className={`font-bold font-mono ${selectedDirective.targetDate === 'Immediate' ? 'text-rose-600 font-black animate-pulse' : 'text-slate-700'}`}>
-                                            {selectedDirective.targetDate || '-'}
-                                        </span>
-                                    </div>
+                                    {selectedDirective.type !== 'WSR' && selectedDirective.type !== 'Reports' && (
+                                        <div className="flex justify-between border-b border-slate-100 pb-2.5">
+                                            <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Target Date</span>
+                                            <span className={`font-bold font-mono ${selectedDirective.targetDate === 'Immediate' ? 'text-rose-600 font-black animate-pulse' : 'text-slate-700'}`}>
+                                                {selectedDirective.targetDate || '-'}
+                                            </span>
+                                        </div>
+                                    )}
 
                                     {/* Type */}
                                     <div className="flex justify-between border-b border-slate-100 pb-2.5 items-center">
@@ -3435,7 +3510,7 @@
                                             selectedDirective.type === 'Deficiency' ? 'bg-rose-50 border-rose-100 text-rose-700' :
                                             selectedDirective.type === 'Instruction' ? 'bg-amber-50 border-amber-100 text-amber-700' :
                                             selectedDirective.type === 'Growth/Idea' ? 'bg-teal-50 border-teal-100 text-teal-700' :
-                                            selectedDirective.type === 'Management Summary' ? 'bg-violet-50 border-violet-100 text-violet-750' :
+                                            selectedDirective.type === 'Management Summary' ? 'bg-violet-50 border-violet-100 text-violet-700' :
                                             selectedDirective.type === 'WSR' ? 'bg-pink-50 border-pink-100 text-pink-700' :
                                             selectedDirective.type === 'Reports' ? 'bg-sky-50 border-sky-100 text-sky-700' :
                                             'bg-slate-100 border-slate-200 text-slate-500'
@@ -3461,10 +3536,10 @@
                                     <div className="flex justify-between border-b border-slate-100 pb-2.5 items-center">
                                         <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Status</span>
                                         <span className={`text-[10px] px-2.5 py-0.5 rounded border font-bold ${
-                                            selectedDirective.status === 'Pending' ? 'bg-slate-100 border border-slate-200 text-slate-650' :
+                                            selectedDirective.status === 'Pending' ? 'bg-slate-100 border border-slate-200 text-slate-600' :
                                             selectedDirective.status === 'Not Seen' ? 'bg-slate-50 border border-slate-150 text-slate-400' :
                                             selectedDirective.status === 'In Progress' ? 'bg-indigo-50 border border-indigo-150 text-indigo-700' :
-                                            selectedDirective.status === 'On Hold' ? 'bg-amber-50 border border-amber-150 text-amber-750' :
+                                            selectedDirective.status === 'On Hold' ? 'bg-amber-50 border border-amber-200 text-amber-700' :
                                             selectedDirective.status === 'Completed' ? 'bg-emerald-50 border border-emerald-150 text-emerald-700' :
                                             selectedDirective.status === 'Checked & Confirmed' ? 'bg-emerald-500 border-none text-white' :
                                             'bg-slate-100'
@@ -3526,7 +3601,7 @@
                                                     navigator.clipboard.writeText(selectedDirective.remark);
                                                     showNotification('Remarks copied to clipboard!', 'success');
                                                 }}
-                                                className="text-[10px] text-teal-650 hover:text-teal-700 font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                                                className="text-[10px] text-teal-600 hover:text-teal-700 font-bold flex items-center gap-1 hover:underline cursor-pointer"
                                             >
                                                 Copy Text
                                             </button>
@@ -3576,7 +3651,7 @@
                             onClick={() => setIsDispatchOpen(false)}
                         >
                             <div 
-                                className="w-full max-w-lg bg-white border border-slate-205 rounded-3xl p-4 md:p-6 shadow-2xl flex flex-col gap-4 md:gap-5 relative text-slate-800 animate-slide-up max-h-[92vh] overflow-y-auto"
+                                className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-4 md:p-6 shadow-2xl flex flex-col gap-4 md:gap-5 relative text-slate-800 animate-slide-up max-h-[92vh] overflow-y-auto"
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <button
@@ -3604,7 +3679,7 @@
                                             required
                                             value={dispatchDeptId}
                                             onChange={(e) => setDispatchDeptId(e.target.value)}
-                                            className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
                                         >
                                             <option value="">-- Choose Recipient Head --</option>
                                             {mappings.map(m => (
@@ -3620,7 +3695,7 @@
                                             <select
                                                 value={dispatchType}
                                                 onChange={(e) => setDispatchType(e.target.value)}
-                                                className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
                                             >
                                                 <option value="Work">Work</option>
                                                 <option value="Deficiency">Deficiency</option>
@@ -3638,7 +3713,7 @@
                                             <select
                                                 value={dispatchPriority}
                                                 onChange={(e) => setDispatchPriority(e.target.value)}
-                                                className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
                                             >
                                                 <option value="Normal">Normal</option>
                                                 <option value="Urgent">Urgent</option>
@@ -3647,6 +3722,21 @@
                                         </div>
                                     </div>
 
+                                    {/* Report Name */}
+                                    {dispatchType === 'Reports' && (
+                                        <div className="flex flex-col gap-1.5 mt-2">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Report Name</label>
+                                            <input
+                                                required
+                                                type="text"
+                                                value={dispatchReportName}
+                                                onChange={(e) => setDispatchReportName(e.target.value)}
+                                                placeholder="Enter report name (e.g. Daily Backup Verification)"
+                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                            />
+                                        </div>
+                                    )}
+
                                     {/* Conditional WSR scheduling input */}
                                     {dispatchType === 'WSR' && (
                                         <div className="flex flex-col gap-1.5 mt-2">
@@ -3654,7 +3744,7 @@
                                             <select
                                                 value={dispatchWsrDay}
                                                 onChange={(e) => setDispatchWsrDay(e.target.value)}
-                                                className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
                                             >
                                                 <option value="Monday">Monday</option>
                                                 <option value="Tuesday">Tuesday</option>
@@ -3683,7 +3773,7 @@
                                                             setDispatchReportDay('1');
                                                         }
                                                     }}
-                                                    className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
                                                 >
                                                     <option value="Weekly">Weekly</option>
                                                     <option value="Monthly">Monthly</option>
@@ -3699,7 +3789,7 @@
                                                     <select
                                                         value={dispatchReportDay}
                                                         onChange={(e) => setDispatchReportDay(e.target.value)}
-                                                        className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
                                                     >
                                                         <option value="Monday">Monday</option>
                                                         <option value="Tuesday">Tuesday</option>
@@ -3713,7 +3803,7 @@
                                                     <select
                                                         value={dispatchReportDay}
                                                         onChange={(e) => setDispatchReportDay(e.target.value)}
-                                                        className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
                                                     >
                                                         {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
                                                             <option key={day} value={String(day)}>{day}</option>
@@ -3736,19 +3826,19 @@
                                             value={dispatchDesc}
                                             onChange={(e) => setDispatchDesc(e.target.value)}
                                             placeholder="निर्देश यहाँ दर्ज करें... (e.g. नई पैकेजिंग डिजाइन तैयार करवानी है)"
-                                            className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 hindi-text placeholder:text-slate-400"
+                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 hindi-text placeholder:text-slate-400"
                                         />
                                     </div>
 
                                     {/* Target Date */}
                                     {dispatchType !== 'WSR' && dispatchType !== 'Reports' && (
                                         <div className="flex flex-col gap-1.5">
-                                            <label className="text-xs font-bold text-slate-505 uppercase tracking-wider">Target Completion Date</label>
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Target Completion Date</label>
                                             <input
                                                 type="date"
                                                 value={dispatchTargetDate}
                                                 onChange={(e) => setDispatchTargetDate(e.target.value)}
-                                                className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
                                             />
                                         </div>
                                     )}
