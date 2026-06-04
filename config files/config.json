@@ -1,6 +1,6 @@
 {
   "clientId": "680867814154-rji8esp30qasc5c7nuhh0rkq6nd6d484.apps.googleusercontent.com",
-  "mdEmail": "rdb@super91.com",
+  "mdEmail": "manan.mongia@super91.com",
   "mappings": [
     {
     "id": "1",
@@ -54,12 +54,12 @@
     "sheetTabName": "",
     "sops": [
         { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
-        { "name": "SOP - NPH", "id": "1X8W7c-b7QR2VXUxosn65fBaxDuSwK3Q0Fggqlgr5RNQ" }
+        { "name": "SOP - PCIL (NPH)", "id": "1X8W7c-b7QR2VXUxosn65fBaxDuSwK3Q0Fggqlgr5RNQ" }
     ]
   },
   {
     "id": "5",
-    "deptName": "Finance & Accounts",
+    "deptName": "CFO",
     "headName": "Lalit Kumawat",
     "headEmail": "lalit.kumawat@super91.com",
     "spreadsheetId": "1DYjb1_KIfgQuReKdreawSg6OsGLSpFYvcHl8UdOFD-s",
@@ -70,19 +70,21 @@
   },
   {
     "id": "6",
-    "deptName": "Gifting Division",
+    "deptName": "Product Management (Gifting)",
     "headName": "Dileep Yadav",
     "headEmail": "bh.gifting@super91.com",
     "spreadsheetId": "1LzcelGpnauKTox6p8na6pxC8aRxUvzR33DeMg76crRQ",
     "sheetTabName": "",
     "sops": [
         { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
-        { "name": "SOP - Membership Support & Training", "id": "1q6tZjv1O7b_62HCMgrllBwlSAJdJT_PpTxGD8Q6WBcU" }
+        { "name": "SOP - Membership Support & Training", "id": "1q6tZjv1O7b_62HCMgrllBwlSAJdJT_PpTxGD8Q6WBcU" },
+        { "name": "SOP - Dileep Yadav", "id": "1cQQDT6R-aTqitegxga39dy-2NiDaWdgU5tThZRwHE90" },
+        { "name": "SOP - SPL Housekeeping Management", "id": "1j8Z6tkQdgv1XdsOIKAZxdZBt-2oaPeHyMDcBbSaFUhY" }
     ]
   },
   {
     "id": "1779871052271",
-    "deptName": "Professional Director",
+    "deptName": "CTO",
     "headName": "RD Bhatnagar",
     "headEmail": "rdb@super91.com",
     "spreadsheetId": "1NRaZRTyVlWml9ocwlXSot6myOd-kjX478us7zbQTj8U",

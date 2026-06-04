@@ -767,6 +767,8 @@
             const [selectedDirective, setSelectedDirective] = React.useState(null);
             const [editDescription, setEditDescription] = React.useState('');
             const [editReportName, setEditReportName] = React.useState('');
+            const [editReportTimeline, setEditReportTimeline] = React.useState('Weekly');
+            const [editReportDay, setEditReportDay] = React.useState('Monday');
             const [editDate, setEditDate] = React.useState('');
             const [editStatus, setEditStatus] = React.useState('');
             const [editRemark, setEditRemark] = React.useState('');
@@ -1762,7 +1764,7 @@
                     let parsedCompletion = completionDateIdx !== -1 && row[completionDateIdx] ? parseExcelDate(row[completionDateIdx]) : '';
 
                     // Dynamic status reset for repeating WSR and Reports directives
-                    if (parsedRepetition && (parsedType === 'WSR' || parsedType === 'Reports')) {
+                    if (parsedRepetition && (parsedType === 'WSR' || parsedType === 'Reports') && parsedRepetition.toLowerCase() !== 'on event') {
                         const currentPeriodCode = getPeriodCode(new Date(), parsedType, parsedRepetition);
                         if (parsedCompletion) {
                             const completionDateObj = parseDateString(parsedCompletion);
@@ -1934,7 +1936,7 @@
                 if (dispatchType === 'WSR') {
                     dispatchRepetitionValue = dispatchWsrDay;
                 } else if (dispatchType === 'Reports') {
-                    dispatchRepetitionValue = `${dispatchReportTimeline} - ${dispatchReportDay}`;
+                    dispatchRepetitionValue = dispatchReportTimeline === 'On Event' ? 'On Event' : `${dispatchReportTimeline} - ${dispatchReportDay}`;
                 }
 
                 let activeTabName;
@@ -2254,6 +2256,27 @@
                 setEditRemark(directive.remark);
                 setEditDelegated(directive.delegatedTo);
                 setEditReportName(directive.reportName || '');
+                
+                // Initialize timeline editing state
+                if (directive.type === 'Reports') {
+                    const rep = directive.repetition || '';
+                    if (rep.toLowerCase() === 'on event') {
+                        setEditReportTimeline('On Event');
+                        setEditReportDay('1');
+                    } else if (rep.includes(' - ')) {
+                        const parts = rep.split(' - ');
+                        const timeline = parts[0].trim();
+                        const day = parts[1].trim();
+                        setEditReportTimeline(timeline);
+                        setEditReportDay(day);
+                    } else {
+                        setEditReportTimeline('Weekly');
+                        setEditReportDay('Monday');
+                    }
+                } else {
+                    setEditReportTimeline('Weekly');
+                    setEditReportDay('Monday');
+                }
                 
                 setEditPriority(directive.priority || 'Normal');
                 
@@ -3286,16 +3309,74 @@
                                     {activeRole?.isMD && (
                                         <>
                                             {editingDirective?.type === 'Reports' && (
-                                                <div className="flex flex-col gap-1.5">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Report Name</label>
-                                                    <input
-                                                        type="text"
-                                                        value={editReportName}
-                                                        onChange={(e) => setEditReportName(e.target.value)}
-                                                        placeholder="Enter report name..."
-                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-semibold"
-                                                    />
-                                                </div>
+                                                <>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Report Name</label>
+                                                        <input
+                                                            type="text"
+                                                            value={editReportName}
+                                                            onChange={(e) => setEditReportName(e.target.value)}
+                                                            placeholder="Enter report name..."
+                                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-semibold"
+                                                        />
+                                                    </div>
+                                                    <div className={`grid ${editReportTimeline === 'On Event' ? 'grid-cols-1' : 'grid-cols-2'} gap-4 mt-1`}>
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Report Timeline</label>
+                                                            <select
+                                                                value={editReportTimeline}
+                                                                onChange={(e) => {
+                                                                    const timeline = e.target.value;
+                                                                    setEditReportTimeline(timeline);
+                                                                    if (timeline === 'Weekly') {
+                                                                        setEditReportDay('Monday');
+                                                                    } else {
+                                                                        setEditReportDay('1');
+                                                                    }
+                                                                }}
+                                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-semibold"
+                                                            >
+                                                                <option value="Weekly">Weekly</option>
+                                                                <option value="Monthly">Monthly</option>
+                                                                <option value="Quarterly">Quarterly</option>
+                                                                <option value="On Event">On Event</option>
+                                                            </select>
+                                                        </div>
+
+                                                        {editReportTimeline !== 'On Event' && (
+                                                            <div className="flex flex-col gap-1.5">
+                                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                                                    {editReportTimeline === 'Weekly' ? 'Submission Day' : 'Day of Month'}
+                                                                </label>
+                                                                {editReportTimeline === 'Weekly' ? (
+                                                                    <select
+                                                                        value={editReportDay}
+                                                                        onChange={(e) => setEditReportDay(e.target.value)}
+                                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-semibold"
+                                                                    >
+                                                                        <option value="Monday">Monday</option>
+                                                                        <option value="Tuesday">Tuesday</option>
+                                                                        <option value="Wednesday">Wednesday</option>
+                                                                        <option value="Thursday">Thursday</option>
+                                                                        <option value="Friday">Friday</option>
+                                                                        <option value="Saturday">Saturday</option>
+                                                                        <option value="Sunday">Sunday</option>
+                                                                    </select>
+                                                                ) : (
+                                                                    <select
+                                                                        value={editReportDay}
+                                                                        onChange={(e) => setEditReportDay(e.target.value)}
+                                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-semibold"
+                                                                    >
+                                                                        {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
+                                                                            <option key={day} value={String(day)}>{day}</option>
+                                                                        ))}
+                                                                    </select>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </>
                                             )}
                                             <div className="flex flex-col gap-1.5">
                                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Directive Description</label>
@@ -3411,11 +3492,14 @@
                                                 targetDate: editTargetDate,
                                                 description: editDescription,
                                                 date: editDate,
-                                                reportName: editReportName
+                                                reportName: editReportName,
+                                                ...(editingDirective?.type === 'Reports' ? {
+                                                    repetition: editReportTimeline === 'On Event' ? 'On Event' : `${editReportTimeline} - ${editReportDay}`
+                                                } : {})
                                             } : {})
                                         })}
                                         disabled={editLoading}
-                                        className="w-1/2 py-3 bg-teal-555 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-teal-500/10 flex items-center justify-center gap-2 cursor-pointer text-sm"
+                                        className="w-1/2 py-3 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-teal-500/10 flex items-center justify-center gap-2 cursor-pointer text-sm"
                                     >
                                         {editLoading ? (
                                             <span className="h-4 w-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
@@ -3759,7 +3843,7 @@
 
                                     {/* Conditional Reports scheduling input */}
                                     {dispatchType === 'Reports' && (
-                                        <div className="grid grid-cols-2 gap-4 mt-2">
+                                        <div className={`grid ${dispatchReportTimeline === 'On Event' ? 'grid-cols-1' : 'grid-cols-2'} gap-4 mt-2`}>
                                             <div className="flex flex-col gap-1.5">
                                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Report Timeline</label>
                                                 <select
@@ -3778,39 +3862,42 @@
                                                     <option value="Weekly">Weekly</option>
                                                     <option value="Monthly">Monthly</option>
                                                     <option value="Quarterly">Quarterly</option>
+                                                    <option value="On Event">On Event</option>
                                                 </select>
                                             </div>
 
-                                            <div className="flex flex-col gap-1.5">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                                    {dispatchReportTimeline === 'Weekly' ? 'Submission Day' : 'Day of Month'}
-                                                </label>
-                                                {dispatchReportTimeline === 'Weekly' ? (
-                                                    <select
-                                                        value={dispatchReportDay}
-                                                        onChange={(e) => setDispatchReportDay(e.target.value)}
-                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
-                                                    >
-                                                        <option value="Monday">Monday</option>
-                                                        <option value="Tuesday">Tuesday</option>
-                                                        <option value="Wednesday">Wednesday</option>
-                                                        <option value="Thursday">Thursday</option>
-                                                        <option value="Friday">Friday</option>
-                                                        <option value="Saturday">Saturday</option>
-                                                        <option value="Sunday">Sunday</option>
-                                                    </select>
-                                                ) : (
-                                                    <select
-                                                        value={dispatchReportDay}
-                                                        onChange={(e) => setDispatchReportDay(e.target.value)}
-                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
-                                                    >
-                                                        {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
-                                                            <option key={day} value={String(day)}>{day}</option>
-                                                        ))}
-                                                    </select>
-                                                )}
-                                            </div>
+                                            {dispatchReportTimeline !== 'On Event' && (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                                        {dispatchReportTimeline === 'Weekly' ? 'Submission Day' : 'Day of Month'}
+                                                    </label>
+                                                    {dispatchReportTimeline === 'Weekly' ? (
+                                                        <select
+                                                            value={dispatchReportDay}
+                                                            onChange={(e) => setDispatchReportDay(e.target.value)}
+                                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                                        >
+                                                            <option value="Monday">Monday</option>
+                                                            <option value="Tuesday">Tuesday</option>
+                                                            <option value="Wednesday">Wednesday</option>
+                                                            <option value="Thursday">Thursday</option>
+                                                            <option value="Friday">Friday</option>
+                                                            <option value="Saturday">Saturday</option>
+                                                            <option value="Sunday">Sunday</option>
+                                                        </select>
+                                                    ) : (
+                                                        <select
+                                                            value={dispatchReportDay}
+                                                            onChange={(e) => setDispatchReportDay(e.target.value)}
+                                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                                        >
+                                                            {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
+                                                                <option key={day} value={String(day)}>{day}</option>
+                                                            ))}
+                                                        </select>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
