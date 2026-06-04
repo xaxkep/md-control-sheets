@@ -3288,15 +3288,17 @@
                                                     <option value="Very Urgent">Very Urgent</option>
                                                 </select>
                                             </div>
-                                            <div className="flex flex-col gap-1.5">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Target Date</label>
-                                                <input
-                                                    type="date"
-                                                    value={editTargetDate}
-                                                    onChange={(e) => setEditTargetDate(e.target.value)}
-                                                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                                                />
-                                            </div>
+                                            {editingDirective?.type !== 'WSR' && editingDirective?.type !== 'Reports' && (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Target Date</label>
+                                                    <input
+                                                        type="date"
+                                                        value={editTargetDate}
+                                                        onChange={(e) => setEditTargetDate(e.target.value)}
+                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                    />
+                                                </div>
+                                            )}
                                         </>
                                     )}
 
@@ -3739,15 +3741,17 @@
                                     </div>
 
                                     {/* Target Date */}
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-slate-505 uppercase tracking-wider">Target Completion Date</label>
-                                        <input
-                                            type="date"
-                                            value={dispatchTargetDate}
-                                            onChange={(e) => setDispatchTargetDate(e.target.value)}
-                                            className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                                        />
-                                    </div>
+                                    {dispatchType !== 'WSR' && dispatchType !== 'Reports' && (
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-xs font-bold text-slate-505 uppercase tracking-wider">Target Completion Date</label>
+                                            <input
+                                                type="date"
+                                                value={dispatchTargetDate}
+                                                onChange={(e) => setDispatchTargetDate(e.target.value)}
+                                                className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                            />
+                                        </div>
+                                    )}
 
                                     <div className="flex items-center gap-3 mt-2">
                                         <button
