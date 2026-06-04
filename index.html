@@ -546,16 +546,25 @@
                 }
             }
 
-            // Make sure core fields are set at their indices if originalValues didn't have them
-            if (indices.dateIdx !== -1 && !updatedRowValues[indices.dateIdx]) {
+            // Update date if changed
+            if (indices.dateIdx !== -1 && updatedFields.hasOwnProperty('date')) {
+                const dateVal = updatedFields.date ? formatDateString(parseInputDate(updatedFields.date)) : '';
+                updatedRowValues[indices.dateIdx] = dateVal || '';
+            } else if (indices.dateIdx !== -1 && !updatedRowValues[indices.dateIdx]) {
                 updatedRowValues[indices.dateIdx] = directive.date || '';
             }
+
             if (indices.typeIdx !== -1 && !updatedRowValues[indices.typeIdx]) {
                 updatedRowValues[indices.typeIdx] = directive.type || '';
             }
-            if (indices.descIdx !== -1 && !updatedRowValues[indices.descIdx]) {
+
+            // Update description if changed
+            if (indices.descIdx !== -1 && updatedFields.hasOwnProperty('description')) {
+                updatedRowValues[indices.descIdx] = updatedFields.description || '';
+            } else if (indices.descIdx !== -1 && !updatedRowValues[indices.descIdx]) {
                 updatedRowValues[indices.descIdx] = directive.description || '';
             }
+
             if (indices.repetitionIdx !== -1 && !updatedRowValues[indices.repetitionIdx]) {
                 updatedRowValues[indices.repetitionIdx] = directive.repetition || '';
             }
@@ -692,6 +701,8 @@
             // Row editing state (DH or MD edit)
             const [editingDirective, setEditingDirective] = React.useState(null);
             const [selectedDirective, setSelectedDirective] = React.useState(null);
+            const [editDescription, setEditDescription] = React.useState('');
+            const [editDate, setEditDate] = React.useState('');
             const [editStatus, setEditStatus] = React.useState('');
             const [editRemark, setEditRemark] = React.useState('');
             const [editDelegated, setEditDelegated] = React.useState('');
@@ -1908,11 +1919,13 @@
             // Trigger edit dialog
             const openEditModal = (directive) => {
                 setEditingDirective(directive);
+                setEditDescription(directive.description || '');
                 setEditStatus(directive.status);
                 setEditRemark(directive.remark);
                 setEditDelegated(directive.delegatedTo);
                 
                 setEditPriority(directive.priority || 'Normal');
+                
                 let targetDateHtml = '';
                 if (directive.targetDate) {
                     const parsed = parseDateString(directive.targetDate);
@@ -1924,6 +1937,18 @@
                     }
                 }
                 setEditTargetDate(targetDateHtml);
+
+                let dateHtml = '';
+                if (directive.date) {
+                    const parsed = parseDateString(directive.date);
+                    if (parsed && !isNaN(parsed.getTime()) && parsed.getTime() > 0) {
+                        const year = parsed.getFullYear();
+                        const month = String(parsed.getMonth() + 1).padStart(2, '0');
+                        const day = String(parsed.getDate()).padStart(2, '0');
+                        dateHtml = `${year}-${month}-${day}`;
+                    }
+                }
+                setEditDate(dateHtml);
             };
 
             // Filtering calculations (base filters excluding metrics tab)
@@ -2888,24 +2913,53 @@
                                     </p>
                                 </div>
 
-                                {/* Directive read-only details */}
-                                <div className="bg-slate-50 border border-slate-150 rounded-2xl p-3 md:p-4 flex flex-col gap-2.5 md:gap-3 text-[11px] md:text-xs max-h-[25vh] overflow-y-auto">
-                                    <div className="text-slate-800 font-semibold leading-relaxed hindi-text whitespace-pre-wrap">
-                                        {editingDirective.description}
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3 border-t border-slate-200/80 pt-2.5">
-                                        <div>
-                                            <span className="text-slate-450 font-bold uppercase tracking-wider text-[9px] md:text-[10px]">Date Issued</span>
-                                            <span className="text-slate-700 font-bold block mt-0.5 font-mono">{editingDirective.date}</span>
+                                {/* Directive details (read-only for DH coordinators, editable for MD) */}
+                                {!activeRole?.isMD && (
+                                    <div className="bg-slate-50 border border-slate-150 rounded-2xl p-3 md:p-4 flex flex-col gap-2.5 md:gap-3 text-[11px] md:text-xs max-h-[25vh] overflow-y-auto">
+                                        <div className="text-slate-800 font-semibold leading-relaxed hindi-text whitespace-pre-wrap">
+                                            {editingDirective.description}
                                         </div>
-                                        <div>
-                                            <span className="text-slate-450 font-bold uppercase tracking-wider text-[9px] md:text-[10px]">Target Date</span>
-                                            <span className="text-slate-700 font-bold block mt-0.5 font-mono">{editingDirective.targetDate || '-'}</span>
+                                        <div className="grid grid-cols-2 gap-3 border-t border-slate-200/80 pt-2.5">
+                                            <div>
+                                                <span className="text-slate-450 font-bold uppercase tracking-wider text-[9px] md:text-[10px]">Date Issued</span>
+                                                <span className="text-slate-700 font-bold block mt-0.5 font-mono">{editingDirective.date}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-450 font-bold uppercase tracking-wider text-[9px] md:text-[10px]">Target Date</span>
+                                                <span className="text-slate-700 font-bold block mt-0.5 font-mono">{editingDirective.targetDate || '-'}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                )}
 
                                 <div className="flex flex-col gap-3.5 md:gap-4 overflow-y-auto max-h-[45vh] pr-1">
+                                    {/* Edit Description (MD only) */}
+                                    {activeRole?.isMD && (
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Directive Description</label>
+                                            <textarea
+                                                rows={4}
+                                                value={editDescription}
+                                                onChange={(e) => setEditDescription(e.target.value)}
+                                                placeholder="Enter directive description..."
+                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 hindi-text font-semibold"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Edit Date Issued (MD only) */}
+                                    {activeRole?.isMD && (
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Date Issued</label>
+                                            <input
+                                                type="date"
+                                                value={editDate}
+                                                onChange={(e) => setEditDate(e.target.value)}
+                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-semibold"
+                                            />
+                                        </div>
+                                    )}
+
                                     {/* Edit Status */}
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</label>
@@ -2952,7 +3006,7 @@
 
                                     {/* Delegated To */}
                                     <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-slate-505 uppercase tracking-wider">Delegated To (Assignee)</label>
+                                        <label className="text-xs font-bold text-slate-550 uppercase tracking-wider">Delegated To (Assignee)</label>
                                         <input
                                             type="text"
                                             value={editDelegated}
@@ -2964,7 +3018,7 @@
 
                                     {/* Action Logs / Remarks */}
                                     <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-slate-505 uppercase tracking-wider">Remarks / Action Log</label>
+                                        <label className="text-xs font-bold text-slate-550 uppercase tracking-wider">Remarks / Action Log</label>
                                         <textarea
                                             rows={3}
                                             value={editRemark}
@@ -2987,7 +3041,12 @@
                                             status: editStatus,
                                             remark: editRemark,
                                             delegatedTo: editDelegated,
-                                            ...(activeRole?.isMD ? { priority: editPriority, targetDate: editTargetDate } : {})
+                                            ...(activeRole?.isMD ? { 
+                                                priority: editPriority, 
+                                                targetDate: editTargetDate,
+                                                description: editDescription,
+                                                date: editDate
+                                            } : {})
                                         })}
                                         disabled={editLoading}
                                         className="w-1/2 py-3 bg-teal-555 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-teal-500/10 flex items-center justify-center gap-2 cursor-pointer text-sm"
