@@ -1257,12 +1257,78 @@
 
             const checkAndSendBackgroundReminders = React.useCallback(async (allDirectives) => {
                 if (!allDirectives || allDirectives.length === 0) return;
-                
-                for (const d of allDirectives) {
-                    if (d.type !== 'WSR' && d.type !== 'Reports') continue;
+
+                const today = new Date();
+
+                // Helper to update regular directive remark
+                const updateDirectiveRemarkLocallyAndOnSheet = async (d, updatedRemark, notificationTag) => {
+                    const excelRowNumber = d.excelRowNumber;
+                    const updatedRowValues = assembleUpdatedRow(d, { remark: updatedRemark });
+                    if (isSandbox) {
+                        const sheetId = d.spreadsheetId;
+                        setMockDb(prev => {
+                            const sheetRows = [...(prev[sheetId] || [])];
+                            sheetRows[excelRowNumber - 1] = updatedRowValues;
+                            return { ...prev, [sheetId]: sheetRows };
+                        });
+                        d.remark = updatedRemark;
+                    } else {
+                        const activeTabName = d.sheetTabName || 'Master Data';
+                        const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
+                        const response = await fetch(
+                            `https://sheets.googleapis.com/v4/spreadsheets/${d.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A${excelRowNumber}?valueInputOption=USER_ENTERED`,
+                            {
+                                method: 'PUT',
+                                headers: {
+                                    'Authorization': `Bearer ${auth.accessToken}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ values: [updatedRowValues] })
+                            }
+                        );
+                        if (response.ok) {
+                            d.remark = updatedRemark;
+                        }
+                    }
+                };
+
+                // Helper to update WSR directive status with notification tag
+                const updateDirectiveWsrStatusWithTag = async (d, updatedStatusVal, notificationTag) => {
+                    const excelRowNumber = d.excelRowNumber;
+                    const updatedRowValues = assembleUpdatedRow(d, { status: updatedStatusVal });
+                    if (isSandbox) {
+                        const sheetId = `${d.spreadsheetId}_WSR`;
+                        setMockDb(prev => {
+                            const sheetRows = [...(prev[sheetId] || [])];
+                            sheetRows[excelRowNumber - 1] = updatedRowValues;
+                            return { ...prev, [sheetId]: sheetRows };
+                        });
+                        d.remark = notificationTag;
+                    } else {
+                        const activeTabName = 'WSR';
+                        const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
+                        const response = await fetch(
+                            `https://sheets.googleapis.com/v4/spreadsheets/${d.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A${excelRowNumber}?valueInputOption=USER_ENTERED`,
+                            {
+                                method: 'PUT',
+                                headers: {
+                                    'Authorization': `Bearer ${auth.accessToken}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ values: [updatedRowValues] })
+                            }
+                        );
+                        if (response.ok) {
+                            d.remark = notificationTag;
+                        }
+                    }
+                };
+
+                // 1. Process Reports directives (one-by-one as before)
+                const reportDirectives = allDirectives.filter(d => d.type === 'Reports');
+                for (const d of reportDirectives) {
                     if (!isDueToday(d.type, d.repetition)) continue;
-                    
-                    const periodCode = getPeriodCode(new Date(), d.type, d.repetition);
+                    const periodCode = getPeriodCode(today, d.type, d.repetition);
                     if (!periodCode) continue;
 
                     const uniqueKey = `${d.spreadsheetId}_${d.sheetTabName}_${d.excelRowNumber}_${periodCode}`;
@@ -1274,19 +1340,17 @@
                         continue;
                     }
 
-                    // To prevent concurrent triggers, mark as notified immediately
                     notifiedThisSession.current.add(uniqueKey);
 
-                    // Send email notification
                     try {
                         const subject = `[MD Command Center Reminder] Repeating directive due - ${d.deptName}`;
-                        const scheduleLabel = d.type === 'WSR' ? `WSR Weekly Affirmation (${d.repetition})` : `Report Timeline (${d.repetition})`;
+                        const scheduleLabel = `Report Timeline (${d.repetition})`;
                         const bodyText = [
                             `Dear ${d.headName},`,
                             ``,
-                            `This is an automated reminder for a scheduled repeating directive due today:`,
+                            `This is an automated reminder for a scheduled repeating report due today:`,
                             ``,
-                            `--- Directive Details ---`,
+                            `--- Report Details ---`,
                             `Type: ${d.type}`,
                             `Schedule: ${scheduleLabel}`,
                             `Description: ${d.description}`,
@@ -1300,58 +1364,91 @@
                             `PCIL Group`
                         ].join('\n');
 
-                        // Send email
                         await sendEmailViaGmail(d.headEmail, subject, bodyText);
 
-                        // Append the notification tag to the Remark field of the sheet
                         const updatedRemark = d.remark ? `${d.remark} ${notificationTag}` : notificationTag;
-                        
-                        // We assemble the full updated row dynamically
-                        const updatedRowValues = assembleUpdatedRow(d, { remark: updatedRemark });
-                        
-                        if (isSandbox) {
-                            const sheetId = d.spreadsheetId;
-                            const excelRowNumber = d.excelRowNumber;
-                            setMockDb(prev => {
-                                const sheetRows = [...(prev[sheetId] || [])];
-                                sheetRows[excelRowNumber - 1] = updatedRowValues;
-                                return {
-                                    ...prev,
-                                    [sheetId]: sheetRows
-                                };
-                            });
-                            // Update the remark on the directive object locally so UI doesn't need reload
-                            d.remark = updatedRemark;
-                            console.log(`[Sandbox] Updated Row ${excelRowNumber} remark with notification tag ${notificationTag}`);
-                        } else {
-                            const activeTabName = d.sheetTabName || 'Master Data';
-                            const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
-                            const excelRowNumber = d.excelRowNumber;
-                            const response = await fetch(
-                                `https://sheets.googleapis.com/v4/spreadsheets/${d.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A${excelRowNumber}?valueInputOption=USER_ENTERED`,
-                                {
-                                    method: 'PUT',
-                                    headers: {
-                                        'Authorization': `Bearer ${auth.accessToken}`,
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        values: [updatedRowValues]
-                                    })
-                                }
-                            );
-                            if (response.ok) {
-                                d.remark = updatedRemark;
-                                console.log(`Successfully logged notification metadata ${notificationTag} in row ${excelRowNumber}`);
-                            } else {
-                                console.error(`Failed to update sheet remark for background reminder: status ${response.status}`);
-                            }
-                        }
+                        await updateDirectiveRemarkLocallyAndOnSheet(d, updatedRemark, notificationTag);
                     } catch (err) {
-                        console.error('Error running background reminder checker:', err);
+                        console.error(`Failed to send reminder for report ${d.excelRowNumber}:`, err);
                     }
                 }
-            }, [auth, isSandbox]);
+
+                // 2. Process WSR directives (grouped by headEmail for collective notification)
+                const wsrDirectives = allDirectives.filter(d => d.type === 'WSR');
+                const wsrByGroup = {};
+                
+                for (const d of wsrDirectives) {
+                    if (!isDueToday(d.type, d.repetition)) continue;
+                    const periodCode = getPeriodCode(today, d.type, d.repetition);
+                    if (!periodCode) continue;
+
+                    const uniqueKey = `${d.spreadsheetId}_${d.sheetTabName}_${d.excelRowNumber}_${periodCode}`;
+                    if (notifiedThisSession.current.has(uniqueKey)) continue;
+
+                    const notificationTag = `[Notified: ${periodCode}]`;
+                    if (d.remark && d.remark.includes(notificationTag)) {
+                        notifiedThisSession.current.add(uniqueKey);
+                        continue;
+                    }
+
+                    const email = d.headEmail.toLowerCase();
+                    if (!wsrByGroup[email]) {
+                        wsrByGroup[email] = {
+                            directives: [],
+                            headName: d.headName,
+                            periodCode,
+                            notificationTag
+                        };
+                    }
+                    wsrByGroup[email].directives.push(d);
+                }
+
+                // Send collective WSR emails
+                for (const email of Object.keys(wsrByGroup)) {
+                    const group = wsrByGroup[email];
+                    const pendingWsrs = group.directives;
+                    if (pendingWsrs.length === 0) continue;
+
+                    // Mark as notified in session immediately to prevent double fires
+                    pendingWsrs.forEach(d => {
+                        const uKey = `${d.spreadsheetId}_${d.sheetTabName}_${d.excelRowNumber}_${group.periodCode}`;
+                        notifiedThisSession.current.add(uKey);
+                    });
+
+                    try {
+                        const subject = `[MD Command Center Reminder] WSR Weekly Affirmations Due`;
+                        const wsrListText = pendingWsrs.map((d, index) => `${index + 1}. ${d.description}`).join('\n');
+                        const bodyText = [
+                            `Dear ${group.headName},`,
+                            ``,
+                            `This is an automated collective reminder for your weekly WSR affirmations due today:`,
+                            ``,
+                            `--- WSR Affirmation List ---`,
+                            wsrListText,
+                            `-----------------------------`,
+                            ``,
+                            `Please log in to the MD Command Center to complete these weekly affirmations for the period ${group.periodCode}.`,
+                            ``,
+                            `Regards,`,
+                            `MD Office`,
+                            `PCIL Group`
+                        ].join('\n');
+
+                        // Send single email
+                        await sendEmailViaGmail(email, subject, bodyText);
+                        console.log(`Sent collective WSR email to ${email} for ${pendingWsrs.length} WSRs`);
+
+                        // Update each directive status on Google Sheets
+                        for (const d of pendingWsrs) {
+                            const cleanStatus = d.status || 'Pending';
+                            const updatedStatusVal = `${cleanStatus} ${group.notificationTag}`;
+                            await updateDirectiveWsrStatusWithTag(d, updatedStatusVal, group.notificationTag);
+                        }
+                    } catch (err) {
+                        console.error(`Failed to send collective WSR reminder for ${email}:`, err);
+                    }
+                }
+            }, [auth, isSandbox, mockDb, setMockDb]);
 
             // Fetch Sheets data
             const loadSpreadsheetData = React.useCallback(async () => {
@@ -1714,6 +1811,14 @@
                     
                     let parsedStatus = String(rawStatus).trim();
                     let parsedCompletionDate = '';
+                    let parsedRemark = '';
+                    
+                    // Extract notification tag first to prevent clashing with status matching
+                    const notifiedMatch = parsedStatus.match(/\[Notified: (.*?)\]/);
+                    if (notifiedMatch) {
+                        parsedRemark = notifiedMatch[0]; // e.g. "[Notified: 2026-W23]"
+                        parsedStatus = parsedStatus.replace(/\[Notified: (.*?)\]/, '').trim();
+                    }
                     
                     if (parsedStatus.startsWith('Completed')) {
                         const match = parsedStatus.match(/Completed \((.*?)\)/);
@@ -1758,7 +1863,7 @@
                         targetDate: '',
                         verification: parsedStatus === 'Completed' || parsedStatus === 'Checked & Confirmed' ? 'Done' : 'Pending',
                         status: parsedStatus || 'Pending',
-                        remark: '',
+                        remark: parsedRemark,
                         delegatedTo: '',
                         completionDate: parsedCompletionDate,
                         repetition: parsedRepetition,
