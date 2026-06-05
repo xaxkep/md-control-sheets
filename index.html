@@ -811,6 +811,7 @@
             const [editReportDay, setEditReportDay] = React.useState('Monday');
             const [editDate, setEditDate] = React.useState('');
             const [editStatus, setEditStatus] = React.useState('');
+            const [editVerification, setEditVerification] = React.useState('Pending');
             const [editRemark, setEditRemark] = React.useState('');
             const [editDelegated, setEditDelegated] = React.useState('');
             const [editPriority, setEditPriority] = React.useState('Normal');
@@ -2213,14 +2214,19 @@
                 }
             };
 
-            // Shortcut MD Actions: Verify and Reset
+            // Shortcut MD Actions: Verify, Rework Required, and Reset
             const handleQuickAudit = async (directive, auditAction) => {
                 let updatedFields = {};
                 if (auditAction === 'verify') {
                     updatedFields = {
-                        verification: 'Done',
+                        verification: 'Verified',
                         status: 'Checked & Confirmed',
                         completionDate: directive.completionDate || formatDateTimeString(new Date())
+                    };
+                } else if (auditAction === 'rework') {
+                    updatedFields = {
+                        verification: 'Rework Required',
+                        status: 'In Progress'
                     };
                 } else if (auditAction === 'reset') {
                     updatedFields = {
@@ -2250,7 +2256,7 @@
                     }));
 
                     setEditingDirective(null);
-                    showNotification(`Directive audited: ${auditAction === 'verify' ? 'Verified' : 'Reset'} (Sandbox)`, 'success');
+                    showNotification(`Directive audited: ${auditAction === 'verify' ? 'Verified' : auditAction === 'rework' ? 'Rework Required' : 'Reset'} (Sandbox)`, 'success');
                     setTimeout(loadSpreadsheetData, 100);
                     return;
                 }
@@ -2287,7 +2293,7 @@
                         throw new Error(`Failed to audit row (Error ${response.status}): ${errMsg}`);
                     }
 
-                    showNotification(`Directive audited: ${auditAction === 'verify' ? 'Verified' : 'Reset'}`);
+                    showNotification(`Directive audited: ${auditAction === 'verify' ? 'Verified' : auditAction === 'rework' ? 'Rework Required' : 'Reset'}`);
                     loadSpreadsheetData();
                 } catch (err) {
                     showNotification('Audit failed: ' + err.message, 'error');
@@ -2302,6 +2308,9 @@
                 setEditingDirective(directive);
                 setEditDescription(directive.description || '');
                 setEditStatus(directive.status);
+                let verVal = directive.verification || 'Pending';
+                if (verVal === 'Done') verVal = 'Verified';
+                setEditVerification(verVal);
                 setEditRemark(directive.remark);
                 setEditDelegated(directive.delegatedTo);
                 setEditReportName(directive.reportName || '');
@@ -3277,6 +3286,10 @@
                                                                                             <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
                                                                                                 <Icon name="check" className="w-3.5 h-3.5" /> Verified
                                                                                             </span>
+                                                                                        ) : d.verification === 'Rework Required' ? (
+                                                                                            <span className="text-[10px] font-bold text-rose-500 flex items-center gap-0.5" title="Rework Required">
+                                                                                                <Icon name="close" className="w-3.5 h-3.5" strokeWidth={3} /> Rework Req.
+                                                                                            </span>
                                                                                         ) : (
                                                                                             <span className="text-[10px] font-semibold text-amber-500">
                                                                                                 Pending
@@ -3310,17 +3323,25 @@
                                                                                     <>
                                                                                         <button
                                                                                             onClick={(e) => { e.stopPropagation(); handleQuickAudit(d, 'verify'); }}
-                                                                                            disabled={(d.verification === 'Done' || d.verification === 'Verified') && d.status === 'Checked & Confirmed'}
+                                                                                            disabled={d.verification === 'Done' || d.verification === 'Verified'}
                                                                                             title="Verify (Approve)"
                                                                                             className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-250 text-emerald-700 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
                                                                                         >
                                                                                             <Icon name="check" className="w-3.5 h-3.5" />
                                                                                         </button>
                                                                                         <button
+                                                                                            onClick={(e) => { e.stopPropagation(); handleQuickAudit(d, 'rework'); }}
+                                                                                            disabled={d.verification === 'Rework Required'}
+                                                                                            title="Rework Required"
+                                                                                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+                                                                                        >
+                                                                                            <Icon name="close" className="w-3.5 h-3.5" />
+                                                                                        </button>
+                                                                                        <button
                                                                                             onClick={(e) => { e.stopPropagation(); handleQuickAudit(d, 'reset'); }}
-                                                                                            disabled={d.verification === 'Pending' && d.status !== 'Checked & Confirmed'}
-                                                                                            title="Reset (Reject/Audit Fail)"
-                                                                                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-255 text-rose-700 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+                                                                                            disabled={d.verification === 'Pending'}
+                                                                                            title="Reset to Pending"
+                                                                                            className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-150 border border-slate-200 text-slate-500 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
                                                                                         >
                                                                                             <Icon name="undo" className="w-3.5 h-3.5" />
                                                                                         </button>
@@ -3458,6 +3479,10 @@
                                                                                         <span className="text-emerald-600 flex items-center font-extrabold ml-0.5">
                                                                                             <Icon name="check" className="w-2 h-2" /> Verified
                                                                                         </span>
+                                                                                    ) : d.verification === 'Rework Required' ? (
+                                                                                        <span className="text-rose-500 flex items-center font-extrabold ml-0.5">
+                                                                                            <Icon name="close" className="w-2 h-2" /> Rework Req.
+                                                                                        </span>
                                                                                     ) : (
                                                                                         <span className="text-amber-500 font-extrabold ml-0.5">Pending</span>
                                                                                     )}
@@ -3471,17 +3496,24 @@
                                                                             <>
                                                                                 <button
                                                                                     onClick={() => handleQuickAudit(d, 'verify')}
-                                                                                    disabled={(d.verification === 'Done' || d.verification === 'Verified') && d.status === 'Checked & Confirmed'}
+                                                                                    disabled={d.verification === 'Done' || d.verification === 'Verified'}
                                                                                     className="p-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 disabled:opacity-30 cursor-pointer"
                                                                                 >
                                                                                     <Icon name="check" className="w-3 h-3" />
                                                                                 </button>
                                                                                 <button
-                                                                                    onClick={() => handleQuickAudit(d, 'reset')}
-                                                                                    disabled={d.verification === 'Pending' && d.status !== 'Checked & Confirmed'}
+                                                                                    onClick={() => handleQuickAudit(d, 'rework')}
+                                                                                    disabled={d.verification === 'Rework Required'}
                                                                                     className="p-1 rounded-md bg-rose-50 border border-rose-200 text-rose-700 disabled:opacity-30 cursor-pointer"
                                                                                 >
                                                                                     <Icon name="close" className="w-3 h-3" />
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => handleQuickAudit(d, 'reset')}
+                                                                                    disabled={d.verification === 'Pending'}
+                                                                                    className="p-1 rounded-md bg-slate-50 border border-slate-200 text-slate-500 disabled:opacity-30 cursor-pointer"
+                                                                                >
+                                                                                    <Icon name="undo" className="w-3 h-3" />
                                                                                 </button>
                                                                             </>
                                                                         )}
@@ -3683,6 +3715,22 @@
                                         </div>
                                     )}
 
+                                    {/* Edit Verification (MD only) */}
+                                    {activeRole?.isMD && editingDirective?.type !== 'WSR' && (
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Verification (Audit)</label>
+                                            <select
+                                                value={editVerification}
+                                                onChange={(e) => setEditVerification(e.target.value)}
+                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-semibold"
+                                            >
+                                                <option value="Pending">Pending</option>
+                                                <option value="Verified">Verified</option>
+                                                <option value="Rework Required">Rework Required</option>
+                                            </select>
+                                        </div>
+                                    )}
+
                                     {/* Edit Priority & Target Date (MD only) */}
                                     {activeRole?.isMD && (
                                         <>
@@ -3757,6 +3805,7 @@
                                                 description: editDescription,
                                                 date: editDate,
                                                 reportName: editReportName,
+                                                verification: editVerification,
                                                 ...(editingDirective?.type === 'Reports' ? {
                                                     repetition: editReportTimeline === 'On Event' ? 'On Event' : `${editReportTimeline} - ${editReportDay}`
                                                 } : {})
@@ -3903,9 +3952,9 @@
                                         <div className="flex justify-between border-b border-slate-100 pb-2.5 items-center">
                                             <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Audit status</span>
                                             <span className={`text-[10px] px-2.5 py-0.5 rounded font-bold ${
-                                                (selectedDirective.verification === 'Done' || selectedDirective.verification === 'Verified') ? 'bg-emerald-100 text-emerald-700 border border-emerald-250' : 'bg-amber-100 text-amber-700 border border-amber-250'
+                                                (selectedDirective.verification === 'Done' || selectedDirective.verification === 'Verified') ? 'bg-emerald-100 text-emerald-700 border border-emerald-250' : selectedDirective.verification === 'Rework Required' ? 'bg-rose-100 text-rose-700 border border-rose-250' : 'bg-amber-100 text-amber-700 border border-amber-250'
                                             }`}>
-                                                {(selectedDirective.verification === 'Done' || selectedDirective.verification === 'Verified') ? 'Done (Verified)' : 'Pending'}
+                                                {(selectedDirective.verification === 'Done' || selectedDirective.verification === 'Verified') ? 'Done (Verified)' : selectedDirective.verification === 'Rework Required' ? 'Rework Required' : 'Pending'}
                                             </span>
                                         </div>
                                     )}
