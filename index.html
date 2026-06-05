@@ -2581,11 +2581,11 @@
                     // Secondary sort by type (WSR vs others)
                     if (a.type === 'WSR' && b.type !== 'WSR') return 1;
                     if (a.type !== 'WSR' && b.type === 'WSR') return -1;
-                    // Preserve spreadsheet relative order (top to bottom)
+                    // Preserve spreadsheet relative order in reverse (latest row first)
                     if (a.spreadsheetId !== b.spreadsheetId) {
-                        return a.spreadsheetId.localeCompare(b.spreadsheetId);
+                        return b.spreadsheetId.localeCompare(a.spreadsheetId);
                     }
-                    return a.excelRowNumber - b.excelRowNumber;
+                    return b.excelRowNumber - a.excelRowNumber;
                 });
             }, [baseFilteredDirectives, activeMetricTab]);
 
