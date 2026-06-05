@@ -3174,9 +3174,11 @@
                                                                             <span className={`text-[10px] px-2 py-0.5 rounded border ${typeColors[d.type] || 'bg-slate-100'} font-bold w-fit`}>
                                                                                 {d.type}
                                                                             </span>
-                                                                            <span className={`text-[10px] px-2 py-0.5 rounded border ${priorityColors[d.priority] || 'bg-slate-100'} font-bold w-fit`}>
-                                                                                {d.priority}
-                                                                            </span>
+                                                                            {d.type !== 'WSR' && (
+                                                                                <span className={`text-[10px] px-2 py-0.5 rounded border ${priorityColors[d.priority] || 'bg-slate-100'} font-bold w-fit`}>
+                                                                                    {d.priority}
+                                                                                </span>
+                                                                            )}
                                                                             {d.repetition && (
                                                                                 <span className="text-[10px] px-2 py-0.5 rounded border bg-slate-50 border-slate-200 text-slate-500 font-semibold w-fit" title="Repetition Schedule">
                                                                                     🔄 {d.repetition}
@@ -3355,9 +3357,11 @@
                                                                         <span className={`text-[8px] px-1.5 py-0.5 rounded font-extrabold border ${typeColors[d.type] || 'bg-slate-100'}`}>
                                                                             {d.type}
                                                                         </span>
-                                                                        <span className={`text-[8px] px-1.5 py-0.5 rounded font-extrabold border ${priorityColors[d.priority] || 'bg-slate-100'}`}>
-                                                                            {d.priority}
-                                                                        </span>
+                                                                        {d.type !== 'WSR' && (
+                                                                            <span className={`text-[8px] px-1.5 py-0.5 rounded font-extrabold border ${priorityColors[d.priority] || 'bg-slate-100'}`}>
+                                                                                {d.priority}
+                                                                            </span>
+                                                                        )}
                                                                         {d.repetition && (
                                                                             <span className="text-[8px] px-1.5 py-0.5 rounded font-extrabold border bg-slate-50 border-slate-200 text-slate-500">
                                                                                 🔄 {d.repetition}
