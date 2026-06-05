@@ -439,6 +439,9 @@
                 const num = Number(val);
                 // Excel 1900 leap year bug handler
                 const date = new Date(Math.round((num - (num > 60 ? 25569 : 25568)) * 86400 * 1000));
+                if (num % 1 !== 0) {
+                    return formatDateTimeString(date);
+                }
                 return formatDateString(date);
             }
             return String(val);
@@ -471,7 +474,16 @@
                 const monthIndex = months.findIndex(m => m.toLowerCase() === monthStr.toLowerCase());
                 if (monthIndex !== -1 && !isNaN(day) && !isNaN(year)) {
                     const fullYear = year < 100 ? 2000 + year : year;
-                    return new Date(fullYear, monthIndex, day);
+                    let hours = 0;
+                    let minutes = 0;
+                    if (parts.length >= 4) {
+                        const timeParts = parts[3].split(':');
+                        if (timeParts.length >= 2) {
+                            hours = parseInt(timeParts[0], 10) || 0;
+                            minutes = parseInt(timeParts[1], 10) || 0;
+                        }
+                    }
+                    return new Date(fullYear, monthIndex, day, hours, minutes);
                 }
             }
             const parsed = Date.parse(dateStr);
@@ -597,7 +609,31 @@
 
             // Update date if changed
             if (indices.dateIdx !== -1 && updatedFields.hasOwnProperty('date')) {
-                const dateVal = updatedFields.date ? formatDateString(parseInputDate(updatedFields.date)) : '';
+                const newDateObj = parseInputDate(updatedFields.date);
+                const oldDateObj = parseDateString(directive.date);
+                let dateVal = '';
+                if (newDateObj) {
+                    // Check if calendar dates are the same
+                    const isSameDate = oldDateObj && 
+                        newDateObj.getFullYear() === oldDateObj.getFullYear() &&
+                        newDateObj.getMonth() === oldDateObj.getMonth() &&
+                        newDateObj.getDate() === oldDateObj.getDate();
+                    
+                    if (isSameDate) {
+                        // Preserve original date/time value exactly as it was
+                        dateVal = directive.date;
+                    } else {
+                        // If date is different, preserve original time if it exists
+                        const hasTime = directive.date && String(directive.date).trim().split(/[\s\-\/]+/).length >= 4;
+                        if (hasTime) {
+                            newDateObj.setHours(oldDateObj.getHours());
+                            newDateObj.setMinutes(oldDateObj.getMinutes());
+                            dateVal = formatDateTimeString(newDateObj);
+                        } else {
+                            dateVal = formatDateString(newDateObj);
+                        }
+                    }
+                }
                 updatedRowValues[indices.dateIdx] = dateVal || '';
             } else if (indices.dateIdx !== -1 && !updatedRowValues[indices.dateIdx]) {
                 updatedRowValues[indices.dateIdx] = directive.date || '';
@@ -1933,7 +1969,7 @@
                 if (!targetDept) return;
 
                 setDispatchLoading(true);
-                const todayStr = formatDateString(new Date());
+                const todayStr = formatDateTimeString(new Date());
                 const targetDateStr = dispatchTargetDate ? formatDateString(parseInputDate(dispatchTargetDate)) : '';
                 
                 let dispatchRepetitionValue = '';
@@ -2539,7 +2575,17 @@
                 return [...list].sort((a, b) => {
                     const dateA = parseDateString(a.date);
                     const dateB = parseDateString(b.date);
-                    return dateB - dateA; // Descending (latest first)
+                    if (dateB - dateA !== 0) {
+                        return dateB - dateA;
+                    }
+                    // Secondary sort by type (WSR vs others)
+                    if (a.type === 'WSR' && b.type !== 'WSR') return 1;
+                    if (a.type !== 'WSR' && b.type === 'WSR') return -1;
+                    // Preserve spreadsheet relative order (top to bottom)
+                    if (a.spreadsheetId !== b.spreadsheetId) {
+                        return a.spreadsheetId.localeCompare(b.spreadsheetId);
+                    }
+                    return a.excelRowNumber - b.excelRowNumber;
                 });
             }, [baseFilteredDirectives, activeMetricTab]);
 
