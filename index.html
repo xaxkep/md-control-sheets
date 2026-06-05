@@ -2501,14 +2501,15 @@
 
             // Metrics calculation based on the base filtered list
             const metrics = React.useMemo(() => {
+                const nonWsr = baseFilteredDirectives.filter(d => d.type !== 'WSR');
                 // Pending tasks = Pending or Not Seen
-                const pending = baseFilteredDirectives.filter(d => ['Pending', 'Not Seen'].includes(d.status)).length;
+                const pending = nonWsr.filter(d => ['Pending', 'Not Seen'].includes(d.status)).length;
                 // Active status = Not Seen, Pending, In Progress, On Hold
-                const active = baseFilteredDirectives.filter(d => ['Not Seen', 'Pending', 'In Progress', 'On Hold'].includes(d.status)).length;
+                const active = nonWsr.filter(d => ['Not Seen', 'Pending', 'In Progress', 'On Hold'].includes(d.status)).length;
                 // Critical/Urgent status
-                const urgent = baseFilteredDirectives.filter(d => (d.priority === 'Urgent' || d.priority === 'Very Urgent') && d.status !== 'Checked & Confirmed' && d.status !== 'Completed').length;
+                const urgent = nonWsr.filter(d => (d.priority === 'Urgent' || d.priority === 'Very Urgent') && d.status !== 'Checked & Confirmed' && d.status !== 'Completed').length;
                 // Completed Audits (MD verified Done)
-                const verified = baseFilteredDirectives.filter(d => d.verification === 'Done' || d.verification === 'Verified').length;
+                const verified = nonWsr.filter(d => d.verification === 'Done' || d.verification === 'Verified').length;
 
                 return { pending, active, urgent, verified };
             }, [baseFilteredDirectives]);
@@ -2518,13 +2519,13 @@
                 let list = baseFilteredDirectives;
                 if (activeMetricTab === 'Pending') {
                     // Filter by specific status "Pending" or "Not Seen" when Pending Tasks card is active
-                    list = list.filter(d => ['Pending', 'Not Seen'].includes(d.status));
+                    list = list.filter(d => d.type !== 'WSR' && ['Pending', 'Not Seen'].includes(d.status));
                 } else if (activeMetricTab === 'Active') {
-                    list = list.filter(d => ['Not Seen', 'Pending', 'In Progress', 'On Hold'].includes(d.status));
+                    list = list.filter(d => d.type !== 'WSR' && ['Not Seen', 'Pending', 'In Progress', 'On Hold'].includes(d.status));
                 } else if (activeMetricTab === 'Urgent') {
-                    list = list.filter(d => (d.priority === 'Urgent' || d.priority === 'Very Urgent') && d.status !== 'Checked & Confirmed' && d.status !== 'Completed');
+                    list = list.filter(d => d.type !== 'WSR' && (d.priority === 'Urgent' || d.priority === 'Very Urgent') && d.status !== 'Checked & Confirmed' && d.status !== 'Completed');
                 } else if (activeMetricTab === 'Completed') {
-                    list = list.filter(d => d.verification === 'Done' || d.verification === 'Verified');
+                    list = list.filter(d => d.type !== 'WSR' && (d.verification === 'Done' || d.verification === 'Verified'));
                 }
                 return [...list].sort((a, b) => {
                     const dateA = parseDateString(a.date);
@@ -3203,22 +3204,30 @@
 
                                                                         {/* Status & Verification Audit info */}
                                                                         <td className="py-4 px-4 align-top flex flex-col gap-1.5">
-                                                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold w-fit ${statusColors[d.status] || 'bg-slate-100'}`}>
-                                                                                {d.status}
-                                                                            </span>
-                                                                            
-                                                                            <div className="flex items-center gap-1.5">
-                                                                                <span className="text-[10px] font-bold text-slate-400">Audit:</span>
-                                                                                {(d.verification === 'Done' || d.verification === 'Verified') ? (
-                                                                                    <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
-                                                                                        <Icon name="check" className="w-3.5 h-3.5" /> Verified
+                                                                            {d.type === 'WSR' ? (
+                                                                                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold w-fit bg-slate-100 text-slate-500">
+                                                                                    Print & Sign Only
+                                                                                </span>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold w-fit ${statusColors[d.status] || 'bg-slate-100'}`}>
+                                                                                        {d.status}
                                                                                     </span>
-                                                                                ) : (
-                                                                                    <span className="text-[10px] font-semibold text-amber-500">
-                                                                                        Pending
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
+                                                                                    
+                                                                                    <div className="flex items-center gap-1.5">
+                                                                                        <span className="text-[10px] font-bold text-slate-400">Audit:</span>
+                                                                                        {(d.verification === 'Done' || d.verification === 'Verified') ? (
+                                                                                            <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
+                                                                                                <Icon name="check" className="w-3.5 h-3.5" /> Verified
+                                                                                            </span>
+                                                                                        ) : (
+                                                                                            <span className="text-[10px] font-semibold text-amber-500">
+                                                                                                Pending
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </>
+                                                                            )}
                                                                         </td>
 
                                                                         {/* Remark Action logs */}
@@ -3240,7 +3249,7 @@
                                                                         <td className="py-4 px-4 align-top text-right text-xs">
                                                                             <div className="flex items-center justify-end gap-1.5">
                                                                                 {/* MD Quick Audit Actions */}
-                                                                                {activeRole.isMD && (
+                                                                                {activeRole.isMD && d.type !== 'WSR' && (
                                                                                     <>
                                                                                         <button
                                                                                             onClick={(e) => { e.stopPropagation(); handleQuickAudit(d, 'verify'); }}
@@ -3262,13 +3271,15 @@
                                                                                 )}
 
                                                                                 {/* Edit form trigger */}
-                                                                                <button
-                                                                                    onClick={(e) => { e.stopPropagation(); openEditModal(d); }}
-                                                                                    title="Edit Row Details"
-                                                                                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
-                                                                                >
-                                                                                    <Icon name="edit" className="w-3.5 h-3.5" />
-                                                                                </button>
+                                                                                {(activeRole.isMD || d.type !== 'WSR') && (
+                                                                                    <button
+                                                                                        onClick={(e) => { e.stopPropagation(); openEditModal(d); }}
+                                                                                        title="Edit Row Details"
+                                                                                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
+                                                                                    >
+                                                                                        <Icon name="edit" className="w-3.5 h-3.5" />
+                                                                                    </button>
+                                                                                )}
                                                                             </div>
                                                                         </td>
                                                                     </tr>
@@ -3373,23 +3384,31 @@
 
                                                                 <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-0.5 gap-2">
                                                                     <div className="flex items-center gap-1.5">
-                                                                        <span className={`text-[8px] px-2 py-0.5 rounded-full font-bold ${statusColors[d.status] || 'bg-slate-100'}`}>
-                                                                            {d.status}
-                                                                        </span>
-                                                                        <span className="text-[8px] font-bold text-slate-400 flex items-center">
-                                                                            Audit: 
-                                                                            {(d.verification === 'Done' || d.verification === 'Verified') ? (
-                                                                                <span className="text-emerald-600 flex items-center font-extrabold ml-0.5">
-                                                                                    <Icon name="check" className="w-2 h-2" /> Verified
+                                                                        {d.type === 'WSR' ? (
+                                                                            <span className="text-[8px] px-2 py-0.5 rounded-full font-bold bg-slate-100 text-slate-500">
+                                                                                Print & Sign Only
+                                                                            </span>
+                                                                        ) : (
+                                                                            <>
+                                                                                <span className={`text-[8px] px-2 py-0.5 rounded-full font-bold ${statusColors[d.status] || 'bg-slate-100'}`}>
+                                                                                    {d.status}
                                                                                 </span>
-                                                                            ) : (
-                                                                                <span className="text-amber-500 font-extrabold ml-0.5">Pending</span>
-                                                                            )}
-                                                                        </span>
+                                                                                <span className="text-[8px] font-bold text-slate-400 flex items-center">
+                                                                                    Audit: 
+                                                                                    {(d.verification === 'Done' || d.verification === 'Verified') ? (
+                                                                                        <span className="text-emerald-600 flex items-center font-extrabold ml-0.5">
+                                                                                            <Icon name="check" className="w-2 h-2" /> Verified
+                                                                                        </span>
+                                                                                    ) : (
+                                                                                        <span className="text-amber-500 font-extrabold ml-0.5">Pending</span>
+                                                                                    )}
+                                                                                </span>
+                                                                            </>
+                                                                        )}
                                                                     </div>
 
                                                                     <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                                                        {activeRole.isMD && (
+                                                                        {activeRole.isMD && d.type !== 'WSR' && (
                                                                             <>
                                                                                 <button
                                                                                     onClick={() => handleQuickAudit(d, 'verify')}
@@ -3407,12 +3426,14 @@
                                                                                 </button>
                                                                             </>
                                                                         )}
-                                                                        <button
-                                                                            onClick={() => openEditModal(d)}
-                                                                            className="p-1 rounded-md bg-slate-50 border border-slate-200 text-slate-600 cursor-pointer"
-                                                                        >
-                                                                            <Icon name="edit" className="w-3 h-3" />
-                                                                        </button>
+                                                                        {(activeRole.isMD || d.type !== 'WSR') && (
+                                                                            <button
+                                                                                onClick={() => openEditModal(d)}
+                                                                                className="p-1 rounded-md bg-slate-50 border border-slate-200 text-slate-600 cursor-pointer"
+                                                                            >
+                                                                                <Icon name="edit" className="w-3 h-3" />
+                                                                            </button>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -3585,21 +3606,23 @@
                                     )}
 
                                     {/* Edit Status */}
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</label>
-                                        <select
-                                            value={editStatus}
-                                            onChange={(e) => setEditStatus(e.target.value)}
-                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                                        >
-                                            <option value="Pending">Pending</option>
-                                            <option value="Not Seen">Not Seen</option>
-                                            <option value="In Progress">In Progress</option>
-                                            <option value="On Hold">On Hold</option>
-                                            <option value="Completed">Completed</option>
-                                            {activeRole.isMD && <option value="Checked & Confirmed">Checked & Confirmed</option>}
-                                        </select>
-                                    </div>
+                                    {editingDirective?.type !== 'WSR' && (
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</label>
+                                            <select
+                                                value={editStatus}
+                                                onChange={(e) => setEditStatus(e.target.value)}
+                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                            >
+                                                <option value="Pending">Pending</option>
+                                                <option value="Not Seen">Not Seen</option>
+                                                <option value="In Progress">In Progress</option>
+                                                <option value="On Hold">On Hold</option>
+                                                <option value="Completed">Completed</option>
+                                                <option value="Checked & Confirmed">Checked & Confirmed</option>
+                                            </select>
+                                        </div>
+                                    )}
 
                                     {/* Edit Priority & Target Date (MD only) */}
                                     {activeRole?.isMD && (
@@ -3643,16 +3666,18 @@
                                     </div>
 
                                     {/* Action Logs / Remarks */}
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Remarks / Action Log</label>
-                                        <textarea
-                                            rows={3}
-                                            value={editRemark}
-                                            onChange={(e) => setEditRemark(e.target.value)}
-                                            placeholder="Enter progress reports, roadblocks, updates..."
-                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 hindi-text"
-                                        />
-                                    </div>
+                                    {editingDirective?.type !== 'WSR' && (
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Remarks / Action Log</label>
+                                            <textarea
+                                                rows={3}
+                                                value={editRemark}
+                                                onChange={(e) => setEditRemark(e.target.value)}
+                                                placeholder="Enter progress reports, roadblocks, updates..."
+                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 hindi-text"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center gap-3 mt-2">
@@ -3797,30 +3822,34 @@
                                     </div>
 
                                     {/* Status */}
-                                    <div className="flex justify-between border-b border-slate-100 pb-2.5 items-center">
-                                        <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Status</span>
-                                        <span className={`text-[10px] px-2.5 py-0.5 rounded border font-bold ${
-                                            selectedDirective.status === 'Pending' ? 'bg-slate-100 border border-slate-200 text-slate-600' :
-                                            selectedDirective.status === 'Not Seen' ? 'bg-slate-50 border border-slate-150 text-slate-400' :
-                                            selectedDirective.status === 'In Progress' ? 'bg-indigo-50 border border-indigo-150 text-indigo-700' :
-                                            selectedDirective.status === 'On Hold' ? 'bg-amber-50 border border-amber-200 text-amber-700' :
-                                            selectedDirective.status === 'Completed' ? 'bg-emerald-50 border border-emerald-150 text-emerald-700' :
-                                            selectedDirective.status === 'Checked & Confirmed' ? 'bg-emerald-500 border-none text-white' :
-                                            'bg-slate-100'
-                                        }`}>
-                                            {selectedDirective.status}
-                                        </span>
-                                    </div>
+                                    {selectedDirective.type !== 'WSR' && (
+                                        <div className="flex justify-between border-b border-slate-100 pb-2.5 items-center">
+                                            <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Status</span>
+                                            <span className={`text-[10px] px-2.5 py-0.5 rounded border font-bold ${
+                                                selectedDirective.status === 'Pending' ? 'bg-slate-100 border border-slate-200 text-slate-600' :
+                                                selectedDirective.status === 'Not Seen' ? 'bg-slate-50 border border-slate-150 text-slate-400' :
+                                                selectedDirective.status === 'In Progress' ? 'bg-indigo-50 border border-indigo-150 text-indigo-700' :
+                                                selectedDirective.status === 'On Hold' ? 'bg-amber-50 border border-amber-200 text-amber-700' :
+                                                selectedDirective.status === 'Completed' ? 'bg-emerald-50 border border-emerald-150 text-emerald-700' :
+                                                selectedDirective.status === 'Checked & Confirmed' ? 'bg-emerald-500 border-none text-white' :
+                                                'bg-slate-100'
+                                            }`}>
+                                                {selectedDirective.status}
+                                            </span>
+                                        </div>
+                                    )}
 
                                     {/* Audit / Verification */}
-                                    <div className="flex justify-between border-b border-slate-100 pb-2.5 items-center">
-                                        <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Audit status</span>
-                                        <span className={`text-[10px] px-2.5 py-0.5 rounded font-bold ${
-                                            (selectedDirective.verification === 'Done' || selectedDirective.verification === 'Verified') ? 'bg-emerald-100 text-emerald-700 border border-emerald-250' : 'bg-amber-100 text-amber-700 border border-amber-250'
-                                        }`}>
-                                            {(selectedDirective.verification === 'Done' || selectedDirective.verification === 'Verified') ? 'Done (Verified)' : 'Pending'}
-                                        </span>
-                                    </div>
+                                    {selectedDirective.type !== 'WSR' && (
+                                        <div className="flex justify-between border-b border-slate-100 pb-2.5 items-center">
+                                            <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Audit status</span>
+                                            <span className={`text-[10px] px-2.5 py-0.5 rounded font-bold ${
+                                                (selectedDirective.verification === 'Done' || selectedDirective.verification === 'Verified') ? 'bg-emerald-100 text-emerald-700 border border-emerald-250' : 'bg-amber-100 text-amber-700 border border-amber-250'
+                                            }`}>
+                                                {(selectedDirective.verification === 'Done' || selectedDirective.verification === 'Verified') ? 'Done (Verified)' : 'Pending'}
+                                            </span>
+                                        </div>
+                                    )}
 
                                     {/* Worksheet Tab */}
                                     <div className="flex justify-between border-b border-slate-100 pb-2.5">
