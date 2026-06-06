@@ -684,7 +684,8 @@
                 let statusVal = updatedFields.status || '';
                 if (directive.type === 'WSR' || directive.type === 'Reports') {
                     if (statusVal === 'Completed') {
-                        statusVal = `Completed (${formatDateTimeString(new Date())})`;
+                        const datePart = directive.completionDate || formatDateTimeString(new Date());
+                        statusVal = `Completed (${datePart})`;
                     } else if (statusVal === 'Checked & Confirmed') {
                         const datePart = directive.completionDate || formatDateTimeString(new Date());
                         statusVal = `Checked & Confirmed (${datePart})`;
@@ -714,14 +715,22 @@
                     updatedRowValues[indices.completionDateIdx] = updatedFields.completionDate || '';
                 } else if (updatedFields.hasOwnProperty('status') || updatedFields.hasOwnProperty('verification')) {
                     let newCompletionDate = directive.completionDate;
-                    if (updatedFields.status === 'Completed' && directive.status !== 'Completed') {
-                        newCompletionDate = formatDateTimeString(new Date());
-                    } else if (updatedFields.status && updatedFields.status !== 'Completed') {
-                        newCompletionDate = '';
+                    const newStatus = updatedFields.hasOwnProperty('status') ? updatedFields.status : directive.status;
+                    const isCompletedStatus = newStatus === 'Completed' || newStatus === 'Checked & Confirmed';
+
+                    if (updatedFields.hasOwnProperty('status')) {
+                        if (isCompletedStatus) {
+                            const prevStatus = directive.status;
+                            const wasCompleted = prevStatus === 'Completed' || prevStatus === 'Checked & Confirmed';
+                            if (!wasCompleted || !newCompletionDate) {
+                                newCompletionDate = formatDateTimeString(new Date());
+                            }
+                        } else {
+                            newCompletionDate = '';
+                        }
                     }
 
                     const newVerification = updatedFields.hasOwnProperty('verification') ? updatedFields.verification : directive.verification;
-                    const newStatus = updatedFields.hasOwnProperty('status') ? updatedFields.status : directive.status;
                     if (newVerification === 'Done' && newStatus !== 'Checked & Confirmed') {
                         if (!newCompletionDate) {
                             newCompletionDate = formatDateTimeString(new Date());
@@ -1797,12 +1806,41 @@
                     const parsedPriority = priorityIdx !== -1 && row[priorityIdx] ? row[priorityIdx] : 'Normal';
                     const parsedTargetDate = targetDateIdx !== -1 && row[targetDateIdx] ? parseExcelDate(row[targetDateIdx]) : '';
                     const parsedVerification = verificationIdx !== -1 && row[verificationIdx] ? row[verificationIdx] : 'Pending';
-                    const parsedRemark = remarkIdx !== -1 && row[remarkIdx] ? row[remarkIdx] : '';
+                    let parsedRemark = remarkIdx !== -1 && row[remarkIdx] ? String(row[remarkIdx]).trim() : '';
                     const parsedDelegated = delegatedIdx !== -1 && row[delegatedIdx] ? row[delegatedIdx] : '';
                     const parsedRepetition = repetitionIdx !== -1 && row[repetitionIdx] ? String(row[repetitionIdx]).trim() : '';
 
-                    let parsedStatus = statusIdx !== -1 && row[statusIdx] ? row[statusIdx] : 'Pending';
+                    let parsedStatus = statusIdx !== -1 && row[statusIdx] ? String(row[statusIdx]).trim() : 'Pending';
+
+                    // Extract notification tag first to prevent clashing with status matching
+                    const notifiedMatch = parsedStatus.match(/\[Notified: (.*?)\]/);
+                    if (notifiedMatch) {
+                        const tag = notifiedMatch[0];
+                        parsedStatus = parsedStatus.replace(/\[Notified: (.*?)\]/, '').trim();
+                        if (!parsedRemark.includes(tag)) {
+                            parsedRemark = parsedRemark ? `${parsedRemark} ${tag}` : tag;
+                        }
+                    }
+
                     let parsedCompletion = completionDateIdx !== -1 && row[completionDateIdx] ? parseExcelDate(row[completionDateIdx]) : '';
+
+                    if (parsedStatus.startsWith('Completed')) {
+                        const match = parsedStatus.match(/Completed \((.*?)\)/);
+                        if (match) {
+                            if (!parsedCompletion) {
+                                parsedCompletion = match[1];
+                            }
+                        }
+                        parsedStatus = 'Completed';
+                    } else if (parsedStatus.startsWith('Checked & Confirmed')) {
+                        const match = parsedStatus.match(/Checked & Confirmed \((.*?)\)/);
+                        if (match) {
+                            if (!parsedCompletion) {
+                                parsedCompletion = match[1];
+                            }
+                        }
+                        parsedStatus = 'Checked & Confirmed';
+                    }
 
                     // Dynamic status reset for repeating WSR and Reports directives
                     if (parsedRepetition && (parsedType === 'WSR' || parsedType === 'Reports') && parsedRepetition.toLowerCase() !== 'on event') {
@@ -2153,7 +2191,7 @@
 
                     // Notify MD in Sandbox Mode
                     const isUrgent = currentDirective.priority === 'Urgent' || currentDirective.priority === 'Very Urgent';
-                    const isStatusChangedToNotify = (newStatus === 'On Hold' || newStatus === 'Completed') && currentDirective.status !== newStatus;
+                    const isStatusChangedToNotify = (newStatus === 'On Hold' || newStatus === 'Completed' || newStatus === 'Checked & Confirmed') && currentDirective.status !== newStatus;
                     if (isUrgent && isStatusChangedToNotify && !activeRole.isMD) {
                         showNotification(`Notification email simulated to MD sir (${mdEmail})`, 'info');
                     }
@@ -2201,7 +2239,7 @@
 
                     // Notify MD in Production Mode
                     const isUrgent = currentDirective.priority === 'Urgent' || currentDirective.priority === 'Very Urgent';
-                    const isStatusChangedToNotify = (newStatus === 'On Hold' || newStatus === 'Completed') && currentDirective.status !== newStatus;
+                    const isStatusChangedToNotify = (newStatus === 'On Hold' || newStatus === 'Completed' || newStatus === 'Checked & Confirmed') && currentDirective.status !== newStatus;
                     if (isUrgent && isStatusChangedToNotify && !activeRole.isMD) {
                         sendMDStatusNotification(mdEmail, currentDirective, newStatus, newRemark);
                     }
