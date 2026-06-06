@@ -2726,33 +2726,34 @@
                     />
                     
                     {/* Header */}
-                    <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 text-white shadow-lg py-4 px-6 transition-all duration-300">
-                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                    <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 text-white shadow-lg py-2.5 px-3 md:py-4 md:px-6 transition-all duration-300">
+                        <div className="max-w-7xl mx-auto flex flex-row items-center justify-between gap-2 md:gap-4">
                             {/* Brand Logo & Name */}
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-teal-400 to-indigo-500 flex items-center justify-center shadow-md shadow-indigo-500/10">
-                                    <Icon name="sheet" className="w-5 h-5 text-slate-900" />
+                            <div className="flex items-center gap-2 md:gap-3">
+                                <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-gradient-to-tr from-teal-400 to-indigo-500 flex items-center justify-center shadow-md shadow-indigo-500/10">
+                                    <Icon name="sheet" className="w-4 h-4 md:w-5 md:h-5 text-slate-900" />
                                 </div>
                                 <div>
-                                    <h1 className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-200 via-indigo-200 to-white">
+                                    <h1 className="text-sm md:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-200 via-indigo-200 to-white">
                                         MD Command Center
                                     </h1>
-                                    <p className="text-xs text-slate-400 font-medium">Google Sheets Engine</p>
+                                    <p className="text-[10px] md:text-xs text-slate-400 font-medium">Google Sheets Engine</p>
                                 </div>
                             </div>
 
                             {/* Active Persona Banner for Sandbox */}
                             {isSandbox && (
-                                <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 px-4 py-1.5 rounded-full flex items-center gap-2 text-xs font-semibold shadow-inner">
-                                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-                                    Demo Sandbox Active
+                                <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 px-2 py-1 md:px-4 md:py-1.5 rounded-full flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs font-semibold shadow-inner">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                    <span className="hidden sm:inline">Demo Sandbox Active</span>
+                                    <span className="sm:hidden">Sandbox</span>
                                     <span className="text-slate-500 font-normal">|</span>
                                     <span className="text-slate-100 flex items-center gap-1">
-                                        Role: 
+                                        <span className="hidden sm:inline">Role:</span> 
                                         <select 
                                             value={sandboxRole}
                                             onChange={(e) => setSandboxRole(e.target.value)}
-                                            className="bg-slate-800 text-amber-300 border-none outline-none font-bold cursor-pointer rounded px-1.5 py-0.5"
+                                            className="bg-slate-800 text-amber-300 border-none outline-none font-bold cursor-pointer rounded px-1 py-0.5 text-[10px] md:text-xs"
                                         >
                                             <option value="MD">Managing Director</option>
                                             {(() => {
@@ -2780,32 +2781,32 @@
                             )}
 
                             {/* User Authentication Profile & Controls */}
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
                                 {activeRole ? (
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 md:gap-3">
                                         <div className="text-right hidden sm:block">
-                                            <div className="text-sm font-semibold text-slate-100">{activeRole.name}</div>
-                                            <div className="text-xs text-slate-405 flex items-center justify-end gap-1 font-medium">
+                                            <div className="text-xs md:text-sm font-semibold text-slate-100">{activeRole.name}</div>
+                                            <div className="text-[10px] md:text-xs text-slate-400 flex items-center justify-end gap-1 font-medium">
                                                 {activeRole.isMD ? (
                                                     <span className="text-teal-400 font-bold flex items-center gap-0.5">
-                                                        <Icon name="shield" className="w-3.5 h-3.5" /> Managing Director
+                                                        <Icon name="shield" className="w-3 h-3 md:w-3.5 md:h-3.5" /> MD
                                                     </span>
                                                 ) : (
-                                                    <span className="text-indigo-400 font-semibold" title={activeRole.mappings ? activeRole.mappings.map(m => m.deptName).join(' & ') : (activeRole.mapping?.deptName || '')}>
-                                                        Dept Head: {activeRole.mappings ? activeRole.mappings.map(m => m.deptName).join(' & ') : (activeRole.mapping?.deptName || '')}
+                                                    <span className="text-indigo-400 font-semibold truncate max-w-[120px]" title={activeRole.mappings ? activeRole.mappings.map(m => m.deptName).join(' & ') : (activeRole.mapping?.deptName || '')}>
+                                                        DH
                                                     </span>
                                                 )}
                                             </div>
                                         </div>
                                         {isSandbox ? (
-                                            <div className="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white shadow border border-indigo-400/20">
+                                            <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white shadow border border-indigo-400/20 text-xs md:text-base">
                                                 {activeRole.name.charAt(0)}
                                             </div>
                                         ) : (
                                             auth?.picture ? (
-                                                <img src={auth.picture} alt="Avatar" className="h-9 w-9 rounded-full border border-slate-700 shadow" />
+                                                <img src={auth.picture} alt="Avatar" className="h-8 w-8 md:h-10 md:w-10 rounded-full border border-slate-700 shadow" />
                                             ) : (
-                                                <div className="h-9 w-9 rounded-full bg-slate-800 flex items-center justify-center font-bold text-teal-450 shadow border border-slate-700">
+                                                <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-teal-400 shadow border border-slate-700 text-xs md:text-base">
                                                     {activeRole.name.charAt(0)}
                                                 </div>
                                             )
@@ -2813,33 +2814,33 @@
                                         <button 
                                             onClick={handleLogout} 
                                             title="Logout"
-                                            className="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 hover:border-rose-900/30 transition-all cursor-pointer shadow-sm"
+                                            className="p-1.5 md:p-2 rounded-lg md:rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 hover:border-rose-900/30 transition-all cursor-pointer shadow-sm"
                                         >
-                                            <Icon name="logout" className="w-4 h-4" />
+                                            <Icon name="logout" className="w-3.5 h-3.5 md:w-4 md:h-4" />
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5 md:gap-2">
                                         <button 
                                             onClick={() => {
                                                 setIsSandbox(true);
                                                 setSandboxRole('MD');
                                                 showNotification('Entered Demo Sandbox Mode. No real Google updates will occur.', 'info');
                                             }}
-                                            className="px-4 py-2 text-xs font-semibold text-teal-400 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 rounded-xl transition-all cursor-pointer shadow-sm"
+                                            className="px-2.5 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs font-semibold text-teal-400 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 rounded-lg md:rounded-xl transition-all cursor-pointer shadow-sm"
                                         >
-                                            Demo Sandbox
+                                            Sandbox
                                         </button>
                                         
                                         {clientId ? (
                                             <button 
                                                 onClick={triggerGoogleLogin}
-                                                className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/50 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-indigo-500/15"
+                                                className="px-2.5 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/50 rounded-lg md:rounded-xl transition-all flex items-center gap-1 md:gap-1.5 cursor-pointer shadow-md shadow-indigo-500/15"
                                             >
-                                                <Icon name="globe" className="w-3.5 h-3.5" /> Sign In with Google
+                                                <Icon name="globe" className="w-3 h-3 md:w-3.5 md:h-3.5" /> <span className="hidden sm:inline">Sign In</span>
                                             </button>
                                         ) : (
-                                            <span className="text-xs text-slate-500 font-medium px-2 italic">Credentials Pending</span>
+                                            <span className="text-[10px] md:text-xs text-slate-500 font-medium px-1 italic">Pending</span>
                                         )}
                                     </div>
                                 )}
@@ -2848,9 +2849,9 @@
                                 <button 
                                     onClick={() => fileInputRef.current && fileInputRef.current.click()}
                                     title="Configure Application (Upload JSON)"
-                                    className={`p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-teal-400 hover:border-teal-900/30 transition-all cursor-pointer shadow-sm ${!clientId ? 'animate-pulse' : ''}`}
+                                    className={`p-1.5 md:p-2 rounded-lg md:rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-teal-400 hover:border-teal-900/30 transition-all cursor-pointer shadow-sm ${!clientId ? 'animate-pulse' : ''}`}
                                 >
-                                    <Icon name="settings" className="w-4 h-4" />
+                                    <Icon name="settings" className="w-3.5 h-3.5 md:w-4 md:h-4" />
                                 </button>
                             </div>
                         </div>
