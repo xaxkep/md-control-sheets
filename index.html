@@ -798,6 +798,11 @@
             const [syncStatuses, setSyncStatuses] = React.useState({}); // { spreadsheetId: { status: 'success'|'error', error: '' } }
             const [tokenClient, setTokenClient] = React.useState(null);
 
+            // API Quota Optimizations: Lock, Cooldown, and Missing WSR cache
+            const syncLock = React.useRef(false);
+            const lastSyncTime = React.useRef(0);
+            const missingWsrSheets = React.useRef(new Set());
+
             // Filter States
             const [searchTerm, setSearchTerm] = React.useState('');
             const [filterDept, setFilterDept] = React.useState('All');
@@ -1529,6 +1534,15 @@
             // Fetch Sheets data
             const loadSpreadsheetData = React.useCallback(async () => {
                 if (!activeRole) return;
+                
+                const now = Date.now();
+                if (syncLock.current || (now - lastSyncTime.current < 2500)) {
+                    console.log("[Quota Optimization] Sync skipped: already running or cooldown active.");
+                    return;
+                }
+                
+                syncLock.current = true;
+                lastSyncTime.current = now;
                 setLoading(true);
                 const statuses = {};
                 let compiledDirectives = [];
@@ -1616,6 +1630,9 @@
 
                         // Fetch WSR tab
                         const fetchWsr = (async () => {
+                            if (missingWsrSheets.current.has(map.spreadsheetId)) {
+                                return [];
+                            }
                             try {
                                 const quotedTab = `'WSR'`;
                                 const response = await fetch(
@@ -1625,7 +1642,11 @@
                                     }
                                 );
                                 if (!response.ok) {
-                                    // Silent ignore if WSR tab doesn't exist on sheet (not an error to prevent regular sync)
+                                    if (response.status === 400 || response.status === 404) {
+                                        // WSR Tab doesn't exist on this sheet. Cache this to avoid future API requests.
+                                        missingWsrSheets.current.add(map.spreadsheetId);
+                                        console.log(`[Quota Optimization] Cached missing WSR sheet for ${map.deptName}`);
+                                    }
                                     return [];
                                 }
                                 const data = await response.json();
@@ -1662,6 +1683,7 @@
                     showNotification('Error syncing Google Sheets: ' + err.message, 'error');
                 } finally {
                     setLoading(false);
+                    syncLock.current = false;
                 }
             }, [isSandbox, auth, activeRole, mappings, mockDb, checkAndSendBackgroundReminders]);
 
@@ -1671,6 +1693,13 @@
                     loadSpreadsheetData();
                 }
             }, [sandboxRole, isSandbox, auth, mappings]);
+
+            // Clear missing WSR sheets cache and cooldown when active role or mappings change
+            React.useEffect(() => {
+                missingWsrSheets.current.clear();
+                lastSyncTime.current = 0;
+                syncLock.current = false;
+            }, [activeRole, mappings]);
 
             // Save sandbox DB changes to local storage
             React.useEffect(() => {
