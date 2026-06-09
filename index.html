@@ -520,11 +520,14 @@
             let mode = 'weekly'; // WSR default
             if (type === 'Reports') {
                 const rep = String(repetitionStr).toLowerCase();
-                if (rep.includes('monthly')) mode = 'monthly';
+                if (rep === 'daily') mode = 'daily';
+                else if (rep.includes('monthly')) mode = 'monthly';
                 else if (rep.includes('quarterly')) mode = 'quarterly';
             }
             
-            if (mode === 'weekly') {
+            if (mode === 'daily') {
+                return `${date.getFullYear()}-D${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+            } else if (mode === 'weekly') {
                 const tempDate = new Date(date.getTime());
                 tempDate.setHours(0, 0, 0, 0);
                 tempDate.setDate(tempDate.getDate() + 3 - (tempDate.getDay() + 6) % 7);
@@ -553,6 +556,9 @@
             if (type === 'WSR') {
                 return rep === todayDayName;
             } else if (type === 'Reports') {
+                if (rep === 'daily') {
+                    return true;
+                }
                 if (rep.startsWith('weekly')) {
                     const parts = rep.split('-');
                     if (parts.length >= 2) {
@@ -2080,7 +2086,13 @@
                 if (dispatchType === 'WSR') {
                     dispatchRepetitionValue = dispatchWsrDay;
                 } else if (dispatchType === 'Reports') {
-                    dispatchRepetitionValue = dispatchReportTimeline === 'On Event' ? 'On Event' : `${dispatchReportTimeline} - ${dispatchReportDay}`;
+                    if (dispatchReportTimeline === 'On Event') {
+                        dispatchRepetitionValue = 'On Event';
+                    } else if (dispatchReportTimeline === 'Daily') {
+                        dispatchRepetitionValue = 'Daily';
+                    } else {
+                        dispatchRepetitionValue = `${dispatchReportTimeline} - ${dispatchReportDay}`;
+                    }
                 }
 
                 let activeTabName;
@@ -2489,6 +2501,9 @@
                     if (rep.toLowerCase() === 'on event') {
                         setEditReportTimeline('On Event');
                         setEditReportDay('1');
+                    } else if (rep.toLowerCase() === 'daily') {
+                        setEditReportTimeline('Daily');
+                        setEditReportDay('');
                     } else if (rep.includes(' - ')) {
                         const parts = rep.split(' - ');
                         const timeline = parts[0].trim();
@@ -3815,7 +3830,7 @@
                                                             className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-semibold"
                                                         />
                                                     </div>
-                                                    <div className={`grid ${editReportTimeline === 'On Event' ? 'grid-cols-1' : 'grid-cols-2'} gap-4 mt-1`}>
+                                                    <div className={`grid ${(editReportTimeline === 'On Event' || editReportTimeline === 'Daily') ? 'grid-cols-1' : 'grid-cols-2'} gap-4 mt-1`}>
                                                         <div className="flex flex-col gap-1.5">
                                                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Report Timeline</label>
                                                             <select
@@ -3825,12 +3840,15 @@
                                                                     setEditReportTimeline(timeline);
                                                                     if (timeline === 'Weekly') {
                                                                         setEditReportDay('Monday');
+                                                                    } else if (timeline === 'Daily') {
+                                                                        setEditReportDay('');
                                                                     } else {
                                                                         setEditReportDay('1');
                                                                     }
                                                                 }}
                                                                 className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-semibold"
                                                             >
+                                                                <option value="Daily">Daily</option>
                                                                 <option value="Weekly">Weekly</option>
                                                                 <option value="Monthly">Monthly</option>
                                                                 <option value="Quarterly">Quarterly</option>
@@ -3838,7 +3856,7 @@
                                                             </select>
                                                         </div>
 
-                                                        {editReportTimeline !== 'On Event' && (
+                                                        {editReportTimeline !== 'On Event' && editReportTimeline !== 'Daily' && (
                                                             <div className="flex flex-col gap-1.5">
                                                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                                                                     {editReportTimeline === 'Weekly' ? 'Submission Day' : 'Day of Month'}
@@ -4024,7 +4042,7 @@
                                                 reportName: editReportName,
                                                 verification: editVerification,
                                                 ...(editingDirective?.type === 'Reports' ? {
-                                                    repetition: editReportTimeline === 'On Event' ? 'On Event' : `${editReportTimeline} - ${editReportDay}`
+                                                    repetition: editReportTimeline === 'On Event' ? 'On Event' : (editReportTimeline === 'Daily' ? 'Daily' : `${editReportTimeline} - ${editReportDay}`)
                                                 } : {})
                                             } : {})
                                         })}
@@ -4377,7 +4395,7 @@
 
                                     {/* Conditional Reports scheduling input */}
                                     {dispatchType === 'Reports' && (
-                                        <div className={`grid ${dispatchReportTimeline === 'On Event' ? 'grid-cols-1' : 'grid-cols-2'} gap-4 mt-2`}>
+                                        <div className={`grid ${(dispatchReportTimeline === 'On Event' || dispatchReportTimeline === 'Daily') ? 'grid-cols-1' : 'grid-cols-2'} gap-4 mt-2`}>
                                             <div className="flex flex-col gap-1.5">
                                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Report Timeline</label>
                                                 <select
@@ -4387,12 +4405,15 @@
                                                         setDispatchReportTimeline(timeline);
                                                         if (timeline === 'Weekly') {
                                                             setDispatchReportDay('Monday');
+                                                        } else if (timeline === 'Daily') {
+                                                            setDispatchReportDay('');
                                                         } else {
                                                             setDispatchReportDay('1');
                                                         }
                                                     }}
                                                     className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
                                                 >
+                                                    <option value="Daily">Daily</option>
                                                     <option value="Weekly">Weekly</option>
                                                     <option value="Monthly">Monthly</option>
                                                     <option value="Quarterly">Quarterly</option>
@@ -4400,7 +4421,7 @@
                                                 </select>
                                             </div>
 
-                                            {dispatchReportTimeline !== 'On Event' && (
+                                            {dispatchReportTimeline !== 'On Event' && dispatchReportTimeline !== 'Daily' && (
                                                 <div className="flex flex-col gap-1.5">
                                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                                                         {dispatchReportTimeline === 'Weekly' ? 'Submission Day' : 'Day of Month'}
