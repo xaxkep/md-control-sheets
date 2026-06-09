@@ -3208,7 +3208,14 @@
                                         
                                         <div className="w-full sm:w-auto flex gap-2">
                                             <button 
-                                                onClick={() => setIsDispatchOpen(true)}
+                                                onClick={() => {
+                                                    if (!isSandbox && (!auth || Date.now() > auth.expiresAt)) {
+                                                        showNotification('Your session has expired. Please sign in again.', 'error');
+                                                        triggerGoogleLogin();
+                                                        return;
+                                                    }
+                                                    setIsDispatchOpen(true);
+                                                }}
                                                 className="flex-1 sm:flex-initial flex items-center justify-center gap-1 px-2.5 py-1.5 text-slate-705 hover:text-teal-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all cursor-pointer font-bold text-[10px] md:text-xs"
                                             >
                                                 <Icon name="plus" className="w-3 h-3 text-teal-600" /> Issue Directive
