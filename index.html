@@ -763,6 +763,26 @@
             return updatedRowValues;
         }
 
+        // Fetch wrapper that handles status code 429 and retries with progressive exponential backoff
+        async function fetchWithRetry(url, options = {}, retries = 3, delay = 1000) {
+            try {
+                const response = await fetch(url, options);
+                if (response.status === 429 && retries > 0) {
+                    console.warn(`[Quota Optimization] Rate limited (429). Retrying in ${delay}ms... (${retries} retries left)`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return fetchWithRetry(url, options, retries - 1, delay * 2);
+                }
+                return response;
+            } catch (err) {
+                if (retries > 0) {
+                    console.warn(`[Quota Optimization] Fetch error. Retrying in ${delay}ms... (${retries} retries left)`, err);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return fetchWithRetry(url, options, retries - 1, delay * 2);
+                }
+                throw err;
+            }
+        }
+
         // Main App Wrapper
         function App() {
             // PWA Custom Install Prompt State
@@ -1285,7 +1305,7 @@
                         .replace(/\//g, '_')
                         .replace(/=+$/, '');
 
-                    const response = await fetch(
+                    const response = await fetchWithRetry(
                         'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
                         {
                             method: 'POST',
@@ -1388,7 +1408,7 @@
                     } else {
                         const activeTabName = d.sheetTabName || 'Master Data';
                         const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
-                        const response = await fetch(
+                        const response = await fetchWithRetry(
                             `https://sheets.googleapis.com/v4/spreadsheets/${d.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A${excelRowNumber}?valueInputOption=USER_ENTERED`,
                             {
                                 method: 'PUT',
@@ -1420,7 +1440,7 @@
                     } else {
                         const activeTabName = 'WSR';
                         const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
-                        const response = await fetch(
+                        const response = await fetchWithRetry(
                             `https://sheets.googleapis.com/v4/spreadsheets/${d.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A${excelRowNumber}?valueInputOption=USER_ENTERED`,
                             {
                                 method: 'PUT',
@@ -1629,68 +1649,91 @@
                 try {
                     const sheetsToFetch = activeRole.isMD ? mappings : (activeRole.mappings || [activeRole.mapping].filter(Boolean));
                     
-                    const fetchPromises = sheetsToFetch.flatMap((map) => {
-                        // Fetch regular tab
-                        const fetchRegular = (async () => {
-                            try {
-                                const activeTabName = (map.sheetTabName || 'Master Data').trim();
-                                const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
-                                const response = await fetch(
-                                    `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A1:Z1000?valueRenderOption=FORMATTED_VALUE`,
-                                    {
-                                        headers: { 'Authorization': `Bearer ${auth.accessToken}` }
-                                    }
-                                );
-                                if (!response.ok) {
-                                    let errMsg = '';
-                                    try {
-                                        const errData = await response.json();
-                                        errMsg = errData?.error?.message || response.statusText || '';
-                                    } catch (_) {
-                                        errMsg = response.statusText || '';
-                                    }
-                                    throw new Error(errMsg || `status ${response.status}`);
+                    const fetchSingleTab = async (map) => {
+                        try {
+                            const activeTabName = (map.sheetTabName || 'Master Data').trim();
+                            const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
+                            const response = await fetchWithRetry(
+                                `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values:batchGet?ranges=${encodeURIComponent(quotedTab + '!A1:Z1000')}&valueRenderOption=FORMATTED_VALUE`,
+                                {
+                                    headers: { 'Authorization': `Bearer ${auth.accessToken}` }
                                 }
-                                const data = await response.json();
-                                statuses[map.spreadsheetId] = { status: 'success' };
-                                return parseSheetRows(data.values || [], map);
-                            } catch (err) {
-                                console.error(`Error loading regular sheet for ${map.deptName}:`, err);
-                                statuses[map.spreadsheetId] = { status: 'error', error: err.message };
-                                return [];
-                            }
-                        })();
-
-                        // Fetch WSR tab
-                        const fetchWsr = (async () => {
-                            if (missingWsrSheets.current.has(map.spreadsheetId)) {
-                                return [];
-                            }
-                            try {
-                                const quotedTab = `'WSR'`;
-                                const response = await fetch(
-                                    `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A1:C1000?valueRenderOption=FORMATTED_VALUE`,
-                                    {
-                                        headers: { 'Authorization': `Bearer ${auth.accessToken}` }
-                                    }
-                                );
-                                if (!response.ok) {
-                                    if (response.status === 400 || response.status === 404) {
-                                        // WSR Tab doesn't exist on this sheet. Cache this to avoid future API requests.
-                                        missingWsrSheets.current.add(map.spreadsheetId);
-                                        console.log(`[Quota Optimization] Cached missing WSR sheet for ${map.deptName}`);
-                                    }
-                                    return [];
+                            );
+                            if (!response.ok) {
+                                let errMsg = '';
+                                try {
+                                    const errData = await response.json();
+                                    errMsg = errData?.error?.message || response.statusText || '';
+                                } catch (_) {
+                                    errMsg = response.statusText || '';
                                 }
-                                const data = await response.json();
-                                return parseWsrSheetRows(data.values || [], map);
-                            } catch (err) {
-                                console.warn(`WSR sheet not found or inaccessible for ${map.deptName}:`, err.message);
-                                return [];
+                                throw new Error(errMsg || `status ${response.status}`);
                             }
-                        })();
+                            const data = await response.json();
+                            statuses[map.spreadsheetId] = { status: 'success' };
+                            const regularValues = data.valueRanges[0]?.values || [];
+                            return parseSheetRows(regularValues, map);
+                        } catch (err) {
+                            console.error(`Error loading fallback single sheet for ${map.deptName}:`, err);
+                            statuses[map.spreadsheetId] = { status: 'error', error: err.message };
+                            return [];
+                        }
+                    };
 
-                        return [fetchRegular, fetchWsr];
+                    const fetchPromises = sheetsToFetch.map(async (map) => {
+                        const activeTabName = (map.sheetTabName || 'Master Data').trim();
+                        const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
+                        const ranges = [`${quotedTab}!A1:Z1000`];
+                        
+                        const hasWsr = !missingWsrSheets.current.has(map.spreadsheetId);
+                        if (hasWsr) {
+                            ranges.push(`'WSR'!A1:C1000`);
+                        }
+                        
+                        try {
+                            const queryParams = ranges.map(r => `ranges=${encodeURIComponent(r)}`).join('&');
+                            const response = await fetchWithRetry(
+                                `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values:batchGet?${queryParams}&valueRenderOption=FORMATTED_VALUE`,
+                                {
+                                    headers: { 'Authorization': `Bearer ${auth.accessToken}` }
+                                }
+                            );
+                            
+                            if (!response.ok) {
+                                // If WSR doesn't exist, batchGet returns 400 Bad Request
+                                if (response.status === 400 && hasWsr) {
+                                    missingWsrSheets.current.add(map.spreadsheetId);
+                                    console.log(`[Quota Optimization] batchGet failed. Retrying with only regular tab for ${map.deptName}`);
+                                    return fetchSingleTab(map);
+                                }
+                                let errMsg = '';
+                                try {
+                                    const errData = await response.json();
+                                    errMsg = errData?.error?.message || response.statusText || '';
+                                } catch (_) {
+                                    errMsg = response.statusText || '';
+                                }
+                                throw new Error(errMsg || `status ${response.status}`);
+                            }
+                            
+                            const data = await response.json();
+                            statuses[map.spreadsheetId] = { status: 'success' };
+                            
+                            const regularValues = data.valueRanges[0]?.values || [];
+                            const parsedRegular = parseSheetRows(regularValues, map);
+                            
+                            let parsedWsr = [];
+                            if (hasWsr && data.valueRanges[1]) {
+                                const wsrValues = data.valueRanges[1]?.values || [];
+                                parsedWsr = parseWsrSheetRows(wsrValues, map);
+                            }
+                            
+                            return [...parsedRegular, ...parsedWsr];
+                        } catch (err) {
+                            console.error(`Error loading sheet data for ${map.deptName}:`, err);
+                            statuses[map.spreadsheetId] = { status: 'error', error: err.message };
+                            return [];
+                        }
                     });
 
                     const results = await Promise.all(fetchPromises);
@@ -2181,7 +2224,7 @@
                         throw new Error('Your session has expired. Please sign in again.');
                     }
                     const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
-                    const response = await fetch(
+                    const response = await fetchWithRetry(
                         `https://sheets.googleapis.com/v4/spreadsheets/${targetDept.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A:A:append?valueInputOption=USER_ENTERED`,
                         {
                             method: 'POST',
@@ -2290,7 +2333,7 @@
                     }
                     const activeTabName = currentDirective.sheetTabName || 'Master Data';
                     const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
-                    const response = await fetch(
+                    const response = await fetchWithRetry(
                         `https://sheets.googleapis.com/v4/spreadsheets/${currentDirective.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A${excelRowNumber}?valueInputOption=USER_ENTERED`,
                         {
                             method: 'PUT',
@@ -2391,7 +2434,7 @@
                     }
                     const activeTabName = directive.sheetTabName || 'Master Data';
                     const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
-                    const response = await fetch(
+                    const response = await fetchWithRetry(
                         `https://sheets.googleapis.com/v4/spreadsheets/${directive.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A${excelRowNumber}?valueInputOption=USER_ENTERED`,
                         {
                             method: 'PUT',
@@ -2419,7 +2462,7 @@
                     // Format row red on delete in Google Sheets
                     if (auditAction === 'delete') {
                         try {
-                            const metaResponse = await fetch(
+                            const metaResponse = await fetchWithRetry(
                                 `https://sheets.googleapis.com/v4/spreadsheets/${directive.spreadsheetId}?fields=sheets(properties(sheetId,title))`,
                                 {
                                     headers: { 'Authorization': `Bearer ${auth.accessToken}` }
@@ -2463,7 +2506,7 @@
                                     ]
                                 };
 
-                                await fetch(batchUpdateUrl, {
+                                await fetchWithRetry(batchUpdateUrl, {
                                     method: 'POST',
                                     headers: {
                                         'Authorization': `Bearer ${auth.accessToken}`,
