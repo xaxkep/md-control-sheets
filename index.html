@@ -1830,7 +1830,11 @@
                     }
                 }
 
-                if (repetitionIdx === -1) {
+                const maxRowLength = values.reduce((max, r) => Math.max(max, r ? r.length : 0), 0);
+                if (completionDateIdx === -1 && maxRowLength > 9) {
+                    completionDateIdx = 9; // Fallback to 10th column (Column J)
+                }
+                if (repetitionIdx === -1 && maxRowLength > 10) {
                     repetitionIdx = 10; // Fallback to 11th column (Column K)
                 }
 
@@ -1914,7 +1918,7 @@
                     }
 
                     // Dynamic status reset for repeating WSR and Reports directives
-                    if (parsedRepetition && (parsedType === 'WSR' || parsedType === 'Reports') && parsedRepetition.toLowerCase() !== 'on event') {
+                    if (parsedStatus !== 'Deleted' && parsedRepetition && (parsedType === 'WSR' || parsedType === 'Reports') && parsedRepetition.toLowerCase() !== 'on event') {
                         const currentPeriodCode = getPeriodCode(new Date(), parsedType, parsedRepetition);
                         if (parsedCompletion) {
                             const completionDateObj = parseDateString(parsedCompletion);
@@ -2442,7 +2446,7 @@
                                                     startRowIndex: rowIndex,
                                                     endRowIndex: rowIndex + 1,
                                                     startColumnIndex: 0,
-                                                    endColumnIndex: 11
+                                                    endColumnIndex: updatedRowValues.length
                                                 },
                                                 cell: {
                                                     userEnteredFormat: {
