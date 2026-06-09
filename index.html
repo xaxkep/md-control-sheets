@@ -787,6 +787,7 @@
         function App() {
             // PWA Custom Install Prompt State
             const [deferredPrompt, setDeferredPrompt] = React.useState(null);
+            const [showCompletedAudits, setShowCompletedAudits] = React.useState(false);
 
             // Settings states loaded from localStorage or initialized with defaults
             const [clientId, setClientId] = React.useState(() => localStorage.getItem('pcil_clientId') || '');
@@ -1784,6 +1785,13 @@
                 }
             }, [mockDb, isSandbox]);
 
+            // Safety guard to reset active tab if Completed Audits is disabled
+            React.useEffect(() => {
+                if (!showCompletedAudits && activeMetricTab === 'Completed') {
+                    setActiveMetricTab('All');
+                }
+            }, [showCompletedAudits, activeMetricTab]);
+
             // Parse sheet rows, identifying headers dynamically
             const parseSheetRows = (values, mapping) => {
                 if (!values || values.length === 0) return [];
@@ -2763,6 +2771,10 @@
             // Filtering calculations (base filters excluding metrics tab)
             const baseFilteredDirectives = directives.filter(d => {
                 if (d.status === 'Deleted') return false;
+                
+                // Hide MD verified/done standard/Reports directives by default unless toggled on
+                const isVerified = d.type !== 'WSR' && (d.verification === 'Done' || d.verification === 'Verified');
+                if (!showCompletedAudits && isVerified) return false;
                 const matchesSearch = 
                     (d.description && d.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
                     (d.remark && d.remark.toLowerCase().includes(searchTerm.toLowerCase())) ||
