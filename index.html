@@ -2811,10 +2811,12 @@
                 const active = nonWsr.filter(d => ['Not Seen', 'Pending', 'In Progress', 'On Hold'].includes(d.status)).length;
                 // Critical/Urgent status
                 const urgent = nonWsr.filter(d => (d.priority === 'Urgent' || d.priority === 'Very Urgent') && d.status !== 'Checked & Confirmed' && d.status !== 'Completed').length;
+                // Awaiting Audit (Completed status but not verified yet)
+                const awaitingAudit = nonWsr.filter(d => d.status === 'Completed' && d.verification !== 'Done' && d.verification !== 'Verified').length;
                 // Completed Audits (MD verified Done)
                 const verified = nonWsr.filter(d => d.verification === 'Done' || d.verification === 'Verified').length;
 
-                return { pending, active, urgent, verified };
+                return { pending, active, urgent, awaitingAudit, verified };
             }, [baseFilteredDirectives]);
 
             // Final filtered directives after applying active metric tab toggle, sorted descending by date
@@ -2827,6 +2829,8 @@
                     list = list.filter(d => d.type !== 'WSR' && ['Not Seen', 'Pending', 'In Progress', 'On Hold'].includes(d.status));
                 } else if (activeMetricTab === 'Urgent') {
                     list = list.filter(d => d.type !== 'WSR' && (d.priority === 'Urgent' || d.priority === 'Very Urgent') && d.status !== 'Checked & Confirmed' && d.status !== 'Completed');
+                } else if (activeMetricTab === 'AwaitingAudit') {
+                    list = list.filter(d => d.type !== 'WSR' && d.status === 'Completed' && d.verification !== 'Done' && d.verification !== 'Verified');
                 } else if (activeMetricTab === 'Completed') {
                     list = list.filter(d => d.type !== 'WSR' && (d.verification === 'Done' || d.verification === 'Verified'));
                 }
@@ -3110,7 +3114,7 @@
                             <div className="flex flex-col gap-6">
                                 
                                 {/* Metrics Cards (Top Panel) */}
-                                <div className={`grid grid-cols-2 ${activeRole && !activeRole.isUnregistered ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-3 md:gap-4`}>
+                                <div className={`grid grid-cols-2 ${activeRole && !activeRole.isUnregistered ? (showCompletedAudits ? 'md:grid-cols-6' : 'md:grid-cols-5') : 'md:grid-cols-4'} gap-3 md:gap-4`}>
                                     {/* Pending Tasks Card */}
                                     <div 
                                         onClick={() => setActiveMetricTab(activeMetricTab === 'Pending' ? 'All' : 'Pending')}
@@ -3162,6 +3166,24 @@
                                         <div>
                                             <div className="text-lg md:text-2xl font-black tracking-tight text-rose-600">{loading ? '...' : metrics.urgent}</div>
                                             <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">Urgent Tasks</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Awaiting Audit Card */}
+                                    <div 
+                                        onClick={() => setActiveMetricTab(activeMetricTab === 'AwaitingAudit' ? 'All' : 'AwaitingAudit')}
+                                        className={`glass-panel p-3 md:p-5 rounded-2xl shadow border flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 md:gap-4 relative overflow-hidden group transition-all duration-200 cursor-pointer select-none ${
+                                            activeMetricTab === 'AwaitingAudit' 
+                                            ? 'ring-2 ring-sky-500 bg-sky-50/20 border-sky-200 shadow-md shadow-sky-100' 
+                                            : 'border-slate-200 bg-white/85 hover:border-sky-300 hover:shadow-md hover:-translate-y-0.5'
+                                        }`}
+                                    >
+                                        <div className={`p-2 md:p-3.5 rounded-xl transition-all duration-200 ${activeMetricTab === 'AwaitingAudit' ? 'bg-sky-500 text-white' : 'bg-sky-500/10 text-sky-600'}`}>
+                                            <Icon name="shield" className="w-4 h-4 md:w-6 md:h-6" />
+                                        </div>
+                                        <div>
+                                            <div className="text-lg md:text-2xl font-black tracking-tight text-sky-600">{loading ? '...' : metrics.awaitingAudit}</div>
+                                            <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">Awaiting Audit</div>
                                         </div>
                                     </div>
 
