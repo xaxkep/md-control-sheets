@@ -857,6 +857,7 @@
             const [dispatchDesc, setDispatchDesc] = React.useState('');
             const [dispatchReportName, setDispatchReportName] = React.useState('');
             const [dispatchPriority, setDispatchPriority] = React.useState('Normal');
+            const [dispatchInstructionType, setDispatchInstructionType] = React.useState('Temporary');
             const [dispatchTargetDate, setDispatchTargetDate] = React.useState('');
             const [dispatchWsrDay, setDispatchWsrDay] = React.useState('Monday');
             const [dispatchReportTimeline, setDispatchReportTimeline] = React.useState('Weekly');
@@ -879,6 +880,7 @@
             const [editRemark, setEditRemark] = React.useState('');
             const [editDelegated, setEditDelegated] = React.useState('');
             const [editPriority, setEditPriority] = React.useState('Normal');
+            const [editInstructionType, setEditInstructionType] = React.useState('Temporary');
             const [editTargetDate, setEditTargetDate] = React.useState('');
             const [editLoading, setEditLoading] = React.useState(false);
 
@@ -2154,6 +2156,8 @@
                     } else {
                         dispatchRepetitionValue = `${dispatchReportTimeline} - ${dispatchReportDay}`;
                     }
+                } else if (dispatchType === 'Instruction') {
+                    dispatchRepetitionValue = dispatchInstructionType;
                 }
 
                 let activeTabName;
@@ -2217,8 +2221,9 @@
                     setDispatchReportTimeline('Weekly');
                     setDispatchReportDay('Monday');
                     setDispatchReportName('');
+                    setDispatchInstructionType('Temporary');
                     
-                    showNotification(`Directive successfully dispatched to ${targetDept.headName} (Sandbox Mode)`, 'success');
+                    showNotification(`Directive successfully submitted to ${targetDept.headName} (Sandbox Mode)`, 'success');
                     showNotification(`Notification email simulated to ${targetDept.headEmail}`, 'info');
                     setDispatchSuccess(true);
                     setTimeout(() => {
@@ -2273,8 +2278,9 @@
                     setDispatchReportTimeline('Weekly');
                     setDispatchReportDay('Monday');
                     setDispatchReportName('');
+                    setDispatchInstructionType('Temporary');
                     
-                    showNotification(`Directive successfully dispatched to ${targetDept.headName}!`, 'success');
+                    showNotification(`Directive successfully submitted to ${targetDept.headName}!`, 'success');
                     setDispatchSuccess(true);
                     setTimeout(() => {
                         setDispatchSuccess(false);
@@ -2581,6 +2587,9 @@
                 }
                 
                 setEditPriority(directive.priority || 'Normal');
+                if (directive.type === 'Instruction') {
+                    setEditInstructionType(directive.repetition || 'Temporary');
+                }
                 
                 let targetDateHtml = '';
                 if (directive.targetDate) {
@@ -3307,7 +3316,7 @@
                                                 }}
                                                 className="flex-1 sm:flex-initial flex items-center justify-center gap-1 px-2.5 py-1.5 text-slate-705 hover:text-teal-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all cursor-pointer font-bold text-[10px] md:text-xs"
                                             >
-                                                <Icon name="plus" className="w-3 h-3 text-teal-600" /> Issue Directive
+                                                <Icon name="plus" className="w-3 h-3 text-teal-600" /> Add New
                                             </button>
                                             <button 
                                                 onClick={loadSpreadsheetData}
@@ -3547,8 +3556,8 @@
                                                                                 </span>
                                                                             )}
                                                                             {d.repetition && (
-                                                                                <span className="text-[10px] px-2 py-0.5 rounded border bg-slate-50 border-slate-200 text-slate-500 font-semibold w-fit" title="Repetition Schedule">
-                                                                                    🔄 {d.repetition}
+                                                                                <span className="text-[10px] px-2 py-0.5 rounded border bg-slate-50 border-slate-200 text-slate-500 font-semibold w-fit" title={d.type === 'Instruction' ? 'Instruction Type' : 'Repetition Schedule'}>
+                                                                                    {d.type === 'Instruction' ? '' : '🔄 '}{d.repetition}
                                                                                 </span>
                                                                             )}
                                                                         </td>
@@ -3755,7 +3764,7 @@
                                                                         )}
                                                                         {d.repetition && (
                                                                             <span className="text-[8px] px-1.5 py-0.5 rounded font-extrabold border bg-slate-50 border-slate-200 text-slate-500">
-                                                                                🔄 {d.repetition}
+                                                                                {d.type === 'Instruction' ? '' : '🔄 '}{d.repetition}
                                                                             </span>
                                                                         )}
                                                                     </div>
@@ -4062,18 +4071,45 @@
                                     {/* Edit Priority & Target Date (MD only) */}
                                     {activeRole?.isMD && (
                                         <>
-                                            <div className="flex flex-col gap-1.5">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Priority</label>
-                                                <select
-                                                    value={editPriority}
-                                                    onChange={(e) => setEditPriority(e.target.value)}
-                                                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                                                >
-                                                    <option value="Normal">Normal</option>
-                                                    <option value="Urgent">Urgent</option>
-                                                    <option value="Very Urgent">Very Urgent</option>
-                                                </select>
-                                            </div>
+                                            {editingDirective?.type !== 'Instruction' ? (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Priority</label>
+                                                    <select
+                                                        value={editPriority}
+                                                        onChange={(e) => setEditPriority(e.target.value)}
+                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                    >
+                                                        <option value="Normal">Normal</option>
+                                                        <option value="Urgent">Urgent</option>
+                                                        <option value="Very Urgent">Very Urgent</option>
+                                                    </select>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Importance</label>
+                                                        <select
+                                                            value={editPriority}
+                                                            onChange={(e) => setEditPriority(e.target.value)}
+                                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                        >
+                                                            <option value="Normal">Normal</option>
+                                                            <option value="High">High</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type</label>
+                                                        <select
+                                                            value={editInstructionType}
+                                                            onChange={(e) => setEditInstructionType(e.target.value)}
+                                                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                        >
+                                                            <option value="Temporary">Temporary</option>
+                                                            <option value="Permanent">Permanent</option>
+                                                        </select>
+                                                    </div>
+                                                </>
+                                            )}
                                             {editingDirective?.type !== 'WSR' && editingDirective?.type !== 'Reports' && (
                                                 <div className="flex flex-col gap-1.5">
                                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Target Date</label>
@@ -4150,6 +4186,9 @@
                                                 verification: editVerification,
                                                 ...(editingDirective?.type === 'Reports' ? {
                                                     repetition: editReportTimeline === 'On Event' ? 'On Event' : (editReportTimeline === 'Daily' ? 'Daily' : `${editReportTimeline} - ${editReportDay}`)
+                                                } : {}),
+                                                ...(editingDirective?.type === 'Instruction' ? {
+                                                    repetition: editInstructionType
                                                 } : {})
                                             } : {})
                                         })}
@@ -4328,8 +4367,12 @@
                                     {/* Repetition Schedule */}
                                     {selectedDirective.repetition && (
                                         <div className="flex justify-between border-b border-slate-100 pb-2.5 sm:col-span-2">
-                                            <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Repetition Schedule</span>
-                                            <span className="font-bold text-slate-700 font-mono">🔄 {selectedDirective.repetition}</span>
+                                            <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">
+                                                {selectedDirective.type === 'Instruction' ? 'Instruction Type' : 'Repetition Schedule'}
+                                            </span>
+                                            <span className="font-bold text-slate-700 font-mono">
+                                                {selectedDirective.type === 'Instruction' ? '' : '🔄 '}{selectedDirective.repetition}
+                                            </span>
                                         </div>
                                     )}
                                 </div>
@@ -4431,13 +4474,20 @@
                                         </select>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className={`grid ${dispatchType === 'Instruction' ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2'} gap-4`}>
                                         {/* Directive Type */}
                                         <div className="flex flex-col gap-1.5">
                                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type</label>
                                             <select
                                                 value={dispatchType}
-                                                onChange={(e) => setDispatchType(e.target.value)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setDispatchType(val);
+                                                    if (val === 'Instruction') {
+                                                        setDispatchPriority('Normal');
+                                                        setDispatchInstructionType('Temporary');
+                                                    }
+                                                }}
                                                 className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
                                             >
                                                 <option value="Work">Work</option>
@@ -4450,19 +4500,48 @@
                                             </select>
                                         </div>
 
-                                        {/* Priority */}
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Priority</label>
-                                            <select
-                                                value={dispatchPriority}
-                                                onChange={(e) => setDispatchPriority(e.target.value)}
-                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
-                                            >
-                                                <option value="Normal">Normal</option>
-                                                <option value="Urgent">Urgent</option>
-                                                <option value="Very Urgent">Very Urgent</option>
-                                            </select>
-                                        </div>
+                                        {/* Priority / Importance */}
+                                        {dispatchType !== 'Instruction' ? (
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Priority</label>
+                                                <select
+                                                    value={dispatchPriority}
+                                                    onChange={(e) => setDispatchPriority(e.target.value)}
+                                                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                                >
+                                                    <option value="Normal">Normal</option>
+                                                    <option value="Urgent">Urgent</option>
+                                                    <option value="Very Urgent">Very Urgent</option>
+                                                </select>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Importance</label>
+                                                <select
+                                                    value={dispatchPriority}
+                                                    onChange={(e) => setDispatchPriority(e.target.value)}
+                                                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                                >
+                                                    <option value="Normal">Normal</option>
+                                                    <option value="High">High</option>
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {/* Instruction Type */}
+                                        {dispatchType === 'Instruction' && (
+                                            <div className="flex flex-col gap-1.5 col-span-2 sm:col-span-1">
+                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type</label>
+                                                <select
+                                                    value={dispatchInstructionType}
+                                                    onChange={(e) => setDispatchInstructionType(e.target.value)}
+                                                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-800 text-sm focus:outline-none"
+                                                >
+                                                    <option value="Temporary">Temporary</option>
+                                                    <option value="Permanent">Permanent</option>
+                                                </select>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Report Name */}
@@ -4613,11 +4692,11 @@
                                                 <span className="h-4 w-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
                                             ) : dispatchSuccess ? (
                                                 <>
-                                                    <Icon name="check" className="w-4 h-4 text-white" /> Dispatched
+                                                    <Icon name="check" className="w-4 h-4 text-white" /> Submitted
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Icon name="plus" className="w-4 h-4" /> Dispatch Directive
+                                                    <Icon name="plus" className="w-4 h-4" /> Final Submit
                                                 </>
                                             )}
                                         </button>
