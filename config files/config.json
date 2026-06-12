@@ -1,6 +1,6 @@
 {
   "clientId": "680867814154-rji8esp30qasc5c7nuhh0rkq6nd6d484.apps.googleusercontent.com",
-  "mdEmail": "aditya.singh@super91.com",
+  "mdEmail": "manan.mongia@super91.com",
   "mappings": [
     {
       "id": "1",
@@ -155,6 +155,42 @@
       "headName": "Aditya Singh",
       "headEmail": "aditya.singh@super91.com",
       "spreadsheetId": "1xoZnSgRjA8Gni0m-G2tFkkN959taX2yq4ntrHYSYhEY",
+      "sheetTabName": "",
+      "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+        { "name": "SOP & Policy - SPL All Managers & Incharges", "id": "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+      ]
+    },
+    {
+      "id": "1779873046494",
+      "deptName": "Samples Department",
+      "headName": "Shobhag Kanwar",
+      "headEmail": "samples@super91.com",
+      "spreadsheetId": "1lus9nrlCd3Mitr9Fslwu-GT2ObMrdBKewfY1xQDaJaU",
+      "sheetTabName": "",
+      "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+        { "name": "SOP & Policy - SPL All Managers & Incharges", "id": "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+      ]
+    },
+    {
+      "id": "1779873046495",
+      "deptName": "CPH Setup",
+      "headName": "Rajveer Singh",
+      "headEmail": "cph.care@super91.com",
+      "spreadsheetId": "1mDQZuNqfec-u33KGkejIPmrODM9uyp0ZDzUvLfsdink",
+      "sheetTabName": "",
+      "sops": [
+        { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+        { "name": "SOP & Policy - SPL All Managers & Incharges", "id": "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+      ]
+    },
+    {
+      "id": "1779873046496",
+      "deptName": "Delivery Agency Care",
+      "headName": "Abdul Qadir",
+      "headEmail": "distributor.care@super91.com",
+      "spreadsheetId": "1rWR0XsPZdd8Trt1A0aaR3nkE5eHzty2SmHbTY5pP59w",
       "sheetTabName": "",
       "sops": [
         { "name": "SOP & Policy - SPL All Staff", "id": "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
