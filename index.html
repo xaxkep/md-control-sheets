@@ -208,7 +208,13 @@
                     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                ),                book: (
+                ),
+                mail: (
+                    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                ),
+                book: (
                     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={strokeWidth}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
@@ -905,6 +911,7 @@
             // Data Loading States
             const [directives, setDirectives] = React.useState([]);
             const [loading, setLoading] = React.useState(false);
+            const [reminderLoading, setReminderLoading] = React.useState(false);
             const [syncStatuses, setSyncStatuses] = React.useState({}); // { spreadsheetId: { status: 'success'|'error', error: '' } }
             const [tokenClient, setTokenClient] = React.useState(null);
 
@@ -1216,6 +1223,93 @@
                 setIsSandbox(false);
                 setDirectives([]);
                 showNotification('Logged out successfully.', 'info');
+            };
+
+            const isPendingMoreThan24Hours = (dateStr) => {
+                if (!dateStr) return false;
+                const createdDate = parseDateString(dateStr);
+                if (!createdDate || isNaN(createdDate.getTime()) || createdDate.getTime() === 0) return false;
+                const now = new Date();
+                const diffMs = now.getTime() - createdDate.getTime();
+                return diffMs > 24 * 60 * 60 * 1000;
+            };
+
+            const sendPendingReminders = async () => {
+                if (!isSandbox && (!auth || Date.now() > auth.expiresAt)) {
+                    showNotification('Your session has expired. Please sign in again.', 'error');
+                    triggerGoogleLogin();
+                    return;
+                }
+
+                // Filter pending directives > 24 hours
+                const eligible = directives.filter(d => {
+                    const isPending = d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted';
+                    return isPending && isPendingMoreThan24Hours(d.date);
+                });
+
+                if (eligible.length === 0) {
+                    showNotification('No directives are pending for more than 24 hours.', 'info');
+                    return;
+                }
+
+                // Group by headEmail
+                const grouped = {};
+                eligible.forEach(d => {
+                    const email = (d.headEmail || '').trim().toLowerCase();
+                    if (email) {
+                        if (!grouped[email]) {
+                            grouped[email] = [];
+                        }
+                        grouped[email].push(d);
+                    }
+                });
+
+                const emailCount = Object.keys(grouped).length;
+                if (!confirm(`Found ${eligible.length} pending task(s) across ${emailCount} department head(s) pending for > 24 hours. Send reminder emails?`)) {
+                    return;
+                }
+
+                setReminderLoading(true);
+                let successCount = 0;
+                let failCount = 0;
+
+                for (const email of Object.keys(grouped)) {
+                    const deptDirectives = grouped[email];
+                    const headName = deptDirectives[0].headName || 'Coordinator';
+                    const deptName = deptDirectives[0].departmentName || 'your department';
+                    
+                    const subject = `[MD Command Center] Pending Directives Reminder - ${deptName}`;
+                    
+                    let body = `Dear ${headName},\n\nThis is a reminder regarding the following directive(s) assigned to ${deptName} that have been pending for more than 24 hours:\n\n`;
+                    
+                    deptDirectives.forEach((d, idx) => {
+                        body += `${idx + 1}. Directive (Row ${d.excelRowNumber})\n`;
+                        body += `   Issued Date: ${d.date}\n`;
+                        if (d.type) body += `   Type: ${d.type}\n`;
+                        if (d.priority) body += `   Priority: ${d.priority}\n`;
+                        if (d.targetDate) body += `   Target Date: ${d.targetDate}\n`;
+                        body += `   Details: ${d.description}\n`;
+                        if (d.remark) body += `   Current Logs: ${d.remark}\n`;
+                        body += `\n`;
+                    });
+                    
+                    body += `Please review these tasks and update their status/progress logs in the MD Command Center dashboard as soon as possible.\n\nRegards,\nManaging Director Office`;
+
+                    try {
+                        await sendEmailViaGmail(email, subject, body);
+                        successCount++;
+                    } catch (err) {
+                        console.error(`Failed to send reminder to ${email}:`, err);
+                        failCount++;
+                    }
+                }
+
+                setReminderLoading(false);
+                if (failCount === 0) {
+                    showNotification(`Successfully sent reminder emails to all ${successCount} department head(s).`, 'success');
+                } else {
+                    showNotification(`Sent reminders to ${successCount} department head(s). Failed for ${failCount}.`, 'warning');
+                }
             };
 
             // Identify current role and view mode
@@ -3395,6 +3489,19 @@
                                                 className="flex-1 sm:flex-initial flex items-center justify-center gap-1 px-2.5 py-1.5 text-slate-705 hover:text-teal-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all cursor-pointer font-bold disabled:opacity-50 text-[10px] md:text-xs"
                                             >
                                                 <Icon name="refresh" className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> Sync All
+                                            </button>
+                                            <button 
+                                                onClick={sendPendingReminders}
+                                                disabled={reminderLoading || loading}
+                                                className="flex-1 sm:flex-initial flex items-center justify-center gap-1 px-2.5 py-1.5 text-slate-705 hover:text-amber-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all cursor-pointer font-bold disabled:opacity-50 text-[10px] md:text-xs"
+                                                title="Send email reminders for tasks pending > 24 hours"
+                                            >
+                                                {reminderLoading ? (
+                                                    <span className="h-3 w-3 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></span>
+                                                ) : (
+                                                    <Icon name="mail" className="w-3 h-3 text-amber-500" strokeWidth={2.5} />
+                                                )}
+                                                Send Reminders
                                             </button>
                                         </div>
                                     </div>
