@@ -3740,13 +3740,13 @@
                                                                         onClick={() => setSelectedDirective(d)} 
                                                                         className={`transition-all group cursor-pointer ${
                                                                             isOverdue72h 
-                                                                            ? 'bg-rose-50/45 hover:bg-rose-100/45 border-l-[3px] border-l-rose-500' 
+                                                                            ? 'bg-rose-50/45 hover:bg-rose-100/45' 
                                                                             : 'hover:bg-slate-50/50'
                                                                         }`}
                                                                     >
                                                                         {/* Department mapping info */}
                                                                         {showDeptColumn && (
-                                                                            <td className="py-4 px-4 align-top">
+                                                                            <td className={`py-4 px-4 align-top ${isOverdue72h ? 'border-l-[4px] border-l-rose-500' : ''}`}>
                                                                                 {activeRole.isMD ? (
                                                                                     <>
                                                                                         <div className="font-bold text-slate-800 text-xs">{d.headName}</div>
@@ -3759,7 +3759,7 @@
                                                                         )}
 
                                                                         {/* Date */}
-                                                                        <td className="py-4 px-4 align-top text-xs text-slate-500 font-mono font-medium">
+                                                                        <td className={`py-4 px-4 align-top text-xs text-slate-500 font-mono font-medium ${(!showDeptColumn && isOverdue72h) ? 'border-l-[4px] border-l-rose-500' : ''}`}>
                                                                             <div>{d.date}</div>
                                                                             {getPendingElapsedTime(d.date) && d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted' && (
                                                                                 <div 
