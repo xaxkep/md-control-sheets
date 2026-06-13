@@ -546,6 +546,36 @@
             document.cookie = name + "=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Strict" + (window.location.protocol === 'https:' ? "; Secure" : "");
         }
 
+        // Calculate pending elapsed time in Days, Hours & Minutes
+        function getPendingElapsedTime(dateStr) {
+            if (!dateStr) return null;
+            const createdDate = parseDateString(dateStr);
+            if (!createdDate || isNaN(createdDate.getTime()) || createdDate.getTime() === 0) return null;
+            
+            const now = new Date();
+            const diffMs = now.getTime() - createdDate.getTime();
+            if (diffMs <= 0) return "0m";
+            
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+            const mins = diffMins % 60;
+            
+            const diffHours = Math.floor(diffMins / 60);
+            const hours = diffHours % 24;
+            
+            const days = Math.floor(diffHours / 24);
+            
+            const parts = [];
+            if (days > 0) {
+                parts.push(`${days}d`);
+            }
+            if (hours > 0 || days > 0) {
+                parts.push(`${hours}h`);
+            }
+            parts.push(`${mins}m`);
+            
+            return parts.join(' ');
+        }
+
         // Parse input date string YYYY-MM-DD locally to avoid timezone issues
         function parseInputDate(dateStr) {
             if (!dateStr) return null;
@@ -3583,7 +3613,13 @@
 
                                                                         {/* Date */}
                                                                         <td className="py-4 px-4 align-top text-xs text-slate-500 font-mono font-medium">
-                                                                            {d.date}
+                                                                            <div>{d.date}</div>
+                                                                            {getPendingElapsedTime(d.date) && d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted' && (
+                                                                                <div className="mt-1.5 flex items-center gap-1 text-[9.5px] text-teal-600 font-extrabold bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded-lg w-fit" title="Pending Elapsed Time">
+                                                                                    <span>⏳</span>
+                                                                                    <span>{getPendingElapsedTime(d.date)}</span>
+                                                                                </div>
+                                                                            )}
                                                                         </td>
 
                                                                         {/* Type / Priority */}
@@ -3793,6 +3829,12 @@
                                                                             </>
                                                                         )}
                                                                         <div className="text-[8px] text-slate-400 font-mono mt-0.5">{d.date}</div>
+                                                                        {getPendingElapsedTime(d.date) && d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted' && (
+                                                                            <div className="mt-1 flex items-center gap-0.5 text-[8px] text-teal-600 font-extrabold bg-teal-50/70 border border-teal-200 px-1 py-0.5 rounded-md w-fit" title="Pending Elapsed Time">
+                                                                                <span>⏳</span>
+                                                                                <span>{getPendingElapsedTime(d.date)}</span>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                     <div className="flex gap-1 justify-end flex-shrink-0 flex-wrap max-w-[120px]">
                                                                         <span className={`text-[8px] px-1.5 py-0.5 rounded font-extrabold border ${typeColors[d.type] || 'bg-slate-100'}`}>
@@ -4310,6 +4352,14 @@
                                         <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Date Issued</span>
                                         <span className="font-bold text-slate-700 font-mono">{selectedDirective.date}</span>
                                     </div>
+
+                                    {/* Pending Elapsed Time */}
+                                    {getPendingElapsedTime(selectedDirective.date) && selectedDirective.status !== 'Completed' && selectedDirective.status !== 'Checked & Confirmed' && selectedDirective.status !== 'Deleted' && (
+                                        <div className="flex justify-between border-b border-slate-100 pb-2.5">
+                                            <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Pending For</span>
+                                            <span className="font-bold text-teal-600 font-mono">⏳ {getPendingElapsedTime(selectedDirective.date)}</span>
+                                        </div>
+                                    )}
 
                                     {/* Target Date */}
                                     {selectedDirective.type !== 'WSR' && selectedDirective.type !== 'Reports' && (
