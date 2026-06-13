@@ -1235,6 +1235,15 @@
                 return diffMs > 24 * 60 * 60 * 1000;
             };
 
+            const isPendingMoreThan72Hours = (dateStr) => {
+                if (!dateStr) return false;
+                const createdDate = parseDateString(dateStr);
+                if (!createdDate || isNaN(createdDate.getTime()) || createdDate.getTime() === 0) return false;
+                const now = new Date();
+                const diffMs = now.getTime() - createdDate.getTime();
+                return diffMs > 72 * 60 * 60 * 1000;
+            };
+
             const triggerIndividualReminder = (d) => {
                 if (!isSandbox && (!auth || Date.now() > auth.expiresAt)) {
                     showNotification('Your session has expired. Please sign in again.', 'error');
@@ -1727,6 +1736,67 @@
                         }
                     } catch (err) {
                         console.error(`Failed to send collective WSR reminder for ${email}:`, err);
+                    }
+                }
+
+                // 3. Process 72h Overdue Pending Directives
+                const overdueDirectives = allDirectives.filter(d => {
+                    const isPending = d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted';
+                    return isPending && d.type !== 'WSR' && isPendingMoreThan72Hours(d.date);
+                });
+
+                for (const d of overdueDirectives) {
+                    const uniqueKey = `${d.spreadsheetId}_${d.sheetTabName}_${d.excelRowNumber}_Overdue72h`;
+                    if (notifiedThisSession.current.has(uniqueKey)) continue;
+
+                    const notificationTag = `[Overdue72h]`;
+                    if (d.remark && d.remark.includes(notificationTag)) {
+                        notifiedThisSession.current.add(uniqueKey);
+                        continue;
+                    }
+
+                    notifiedThisSession.current.add(uniqueKey);
+
+                    try {
+                        const email = (d.headEmail || '').trim().toLowerCase();
+                        if (!email) continue;
+
+                        const headName = d.headName || 'Coordinator';
+                        const deptName = d.departmentName || 'your department';
+                        const subject = `[MD Command Center] URGENT: Overdue Task Notification - Row ${d.excelRowNumber} (${deptName})`;
+                        
+                        const bodyText = [
+                            `Dear ${headName},`,
+                            ``,
+                            `This is an automated URGENT notification that the following task assigned to ${deptName} has exceeded 72 hours of pending elapsed time.`,
+                            `Please complete this task and get it audited by Managing Director (MD sir) ASAP.`,
+                            ``,
+                            `--- Overdue Task Details ---`,
+                            `Spreadsheet Row: Row ${d.excelRowNumber}`,
+                            `Department: ${deptName}`,
+                            `Issued Date: ${d.date}`,
+                            `Type: ${d.type}`,
+                            `Priority: ${d.priority}`,
+                            `Description: ${d.description}`,
+                            `Current Logs/Remarks: ${d.remark || 'None'}`,
+                            `-----------------------------`,
+                            ``,
+                            `Please log in to the MD Command Center to update your progress.`,
+                            ``,
+                            `Regards,`,
+                            `MD Command Center Office`,
+                            `PCIL Group`
+                        ].join('\n');
+
+                        await sendEmailViaGmail(email, subject, bodyText);
+                        console.log(`Sent 72h overdue background email to ${email} for Row ${d.excelRowNumber}`);
+
+                        const updatedRemark = d.remark ? `${d.remark} ${notificationTag}` : notificationTag;
+                        await updateDirectiveRemarkLocallyAndOnSheet(d, updatedRemark, notificationTag);
+                        
+                        showNotification(`Automated URGENT reminder sent to ${headName} for Row ${d.excelRowNumber}`, 'info');
+                    } catch (err) {
+                        console.error(`Failed to send automated 72h overdue email for Row ${d.excelRowNumber}:`, err);
                     }
                 }
             }, [auth, isSandbox, mockDb, setMockDb]);
@@ -3662,8 +3732,18 @@
                                                                     'Checked & Confirmed': 'bg-emerald-500 border-none text-white font-bold'
                                                                 };
 
+                                                                const isOverdue72h = d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted' && isPendingMoreThan72Hours(d.date);
+
                                                                 return (
-                                                                    <tr key={index} onClick={() => setSelectedDirective(d)} className="hover:bg-slate-50/50 transition-all group cursor-pointer">
+                                                                    <tr 
+                                                                        key={index} 
+                                                                        onClick={() => setSelectedDirective(d)} 
+                                                                        className={`transition-all group cursor-pointer ${
+                                                                            isOverdue72h 
+                                                                            ? 'bg-rose-50/45 hover:bg-rose-100/45 border-l-[3px] border-l-rose-500' 
+                                                                            : 'hover:bg-slate-50/50'
+                                                                        }`}
+                                                                    >
                                                                         {/* Department mapping info */}
                                                                         {showDeptColumn && (
                                                                             <td className="py-4 px-4 align-top">
@@ -3682,7 +3762,14 @@
                                                                         <td className="py-4 px-4 align-top text-xs text-slate-500 font-mono font-medium">
                                                                             <div>{d.date}</div>
                                                                             {getPendingElapsedTime(d.date) && d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted' && (
-                                                                                <div className="mt-1.5 flex items-center gap-1 text-[9.5px] text-teal-600 font-extrabold bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded-lg w-fit" title="Pending Elapsed Time">
+                                                                                <div 
+                                                                                    className={`mt-1.5 flex items-center gap-1 text-[9.5px] font-extrabold px-1.5 py-0.5 rounded-lg w-fit border ${
+                                                                                        isOverdue72h 
+                                                                                        ? 'text-rose-700 bg-rose-50 border-rose-200 animate-pulse' 
+                                                                                        : 'text-teal-600 bg-teal-50 border-teal-200'
+                                                                                    }`} 
+                                                                                    title={isOverdue72h ? "Pending for > 72 hours!" : "Pending Elapsed Time"}
+                                                                                >
                                                                                     <span>⏳</span>
                                                                                     <span>{getPendingElapsedTime(d.date)}</span>
                                                                                 </div>
@@ -3884,12 +3971,17 @@
                                                             Completed: 'bg-emerald-50 border border-emerald-150 text-emerald-700',
                                                             'Checked & Confirmed': 'bg-emerald-500 border-none text-white'
                                                         };
+                                                        const isOverdue72h = d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted' && isPendingMoreThan72Hours(d.date);
 
                                                         return (
                                                             <div 
                                                                 key={index} 
                                                                 onClick={() => setSelectedDirective(d)} 
-                                                                className="bg-white/90 border border-slate-200 rounded-xl p-3 flex flex-col gap-2 transition-all cursor-pointer shadow-sm active:bg-slate-50/50"
+                                                                className={`border rounded-xl p-3 flex flex-col gap-2 transition-all cursor-pointer shadow-sm active:bg-slate-50/50 ${
+                                                                    isOverdue72h 
+                                                                    ? 'bg-rose-50/45 border-rose-200 border-l-[3px] border-l-rose-500' 
+                                                                    : 'bg-white/90 border-slate-200'
+                                                                }`}
                                                             >
                                                                 <div className="flex justify-between items-start gap-2">
                                                                     <div className="min-w-0">
@@ -3908,7 +4000,14 @@
                                                                         )}
                                                                         <div className="text-[8px] text-slate-400 font-mono mt-0.5">{d.date}</div>
                                                                         {getPendingElapsedTime(d.date) && d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted' && (
-                                                                            <div className="mt-1 flex items-center gap-0.5 text-[8px] text-teal-600 font-extrabold bg-teal-50/70 border border-teal-200 px-1 py-0.5 rounded-md w-fit" title="Pending Elapsed Time">
+                                                                            <div 
+                                                                                className={`mt-1 flex items-center gap-0.5 text-[8px] font-extrabold px-1 py-0.5 rounded-md w-fit border ${
+                                                                                    isOverdue72h 
+                                                                                    ? 'text-rose-700 bg-rose-50 border-rose-200 animate-pulse' 
+                                                                                    : 'text-teal-600 bg-teal-50/70 border-teal-200'
+                                                                                }`} 
+                                                                                title={isOverdue72h ? "Pending for > 72 hours!" : "Pending Elapsed Time"}
+                                                                            >
                                                                                 <span>⏳</span>
                                                                                 <span>{getPendingElapsedTime(d.date)}</span>
                                                                             </div>
@@ -4444,7 +4543,11 @@
                                     {getPendingElapsedTime(selectedDirective.date) && selectedDirective.status !== 'Completed' && selectedDirective.status !== 'Checked & Confirmed' && selectedDirective.status !== 'Deleted' && (
                                         <div className="flex justify-between border-b border-slate-100 pb-2.5">
                                             <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Pending For</span>
-                                            <span className="font-bold text-teal-600 font-mono">⏳ {getPendingElapsedTime(selectedDirective.date)}</span>
+                                            <span className={`font-bold font-mono ${
+                                                isPendingMoreThan72Hours(selectedDirective.date) 
+                                                ? 'text-rose-600 font-extrabold animate-pulse' 
+                                                : 'text-teal-600'
+                                            }`}>⏳ {getPendingElapsedTime(selectedDirective.date)}</span>
                                         </div>
                                     )}
 
