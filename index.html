@@ -510,6 +510,42 @@
             return isNaN(parsed) ? new Date(0) : new Date(parsed);
         }
 
+        // Cookie Helper Functions for session persistence
+        function setCookie(name, value, expiresAt) {
+            let expires = "";
+            if (expiresAt) {
+                const date = new Date(expiresAt);
+                expires = "; expires=" + date.toUTCString();
+            }
+            let cookieStr = name + "=" + encodeURIComponent(JSON.stringify(value)) + expires + "; path=/; SameSite=Strict";
+            if (window.location.protocol === 'https:') {
+                cookieStr += "; Secure";
+            }
+            document.cookie = cookieStr;
+        }
+
+        // Retrieves and decodes parsed cookie data
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) {
+                    try {
+                        return JSON.parse(decodeURIComponent(c.substring(nameEQ.length, c.length)));
+                    } catch (_) {
+                        return null;
+                    }
+                }
+            }
+            return null;
+        }
+
+        function eraseCookie(name) {
+            document.cookie = name + "=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Strict" + (window.location.protocol === 'https:' ? "; Secure" : "");
+        }
+
         // Parse input date string YYYY-MM-DD locally to avoid timezone issues
         function parseInputDate(dateStr) {
             if (!dateStr) return null;
@@ -807,13 +843,16 @@
             // Authentication state
             const [auth, setAuth] = React.useState(() => {
                 try {
-                    const saved = localStorage.getItem('pcil_auth');
-                    if (saved) {
-                        const parsed = JSON.parse(saved);
-                        // Validate token expiration (1 hour limit, using a 2-minute safety buffer)
-                        if (parsed && parsed.accessToken && parsed.expiresAt && parsed.expiresAt > Date.now() + 120 * 1000) {
-                            return parsed;
+                    let parsed = getCookie('pcil_auth');
+                    if (!parsed) {
+                        const saved = localStorage.getItem('pcil_auth');
+                        if (saved) {
+                            parsed = JSON.parse(saved);
                         }
+                    }
+                    // Validate token expiration (1 hour limit, using a 2-minute safety buffer)
+                    if (parsed && parsed.accessToken && parsed.expiresAt && parsed.expiresAt > Date.now() + 120 * 1000) {
+                        return parsed;
                     }
                 } catch (e) {
                     console.error('Failed to parse persistent auth session:', e);
@@ -1119,6 +1158,7 @@
                         };
                         setAuth(authData);
                         localStorage.setItem('pcil_auth', JSON.stringify(authData));
+                        setCookie('pcil_auth', authData, authData.expiresAt);
                         setIsSandbox(false);
                         showNotification(`Logged in as ${userInfo.name || userInfo.email}`, 'success');
                     } else {
@@ -1142,6 +1182,7 @@
             const handleLogout = () => {
                 setAuth(null);
                 localStorage.removeItem('pcil_auth');
+                eraseCookie('pcil_auth');
                 setIsSandbox(false);
                 setDirectives([]);
                 showNotification('Logged out successfully.', 'info');
