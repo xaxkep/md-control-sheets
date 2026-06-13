@@ -946,6 +946,7 @@
             // Row editing state (DH or MD edit)
             const [editingDirective, setEditingDirective] = React.useState(null);
             const [selectedDirective, setSelectedDirective] = React.useState(null);
+            const [reminderTarget, setReminderTarget] = React.useState(null);
             const [editDescription, setEditDescription] = React.useState('');
             const [editReportName, setEditReportName] = React.useState('');
             const [editReportTimeline, setEditReportTimeline] = React.useState('Weekly');
@@ -1234,7 +1235,7 @@
                 return diffMs > 24 * 60 * 60 * 1000;
             };
 
-            const sendIndividualReminder = async (d) => {
+            const triggerIndividualReminder = (d) => {
                 if (!isSandbox && (!auth || Date.now() > auth.expiresAt)) {
                     showNotification('Your session has expired. Please sign in again.', 'error');
                     triggerGoogleLogin();
@@ -1247,6 +1248,14 @@
                     return;
                 }
 
+                setReminderTarget(d);
+            };
+
+            const sendIndividualReminderSubmit = async () => {
+                if (!reminderTarget) return;
+
+                const d = reminderTarget;
+                const email = (d.headEmail || '').trim().toLowerCase();
                 const headName = d.headName || 'Coordinator';
                 const deptName = d.departmentName || 'your department';
                 
@@ -1263,14 +1272,11 @@
                 
                 body += `Please review this task and update its status/progress logs in the MD Command Center dashboard as soon as possible.\n\nRegards,\nManaging Director Office`;
 
-                if (!confirm(`Send reminder email for Row ${d.excelRowNumber} to ${headName} (${email})?`)) {
-                    return;
-                }
-
                 setReminderLoading(true);
                 try {
                     await sendEmailViaGmail(email, subject, body);
                     showNotification(`Reminder email sent successfully to ${headName}.`, 'success');
+                    setReminderTarget(null);
                 } catch (err) {
                     console.error(`Failed to send reminder to ${email}:`, err);
                     showNotification(`Failed to send reminder email: ${err.message}`, 'error');
@@ -3823,7 +3829,7 @@
                                                                                 {/* Individual Reminder Email trigger */}
                                                                                 {activeRole.isMD && d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted' && isPendingMoreThan24Hours(d.date) && (
                                                                                     <button
-                                                                                        onClick={(e) => { e.stopPropagation(); sendIndividualReminder(d); }}
+                                                                                        onClick={(e) => { e.stopPropagation(); triggerIndividualReminder(d); }}
                                                                                         disabled={reminderLoading}
                                                                                         title="Send Email Reminder (>24h)"
                                                                                         className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 disabled:opacity-30 transition-all cursor-pointer animate-fade-in"
@@ -4016,7 +4022,7 @@
                                                                         )}
                                                                         {activeRole.isMD && d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted' && isPendingMoreThan24Hours(d.date) && (
                                                                             <button
-                                                                                onClick={() => sendIndividualReminder(d)}
+                                                                                onClick={() => triggerIndividualReminder(d)}
                                                                                 disabled={reminderLoading}
                                                                                 className="p-1 rounded-md bg-amber-50 border border-amber-200 text-amber-600 cursor-pointer disabled:opacity-50"
                                                                             >
@@ -4603,7 +4609,7 @@
                                     </button>
                                     {activeRole.isMD && selectedDirective.status !== 'Completed' && selectedDirective.status !== 'Checked & Confirmed' && selectedDirective.status !== 'Deleted' && isPendingMoreThan24Hours(selectedDirective.date) && (
                                         <button
-                                            onClick={() => sendIndividualReminder(selectedDirective)}
+                                            onClick={() => triggerIndividualReminder(selectedDirective)}
                                             disabled={reminderLoading}
                                             className="w-1/3 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-amber-500/10 flex items-center justify-center gap-2 cursor-pointer text-sm disabled:opacity-50"
                                         >
@@ -4892,6 +4898,93 @@
                                         </button>
                                     </div>
                                 </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Individual Reminder Confirmation Popup Modal */}
+                    {reminderTarget && (
+                        <div 
+                            className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-950/40 backdrop-blur-sm animate-fade-in"
+                            onClick={() => setReminderTarget(null)}
+                        >
+                            <div 
+                                className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-5 md:p-6 shadow-2xl flex flex-col gap-4 md:gap-5 relative text-slate-800 animate-slide-up max-h-[92vh] overflow-y-auto"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <button
+                                    onClick={() => setReminderTarget(null)}
+                                    className="absolute top-5 right-5 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all cursor-pointer"
+                                >
+                                    <Icon name="close" className="w-5 h-5" />
+                                </button>
+
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <span className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600">
+                                            <Icon name="mail" className="w-4 h-4 text-amber-650" strokeWidth={2.5} />
+                                        </span>
+                                        Confirm Send Reminder
+                                    </h3>
+                                    <p className="text-xs text-slate-450 font-medium mt-1">
+                                        Send an email reminder regarding outstanding Row {reminderTarget.excelRowNumber}
+                                    </p>
+                                </div>
+
+                                <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 flex flex-col gap-3 text-xs md:text-sm">
+                                    <div className="flex justify-between border-b border-slate-200 pb-2">
+                                        <span className="text-slate-450 font-bold uppercase tracking-wider text-[10px]">Recipient</span>
+                                        <span className="text-slate-800 font-bold">{reminderTarget.headName || 'Coordinator'}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-200 pb-2">
+                                        <span className="text-slate-450 font-bold uppercase tracking-wider text-[10px]">Email Address</span>
+                                        <span className="text-slate-700 font-mono font-bold">{reminderTarget.headEmail}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-200 pb-2">
+                                        <span className="text-slate-450 font-bold uppercase tracking-wider text-[10px]">Department</span>
+                                        <span className="text-slate-800 font-bold">{reminderTarget.departmentName}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-200 pb-2">
+                                        <span className="text-slate-450 font-bold uppercase tracking-wider text-[10px]">Issued Date</span>
+                                        <span className="text-slate-705 font-mono font-bold">{reminderTarget.date}</span>
+                                    </div>
+                                    {reminderTarget.targetDate && (
+                                        <div className="flex justify-between border-b border-slate-200 pb-2">
+                                            <span className="text-slate-450 font-bold uppercase tracking-wider text-[10px]">Target Date</span>
+                                            <span className="text-slate-705 font-mono font-bold">{reminderTarget.targetDate}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col gap-1 mt-1">
+                                        <span className="text-slate-450 font-bold uppercase tracking-wider text-[10px]">Directive Details</span>
+                                        <p className="text-slate-800 hindi-text leading-relaxed bg-white border border-slate-150 rounded-xl p-2.5 max-h-36 overflow-y-auto whitespace-pre-wrap select-all">
+                                            {reminderTarget.description}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setReminderTarget(null)}
+                                        className="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-500 font-semibold rounded-xl border border-slate-200 transition-all cursor-pointer text-sm"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={sendIndividualReminderSubmit}
+                                        disabled={reminderLoading}
+                                        className="w-1/2 py-3 bg-amber-500 hover:bg-amber-450 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 cursor-pointer text-sm disabled:opacity-50"
+                                    >
+                                        {reminderLoading ? (
+                                            <span className="h-4 w-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                                        ) : (
+                                            <>
+                                                <Icon name="mail" className="w-4 h-4 text-slate-950" strokeWidth={2.5} />
+                                                <span>Send Email</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
