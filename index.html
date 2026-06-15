@@ -919,6 +919,8 @@
             const syncLock = React.useRef(false);
             const lastSyncTime = React.useRef(0);
             const missingWsrSheets = React.useRef(new Set());
+            const oauthResolveRef = React.useRef(null);
+            const oauthRejectRef = React.useRef(null);
 
             // Filter States
             const [searchTerm, setSearchTerm] = React.useState('');
@@ -1015,13 +1017,43 @@
                             scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/gmail.send',
                             callback: (tokenResponse) => {
                                 if (tokenResponse.error !== undefined) {
+                                    if (oauthRejectRef.current) {
+                                        oauthRejectRef.current(new Error(tokenResponse.error));
+                                        oauthRejectRef.current = null;
+                                        oauthResolveRef.current = null;
+                                    }
+                                    if (tokenResponse.error === 'immediate_failed') {
+                                        console.log('Silent token acquisition failed (immediate_failed).');
+                                        handleLogoutSilently();
+                                        return;
+                                    }
                                     showNotification('OAuth error: ' + tokenResponse.error, 'error');
                                     return;
+                                }
+                                
+                                if (oauthResolveRef.current) {
+                                    oauthResolveRef.current(tokenResponse.access_token);
+                                    oauthResolveRef.current = null;
+                                    oauthRejectRef.current = null;
                                 }
                                 handleOAuthSuccess(tokenResponse.access_token);
                             },
                         });
                         setTokenClient(client);
+
+                        // Silent auto-login on PWA startup
+                        const wasLoggedIn = localStorage.getItem('pcil_user_signed_in') === 'true';
+                        const isTokenExpired = !auth || !auth.expiresAt || auth.expiresAt <= Date.now() + 120 * 1000;
+                        if (wasLoggedIn && isTokenExpired) {
+                            console.log('[PWA init] Attempting silent token restoration...');
+                            setTimeout(() => {
+                                try {
+                                    client.requestAccessToken({ prompt: 'none' });
+                                } catch (e) {
+                                    console.warn('Failed silent auto-login:', e);
+                                }
+                            }, 500);
+                        }
                     } catch (err) {
                         console.error('Failed to init token client', err);
                     }
@@ -1176,55 +1208,110 @@
                 setTimeout(() => setNotification(null), 4000);
             };
 
-            // Google login success handler
-            const handleOAuthSuccess = async (accessToken) => {
-                setLoading(true);
-                try {
-                    // Fetch user info from Google API
-                    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                        headers: { 'Authorization': `Bearer ${accessToken}` }
-                    });
-                    const userInfo = await res.json();
-                    
-                    if (userInfo.email) {
-                        const authData = {
-                            accessToken,
-                            email: userInfo.email.toLowerCase(),
-                            name: userInfo.name || userInfo.email,
-                            picture: userInfo.picture || '',
-                            expiresAt: Date.now() + 3600 * 1000 // expires in 1 hour
-                        };
-                        setAuth(authData);
-                        localStorage.setItem('pcil_auth', JSON.stringify(authData));
-                        setCookie('pcil_auth', authData, authData.expiresAt);
-                        setIsSandbox(false);
-                        showNotification(`Logged in as ${userInfo.name || userInfo.email}`, 'success');
-                    } else {
-                        throw new Error('Could not retrieve email address.');
-                    }
-                } catch (err) {
-                    showNotification('Sign-in failed: ' + err.message, 'error');
-                } finally {
-                    setLoading(false);
-                }
-            };
+             // Google login success handler
+             const handleOAuthSuccess = async (accessToken) => {
+                 setLoading(true);
+                 try {
+                     // Fetch user info from Google API
+                     const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                         headers: { 'Authorization': `Bearer ${accessToken}` }
+                     });
+                     const userInfo = await res.json();
+                     
+                     if (userInfo.email) {
+                         const authData = {
+                             accessToken,
+                             email: userInfo.email.toLowerCase(),
+                             name: userInfo.name || userInfo.email,
+                             picture: userInfo.picture || '',
+                             expiresAt: Date.now() + 3600 * 1000 // expires in 1 hour
+                         };
+                         setAuth(authData);
+                         localStorage.setItem('pcil_auth', JSON.stringify(authData));
+                         localStorage.setItem('pcil_user_signed_in', 'true');
+                         setCookie('pcil_auth', authData, authData.expiresAt);
+                         setIsSandbox(false);
+                         showNotification(`Logged in as ${userInfo.name || userInfo.email}`, 'success');
+                     } else {
+                         throw new Error('Could not retrieve email address.');
+                     }
+                 } catch (err) {
+                     showNotification('Sign-in failed: ' + err.message, 'error');
+                 } finally {
+                     setLoading(false);
+                 }
+             };
 
-            const triggerGoogleLogin = () => {
-                if (!tokenClient) {
-                    showNotification('Google OAuth Client ID is missing or incorrect. Click settings (cog) to check.', 'error');
-                    return;
-                }
-                tokenClient.requestAccessToken({ prompt: 'select_account' });
-            };
+             const requestTokenPromise = (options) => {
+                 return new Promise((resolve, reject) => {
+                     if (!tokenClient) {
+                         reject(new Error('Google Client is not initialized yet.'));
+                         return;
+                     }
+                     oauthResolveRef.current = resolve;
+                     oauthRejectRef.current = reject;
+                     try {
+                         tokenClient.requestAccessToken(options);
+                     } catch (err) {
+                         oauthResolveRef.current = null;
+                         oauthRejectRef.current = null;
+                         reject(err);
+                     }
+                 });
+             };
 
-            const handleLogout = () => {
-                setAuth(null);
-                localStorage.removeItem('pcil_auth');
-                eraseCookie('pcil_auth');
-                setIsSandbox(false);
-                setDirectives([]);
-                showNotification('Logged out successfully.', 'info');
-            };
+             const ensureValidToken = async () => {
+                 if (isSandbox) return 'sandbox_token';
+
+                 // 1. If we have a valid auth token in memory (with a 2-minute safety buffer)
+                 if (auth && auth.accessToken && auth.expiresAt && auth.expiresAt > Date.now() + 120 * 1000) {
+                     return auth.accessToken;
+                 }
+
+                 // 2. If it's expired/missing but we were previously logged in, try silent refresh
+                 if (localStorage.getItem('pcil_user_signed_in') === 'true') {
+                     try {
+                         console.log('[Auth] Token expired or missing. Attempting silent token refresh...');
+                         const token = await requestTokenPromise({ prompt: 'none' });
+                         return token;
+                     } catch (err) {
+                         console.warn('[Auth] Silent token refresh failed, prompting user:', err);
+                     }
+                 }
+
+                 // 3. Fall back to manual prompt if silent auth failed
+                 showNotification('Your session has expired. Re-authorizing...', 'info');
+                 const token = await requestTokenPromise({ prompt: 'select_account' });
+                 return token;
+             };
+
+             const triggerGoogleLogin = () => {
+                 if (!tokenClient) {
+                     showNotification('Google OAuth Client ID is missing or incorrect. Click settings (cog) to check.', 'error');
+                     return;
+                 }
+                 requestTokenPromise({ prompt: 'select_account' }).catch(err => {
+                     console.error('Manual login failed:', err);
+                 });
+             };
+
+             const handleLogout = () => {
+                 setAuth(null);
+                 localStorage.removeItem('pcil_auth');
+                 localStorage.removeItem('pcil_user_signed_in');
+                 eraseCookie('pcil_auth');
+                 setIsSandbox(false);
+                 setDirectives([]);
+                 showNotification('Logged out successfully.', 'info');
+             };
+
+             const handleLogoutSilently = () => {
+                 setAuth(null);
+                 localStorage.removeItem('pcil_auth');
+                 localStorage.removeItem('pcil_user_signed_in');
+                 eraseCookie('pcil_auth');
+                 setIsSandbox(false);
+             };
 
             const isPendingMoreThan24Hours = (dateStr) => {
                 if (!dateStr) return false;
@@ -1244,11 +1331,14 @@
                 return diffMs > 72 * 60 * 60 * 1000;
             };
 
-            const triggerIndividualReminder = (d) => {
-                if (!isSandbox && (!auth || Date.now() > auth.expiresAt)) {
-                    showNotification('Your session has expired. Please sign in again.', 'error');
-                    triggerGoogleLogin();
-                    return;
+            const triggerIndividualReminder = async (d) => {
+                if (!isSandbox) {
+                    try {
+                        const tokenVal = await ensureValidToken();
+                        if (!tokenVal) return;
+                    } catch (err) {
+                        return;
+                    }
                 }
 
                 const email = (d.headEmail || '').trim().toLowerCase();
@@ -1861,7 +1951,21 @@
                 }
 
                 // Production loading via Google Sheets API
-                if (!auth) return;
+                if (!isSandbox) {
+                    try {
+                        const tokenVal = await ensureValidToken();
+                        if (!tokenVal) {
+                            setLoading(false);
+                            syncLock.current = false;
+                            return;
+                        }
+                    } catch (err) {
+                        console.warn('Production sync auth check failed:', err);
+                        setLoading(false);
+                        syncLock.current = false;
+                        return;
+                    }
+                }
                 
                 try {
                     const sheetsToFetch = activeRole.isMD ? mappings : (activeRole.mappings || [activeRole.mapping].filter(Boolean));
@@ -2445,11 +2549,19 @@
                 }
 
                 // Google Sheets API append request
-                if (!auth) return;
-                try {
-                    if (!isSandbox && Date.now() > auth.expiresAt) {
-                        throw new Error('Your session has expired. Please sign in again.');
+                if (!isSandbox) {
+                    try {
+                        const tokenVal = await ensureValidToken();
+                        if (!tokenVal) {
+                            setDispatchLoading(false);
+                            return;
+                        }
+                    } catch (err) {
+                        setDispatchLoading(false);
+                        return;
                     }
+                }
+                try {
                     const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
                     const response = await fetchWithRetry(
                         `https://sheets.googleapis.com/v4/spreadsheets/${targetDept.spreadsheetId}/values/${encodeURIComponent(quotedTab)}!A:A:append?valueInputOption=USER_ENTERED`,
@@ -2554,11 +2666,19 @@
                 }
 
                 // Google Sheets API update row request
-                if (!auth) return;
-                try {
-                    if (!isSandbox && Date.now() > auth.expiresAt) {
-                        throw new Error('Your session has expired. Please sign in again.');
+                if (!isSandbox) {
+                    try {
+                        const tokenVal = await ensureValidToken();
+                        if (!tokenVal) {
+                            setEditLoading(false);
+                            return;
+                        }
+                    } catch (err) {
+                        setEditLoading(false);
+                        return;
                     }
+                }
+                try {
                     const activeTabName = currentDirective.sheetTabName || 'Master Data';
                     const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
                     const response = await fetchWithRetry(
@@ -2655,11 +2775,21 @@
                     return;
                 }
 
-                if (!auth) return;
-                try {
-                    if (!isSandbox && Date.now() > auth.expiresAt) {
-                        throw new Error('Your session has expired. Please sign in again.');
+                if (!isSandbox) {
+                    try {
+                        const tokenVal = await ensureValidToken();
+                        if (!tokenVal) {
+                            setLoading(false);
+                            setEditingDirective(null);
+                            return;
+                        }
+                    } catch (err) {
+                        setLoading(false);
+                        setEditingDirective(null);
+                        return;
                     }
+                }
+                try {
                     const activeTabName = directive.sheetTabName || 'Master Data';
                     const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
                     const response = await fetchWithRetry(
@@ -3514,11 +3644,14 @@
                                         
                                         <div className="w-full sm:w-auto flex gap-2">
                                             <button 
-                                                onClick={() => {
-                                                    if (!isSandbox && (!auth || Date.now() > auth.expiresAt)) {
-                                                        showNotification('Your session has expired. Please sign in again.', 'error');
-                                                        triggerGoogleLogin();
-                                                        return;
+                                                onClick={async () => {
+                                                    if (!isSandbox) {
+                                                        try {
+                                                            const tokenVal = await ensureValidToken();
+                                                            if (!tokenVal) return;
+                                                        } catch (err) {
+                                                            return;
+                                                        }
                                                     }
                                                     setIsDispatchOpen(true);
                                                 }}
