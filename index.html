@@ -1513,22 +1513,33 @@
                 const docs = [];
                 
                 if (role.isMD) {
-                    // Add MD Office SOPs
-                    if (mdSopDocId && mdSopDocId.trim()) {
-                        const parsedMdSops = parseSops({ sopDocId: mdSopDocId }, 'MD Office');
-                        docs.push(...parsedMdSops);
-                    }
-                    
-                    // Aggregate all unique department SOPs
-                    if (mappings) {
-                        mappings.forEach(m => {
-                            const parsedDeptSops = parseSops(m, m.deptName);
-                            parsedDeptSops.forEach(d => {
-                                if (!docs.some(existing => existing.id === d.id && existing.name === d.name)) {
-                                    docs.push(d);
-                                }
+                    if (filterDept !== 'All') {
+                        // Filtered department SOPs only
+                        if (mappings) {
+                            const targetMapping = mappings.find(m => m.deptName === filterDept);
+                            if (targetMapping) {
+                                const parsedDeptSops = parseSops(targetMapping, targetMapping.deptName);
+                                docs.push(...parsedDeptSops);
+                            }
+                        }
+                    } else {
+                        // Add MD Office SOPs
+                        if (mdSopDocId && mdSopDocId.trim()) {
+                            const parsedMdSops = parseSops({ sopDocId: mdSopDocId }, 'MD Office');
+                            docs.push(...parsedMdSops);
+                        }
+                        
+                        // Aggregate all unique department SOPs
+                        if (mappings) {
+                            mappings.forEach(m => {
+                                const parsedDeptSops = parseSops(m, m.deptName);
+                                parsedDeptSops.forEach(d => {
+                                    if (!docs.some(existing => existing.id === d.id && existing.name === d.name)) {
+                                        docs.push(d);
+                                    }
+                                });
                             });
-                        });
+                        }
                     }
                 } else {
                     // Coordinators
@@ -1544,7 +1555,7 @@
                 }
                 
                 return docs;
-            }, [clientId, mdEmail, mappings, auth, mdSopDocId, isSandbox, sandboxRole, activeRole]);
+            }, [clientId, mdEmail, mappings, auth, mdSopDocId, isSandbox, sandboxRole, activeRole, filterDept]);
 
             // Generic helper to send email using Gmail API
             const sendEmailViaGmail = async (toEmail, subject, bodyText) => {
@@ -3589,7 +3600,12 @@
                                         </div>
                                         <div>
                                             <div className="text-lg md:text-2xl font-black tracking-tight text-teal-600">{activeSopDocs.length}</div>
-                                            <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">My SOP</div>
+                                            <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                                {activeRole.isMD 
+                                                    ? (filterDept === 'All' ? 'All SOPs' : `${filterDept} SOPs`)
+                                                    : 'My SOPs'
+                                                }
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
