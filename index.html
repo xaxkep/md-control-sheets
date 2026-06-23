@@ -1186,7 +1186,7 @@
                     
                     // 1. Parse Settings
                     let fetchedClientId = '';
-                    let fetchedMdEmail = 'manan.mongia@super91.com';
+                    let fetchedMdEmails = [];
                     let fetchedMdSopDocId = '';
                     
                     if (settingsRange && settingsRange.values) {
@@ -1195,11 +1195,12 @@
                                 const key = String(row[0]).trim();
                                 const val = String(row[1]).trim();
                                 if (key === 'clientId') fetchedClientId = val;
-                                if (key === 'mdEmail') fetchedMdEmail = val;
+                                if (key === 'mdEmail' && val) fetchedMdEmails.push(val);
                                 if (key === 'mdSopDocId') fetchedMdSopDocId = val;
                             }
                         });
                     }
+                    let fetchedMdEmail = fetchedMdEmails.length > 0 ? fetchedMdEmails.join(', ') : 'manan.mongia@super91.com';
                     
                     // 2. Parse Mappings
                     const fetchedMappings = [];
@@ -1790,7 +1791,10 @@
             // Identify current role and view mode
             const getActiveUserRole = () => {
                 if (isSandbox) {
-                    if (sandboxRole === 'MD') return { isMD: true, email: mdEmail.toLowerCase(), name: 'Managing Director (Demo)' };
+                    if (sandboxRole === 'MD') {
+                        const firstMdEmail = mdEmail.split(',')[0].trim().toLowerCase();
+                        return { isMD: true, email: firstMdEmail, name: 'Managing Director (Demo)' };
+                    }
                     const targetEmail = sandboxRole.replace(/^DH:/, '').toLowerCase();
                     const matchingMappings = mappings.filter(m => m.headEmail.toLowerCase() === targetEmail);
                     if (matchingMappings.length > 0) {
@@ -1806,7 +1810,8 @@
                 }
                 if (!auth) return null;
                 const userEmail = auth.email.toLowerCase();
-                if (userEmail === mdEmail.toLowerCase()) {
+                const mdEmailsList = mdEmail.split(',').map(e => e.trim().toLowerCase());
+                if (mdEmailsList.includes(userEmail)) {
                     return { isMD: true, email: userEmail, name: auth.name };
                 }
                 const matchingMappings = mappings.filter(m => m.headEmail.toLowerCase() === userEmail);
