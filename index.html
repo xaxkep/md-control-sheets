@@ -623,7 +623,7 @@
         }
 
         // SOP Admin Dashboard for Managing Director (MD)
-        function SOPAdminDashboard({ onClose, sops, setSops, sopMappings, setSopMappings, sopReadRecords, setSopReadRecords, mappings, isSandbox, showNotification }) {
+        function SOPAdminDashboard({ onClose, sops, setSops, sopMappings, setSopMappings, sopReadRecords, setSopReadRecords, mappings, isSandbox, showNotification, deptGroups }) {
             const [activeTab, setActiveTab] = React.useState('compliance'); // 'compliance' | 'policies' | 'mappings'
             const [selectedWeek, setSelectedWeek] = React.useState(getCurrentWeekCode());
             const [complianceSubTab, setComplianceSubTab] = React.useState('deviations-this'); // 'deviations-this' | 'deviations-last' | 'pending'
@@ -6060,6 +6060,7 @@
                                             mappings={mappings}
                                             isSandbox={isSandbox}
                                             showNotification={showNotification}
+                                            deptGroups={deptGroups}
                                         />
                                     ) : (
                                         <SOPReader 
