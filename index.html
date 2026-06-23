@@ -419,13 +419,204 @@
             ]
         };
 
+        const CENTRAL_CONFIG_SPREADSHEET_ID = '1-jaWRejpsk7EdKLuOJ4QKx5wr3HTGqvzMaiXvqilDrI';
+
         const DEFAULT_MAPPINGS = [
-            { id: "1", deptName: "IT Project Management", headName: "Manan Mongia", headEmail: "manan@pcil.com", spreadsheetId: "spreadsheet_manan_mongia", sopDocId: "IT Project SOP: mock_it_project_management_sop, Network Security SOP: mock_printing_sop" },
-            { id: "2", deptName: "Product Management (Printing)", headName: "Kajal Sharma", headEmail: "kajal@pcil.com", spreadsheetId: "spreadsheet_kajal_sharma", sopDocId: "mock_printing_sop" },
-            { id: "3", deptName: "Support Center", headName: "Ramesh Panwar", headEmail: "ramesh@pcil.com", spreadsheetId: "spreadsheet_ramesh_panwar", sopDocId: "mock_support_sop" },
-            { id: "4", deptName: "PCIL CEO Office", headName: "Shahid Khan", headEmail: "shahid@pcil.com", spreadsheetId: "spreadsheet_shahid_khan", sopDocId: "mock_ceo_sop" },
-            { id: "5", deptName: "Finance & Accounts", headName: "Lalit Kumawat", headEmail: "lalit@pcil.com", spreadsheetId: "spreadsheet_lalit_kumawat", sopDocId: "mock_finance_sop" },
-            { id: "6", deptName: "Gifting Division", headName: "Dileep Yadav", headEmail: "dileep@pcil.com", spreadsheetId: "spreadsheet_dileep_yadav", sopDocId: "mock_gifting_sop" }
+            {
+                id: "1",
+                deptName: "IT Tasks",
+                headName: "Manan Mongia",
+                headEmail: "manan.mongia@super91.com",
+                spreadsheetId: "191zjsAwBd6eLqeOGuV4ghR-wVCYhckNwg-7-92ySOfs",
+                sheetTabName: "IT Tasks"
+            },
+            {
+                id: "1779858919556",
+                deptName: "IT Project Management",
+                headName: "Manan Mongia",
+                headEmail: "manan.mongia@super91.com",
+                spreadsheetId: "191zjsAwBd6eLqeOGuV4ghR-wVCYhckNwg-7-92ySOfs",
+                sheetTabName: "Master Data",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            },
+            {
+                id: "2",
+                deptName: "Product Management (Printing)",
+                headName: "Kajal Sharma",
+                headEmail: "bh.printing@super91.com",
+                spreadsheetId: "1_S5VOONNUUhBRmAKeqMaHXXFn_prPxHBa0ZTA4_bKhk",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            },
+            {
+                id: "3",
+                deptName: "Support Center",
+                headName: "Ramesh Panwar",
+                headEmail: "support@super91.com",
+                spreadsheetId: "16TSZIktowgmnkhajbNXHpTtMS50SWGIOWiA063_NL_w",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP - Support Center", id: "13mb9gLV9J_NtNp4FLgKqc160vavT9ZIphrW86EZtN1k" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            },
+            {
+                id: "4",
+                deptName: "PCIL CEO Office",
+                headName: "Shahid Khan",
+                headEmail: "shahid.khan@super91.com",
+                spreadsheetId: "1v57wmB6e4K9_9G4DlVCkvKV1e8p818HFaapUNT1y3mk",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP - PCIL (NPH)", id: "1X8W7c-b7QR2VXUxosn65fBaxDuSwK3Q0Fggqlgr5RNQ" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            },
+            {
+                id: "5",
+                deptName: "CFO",
+                headName: "Lalit Kumawat",
+                headEmail: "lalit.kumawat@super91.com",
+                spreadsheetId: "1DYjb1_KIfgQuReKdreawSg6OsGLSpFYvcHl8UdOFD-s",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            },
+            {
+                id: "6",
+                deptName: "Product Management (Gifting)",
+                headName: "Dileep Yadav",
+                headEmail: "bh.gifting@super91.com",
+                spreadsheetId: "1LzcelGpnauKTox6p8na6pxC8aRxUvzR33DeMg76crRQ",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP - Membership Support & Training", id: "1q6tZjv1O7b_62HCMgrllBwlSAJdJT_PpTxGD8Q6WBcU" },
+                    { name: "SOP - Dileep Yadav", id: "1cQQDT6R-aTqitegxga39dy-2NiDaWdgU5tThZRwHE90" },
+                    { name: "SOP - SPL Housekeeping Management", id: "1j8Z6tkQdgv1XdsOIKAZxdZBt-2oaPeHyMDcBbSaFUhY" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            },
+            {
+                id: "1779871052271",
+                deptName: "CTO",
+                headName: "RD Bhatnagar",
+                headEmail: "rdb@super91.com",
+                spreadsheetId: "1NRaZRTyVlWml9ocwlXSot6myOd-kjX478us7zbQTj8U",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            },
+            {
+                id: "1779871622609",
+                deptName: "SCM & Purchase",
+                headName: "Sonu Dubey",
+                headEmail: "purchase@super91.com",
+                spreadsheetId: "1-azKKQs6lhGSdVgMpKSaFLZKT8aIR_arVthhbY-U7qg",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            },
+            {
+                id: "1779873046490",
+                deptName: "Administration",
+                headName: "Mohit Sharma",
+                headEmail: "cao@super91.com",
+                spreadsheetId: "1cugXF8gzeE_HFNIUDv28KUn5sGR1zEAMZBLtjDdiCqE",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" },
+                    { name: "SOP & Policy - Admin Officer", id: "1s1YuJ2CxTNdFI0DzUaDRSciD8yWPlLeg5nltob5WG88" }
+                ]
+            },
+            {
+                id: "1779873046491",
+                deptName: "HR Manager",
+                headName: "Harendra Singh",
+                headEmail: "hr@super91.com",
+                spreadsheetId: "17oEHZfQY-O94KUfrv6PolSgX_5r0UcxPGSA5I1HQkoM",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP - HR Manager", id: "1uK0kwehgNOoLe_NSBI284T6-Nuw0TXb4N9vLK0tnCTs" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            },
+            {
+                id: "1779873046492",
+                deptName: "Product Manager",
+                headName: "Rahul Bhatra",
+                headEmail: "product.manager@super91.com",
+                spreadsheetId: "1a251zSXAQMICvZXKjQC443Ufv_ZTtQVbllfrJQFmUK0",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            },
+            {
+                id: "1779873046493",
+                deptName: "CMO",
+                headName: "Aditya Singh",
+                headEmail: "aditya.singh@super91.com",
+                spreadsheetId: "1xoZnSgRjA8Gni0m-G2tFkkN959taX2yq4ntrHYSYhEY",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            },
+            {
+                id: "1779873046494",
+                deptName: "Samples Department",
+                headName: "Shobhag Kanwar",
+                headEmail: "samples@super91.com",
+                spreadsheetId: "1lus9nrlCd3Mitr9Fslwu-GT2ObMrdBKewfY1xQDaJaU",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            },
+            {
+                id: "1779873046495",
+                deptName: "CPH Setup",
+                headName: "Rajveer Singh",
+                headEmail: "cph.care@super91.com",
+                spreadsheetId: "1mDQZuNqfec-u33KGkejIPmrODM9uyp0ZDzUvLfsdink",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            },
+            {
+                id: "1779873046496",
+                deptName: "Delivery Agency Care",
+                headName: "Abdul Qadir",
+                headEmail: "distributor.care@super91.com",
+                spreadsheetId: "1rWR0XsPZdd8Trt1A0aaR3nkE5eHzty2SmHbTY5pP59w",
+                sheetTabName: "",
+                sops: [
+                    { name: "SOP & Policy - SPL All Staff", id: "1E_zDImWtbKjtbpX4Lbzhbg1goJNffgTT-yiBraI26bk" },
+                    { name: "SOP & Policy - SPL All Managers & Incharges", id: "1WvnlE7s4kt3drVxSfekLmauIXnFB80u5Xim2HBG0aVA" }
+                ]
+            }
         ];
 
         // RC4 Encryption / Decryption Helper
@@ -868,8 +1059,8 @@
             const [showCompletedAudits, setShowCompletedAudits] = React.useState(false);
 
             // Settings states loaded from localStorage or initialized with defaults
-            const [clientId, setClientId] = React.useState(() => localStorage.getItem('pcil_clientId') || '');
-            const [mdEmail, setMdEmail] = React.useState(() => localStorage.getItem('pcil_mdEmail') || 'manan@pcil.com');
+            const [clientId, setClientId] = React.useState(() => localStorage.getItem('pcil_clientId') || '680867814154-rji8esp30qasc5c7nuhh0rkq6nd6d484.apps.googleusercontent.com');
+            const [mdEmail, setMdEmail] = React.useState(() => localStorage.getItem('pcil_mdEmail') || 'manan.mongia@super91.com');
             const [mdSopDocId, setMdSopDocId] = React.useState(() => localStorage.getItem('pcil_mdSopDocId') || '');
             const [mappings, setMappings] = React.useState(() => {
                 const saved = localStorage.getItem('pcil_mappings');
@@ -966,6 +1157,182 @@
             // Notification message state
             const [notification, setNotification] = React.useState(null);
 
+            const fetchCentralConfiguration = async (accessToken) => {
+                if (!accessToken) return null;
+                try {
+                    console.log('[Config] Fetching central configuration from Google Sheets...');
+                    const ranges = ['Settings!A:B', 'Mappings!A:Z', 'SOPs!A:C', 'DeptGroups!A:B', 'SOPMappings!A:C'];
+                    const rangeParams = ranges.map(r => `ranges=${encodeURIComponent(r)}`).join('&');
+                    
+                    const response = await fetchWithRetry(
+                        `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values:batchGet?${rangeParams}`,
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`
+                            }
+                        }
+                    );
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch config sheet. Status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    if (!data.valueRanges) {
+                        throw new Error('Invalid response structure: valueRanges not found');
+                    }
+                    
+                    const [settingsRange, mappingsRange, sopsRange, groupsRange, mappingsSopRange] = data.valueRanges;
+                    
+                    // 1. Parse Settings
+                    let fetchedClientId = '';
+                    let fetchedMdEmail = 'manan.mongia@super91.com';
+                    let fetchedMdSopDocId = '';
+                    
+                    if (settingsRange && settingsRange.values) {
+                        settingsRange.values.forEach(row => {
+                            if (row && row.length >= 2) {
+                                const key = String(row[0]).trim();
+                                const val = String(row[1]).trim();
+                                if (key === 'clientId') fetchedClientId = val;
+                                if (key === 'mdEmail') fetchedMdEmail = val;
+                                if (key === 'mdSopDocId') fetchedMdSopDocId = val;
+                            }
+                        });
+                    }
+                    
+                    // 2. Parse Mappings
+                    const fetchedMappings = [];
+                    if (mappingsRange && mappingsRange.values && mappingsRange.values.length > 0) {
+                        const rows = mappingsRange.values;
+                        const headers = rows[0].map(h => String(h).trim());
+                        
+                        for (let i = 1; i < rows.length; i++) {
+                            const row = rows[i];
+                            const mapping = {};
+                            headers.forEach((header, index) => {
+                                mapping[header] = row[index] !== undefined ? String(row[index]).trim() : '';
+                            });
+                            mapping.sops = [];
+                            if (mapping.id && mapping.deptName) {
+                                fetchedMappings.push(mapping);
+                            }
+                        }
+                    }
+                    
+                    // 3. Parse SOPs List
+                    const sopsDict = {};
+                    if (sopsRange && sopsRange.values && sopsRange.values.length > 0) {
+                        const rows = sopsRange.values;
+                        const headers = rows[0].map(h => String(h).trim());
+                        const idIdx = headers.indexOf('sopId');
+                        const nameIdx = headers.indexOf('sopName');
+                        const docIdIdx = headers.indexOf('sopDocId');
+                        
+                        if (idIdx !== -1 && nameIdx !== -1 && docIdIdx !== -1) {
+                            for (let i = 1; i < rows.length; i++) {
+                                const row = rows[i];
+                                const sopId = row[idIdx] !== undefined ? String(row[idIdx]).trim() : '';
+                                const sopName = row[nameIdx] !== undefined ? String(row[nameIdx]).trim() : '';
+                                const sopDocId = row[docIdIdx] !== undefined ? String(row[docIdIdx]).trim() : '';
+                                if (sopId && sopDocId) {
+                                    sopsDict[sopId] = { name: sopName, id: sopDocId };
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 4. Parse DeptGroups
+                    const groupToDepts = {};
+                    if (groupsRange && groupsRange.values && groupsRange.values.length > 0) {
+                        const rows = groupsRange.values;
+                        const headers = rows[0].map(h => String(h).trim());
+                        const groupIdx = headers.indexOf('groupId');
+                        const deptIdx = headers.indexOf('deptId');
+                        
+                        if (groupIdx !== -1 && deptIdx !== -1) {
+                            for (let i = 1; i < rows.length; i++) {
+                                const row = rows[i];
+                                const groupId = row[groupIdx] !== undefined ? String(row[groupIdx]).trim() : '';
+                                const deptId = row[deptIdx] !== undefined ? String(row[deptIdx]).trim() : '';
+                                if (groupId && deptId) {
+                                    if (!groupToDepts[groupId]) {
+                                        groupToDepts[groupId] = [];
+                                    }
+                                    if (!groupToDepts[groupId].includes(deptId)) {
+                                        groupToDepts[groupId].push(deptId);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 5. Parse SOPMappings and attach to fetchedMappings
+                    if (mappingsSopRange && mappingsSopRange.values && mappingsSopRange.values.length > 0) {
+                        const rows = mappingsSopRange.values;
+                        const headers = rows[0].map(h => String(h).trim());
+                        const targetIdx = headers.indexOf('targetId') !== -1 ? headers.indexOf('targetId') : headers.findIndex(h => h.includes('groupId/deptId') || h.includes('groupId') || h.includes('deptId'));
+                        const typeIdx = headers.indexOf('type');
+                        const sopIdIdx = headers.indexOf('sopId');
+                        
+                        if (targetIdx !== -1 && typeIdx !== -1 && sopIdIdx !== -1) {
+                            for (let i = 1; i < rows.length; i++) {
+                                const row = rows[i];
+                                const targetId = row[targetIdx] !== undefined ? String(row[targetIdx]).trim() : '';
+                                const type = row[typeIdx] !== undefined ? String(row[typeIdx]).trim().toLowerCase() : '';
+                                const sopId = row[sopIdIdx] !== undefined ? String(row[sopIdIdx]).trim() : '';
+                                
+                                if (targetId && type && sopId && sopsDict[sopId]) {
+                                    const sopObject = sopsDict[sopId];
+                                    if (type === 'dept') {
+                                        const targetMapping = fetchedMappings.find(m => String(m.id).trim() === targetId);
+                                        if (targetMapping) {
+                                            if (!targetMapping.sops.some(s => s.id === sopObject.id)) {
+                                                targetMapping.sops.push({ ...sopObject });
+                                            }
+                                        }
+                                    } else if (type === 'group') {
+                                        const deptIds = groupToDepts[targetId] || [];
+                                        deptIds.forEach(dId => {
+                                            const targetMapping = fetchedMappings.find(m => String(m.id).trim() === dId);
+                                            if (targetMapping) {
+                                                if (!targetMapping.sops.some(s => s.id === sopObject.id)) {
+                                                    targetMapping.sops.push({ ...sopObject });
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // 6. Save to localStorage & update states
+                        if (fetchedClientId) {
+                            setClientId(fetchedClientId);
+                            localStorage.setItem('pcil_clientId', fetchedClientId);
+                        }
+                        if (fetchedMdEmail) {
+                            setMdEmail(fetchedMdEmail);
+                            localStorage.setItem('pcil_mdEmail', fetchedMdEmail);
+                        }
+                        if (fetchedMdSopDocId !== undefined) {
+                            setMdSopDocId(fetchedMdSopDocId);
+                            localStorage.setItem('pcil_mdSopDocId', fetchedMdSopDocId);
+                        }
+                        if (fetchedMappings.length > 0) {
+                            setMappings(fetchedMappings);
+                            localStorage.setItem('pcil_mappings', JSON.stringify(fetchedMappings));
+                        }
+                        console.log('[Config] Successfully loaded configuration from spreadsheet. Mappings loaded:', fetchedMappings.length);
+                        return fetchedMappings;
+                    } catch (err) {
+                        console.error('[Config] Failed to fetch central configuration:', err);
+                        showNotification('Using cached configuration. Failed to update from server.', 'warning');
+                        return null;
+                    }
+                };
+
             // Close modals on Escape key press
             React.useEffect(() => {
                 const handleKeyDown = (e) => {
@@ -997,6 +1364,13 @@
                 console.log(`[PWA] User installation choice: ${outcome}`);
                 setDeferredPrompt(null);
             };
+
+            // Fetch central config on startup if already authenticated
+            React.useEffect(() => {
+                if (auth && auth.accessToken) {
+                    fetchCentralConfiguration(auth.accessToken);
+                }
+            }, [auth]);
 
             // Setup GIS Client
             React.useEffect(() => {
@@ -1232,6 +1606,7 @@
                          setCookie('pcil_auth', authData, authData.expiresAt);
                          setIsSandbox(false);
                          showNotification(`Logged in as ${userInfo.name || userInfo.email}`, 'success');
+                         await fetchCentralConfiguration(accessToken);
                      } else {
                          throw new Error('Could not retrieve email address.');
                      }
@@ -1280,7 +1655,7 @@
                  }
 
                  // 3. Fall back to manual prompt if silent auth failed
-                 showNotification('Your session has expired. Re-authorizing...', 'info');
+                showNotification('Your session has expired. Re-authorizing...', 'info');
                  const token = await requestTokenPromise({ prompt: 'select_account' });
                  return token;
              };
@@ -1983,6 +2358,7 @@
                 }
 
                 // Production loading via Google Sheets API
+                let freshMappings = null;
                 if (!isSandbox) {
                     try {
                         const tokenVal = await ensureValidToken();
@@ -1991,6 +2367,7 @@
                             syncLock.current = false;
                             return;
                         }
+                        freshMappings = await fetchCentralConfiguration(tokenVal);
                     } catch (err) {
                         console.warn('Production sync auth check failed:', err);
                         setLoading(false);
@@ -2000,7 +2377,16 @@
                 }
                 
                 try {
-                    const sheetsToFetch = activeRole.isMD ? mappings : (activeRole.mappings || [activeRole.mapping].filter(Boolean));
+                    const currentMappings = freshMappings || mappings;
+                    let sheetsToFetch = [];
+                    if (activeRole.isMD) {
+                        sheetsToFetch = currentMappings;
+                    } else if (auth && auth.email) {
+                        const userEmail = auth.email.toLowerCase();
+                        sheetsToFetch = currentMappings.filter(m => m.headEmail.toLowerCase() === userEmail);
+                    } else {
+                        sheetsToFetch = activeRole.mappings || [activeRole.mapping].filter(Boolean);
+                    }
                     
                     const fetchSingleTab = async (map) => {
                         try {
