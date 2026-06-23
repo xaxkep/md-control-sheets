@@ -557,23 +557,23 @@
                 mappings.forEach(map => {
                     const email = map.headEmail.toLowerCase();
                     const mappedSopIds = sopMappings
-                        .filter(m => m.type === 'dept' && String(m.targetId).trim() === String(map.id).trim())
-                        .map(m => m.sopId);
+                        .filter(m => String(m.type).trim().toLowerCase() === 'dept' && String(m.targetId).trim().toLowerCase() === String(map.id).trim().toLowerCase())
+                        .map(m => String(m.sopId).trim().toLowerCase());
                     
                     const resolvedSopIds = new Set(mappedSopIds);
                     if (Array.isArray(map.sops)) {
-                        map.sops.forEach(s => resolvedSopIds.add(s.id));
+                        map.sops.forEach(s => resolvedSopIds.add(String(s.id).trim().toLowerCase()));
                     }
                     
-                    const activePolicies = sops.filter(p => resolvedSopIds.has(p.sopId) && p.status !== 'Inactive');
+                    const activePolicies = sops.filter(p => resolvedSopIds.has(String(p.sopId).trim().toLowerCase()) && String(p.status).trim().toLowerCase() !== 'inactive');
                     if (activePolicies.length === 0) return;
                     
                     const pendingPolicies = activePolicies.filter(policy => {
                         return !sopReadRecords.some(r => 
-                            r.userEmail.toLowerCase() === email &&
-                            r.weekCode === selectedWeek &&
-                            r.sopId === policy.sopId &&
-                            r.policyId === policy.policyId
+                            String(r.userEmail).trim().toLowerCase() === String(email).trim().toLowerCase() &&
+                            String(r.weekCode).trim().toLowerCase() === String(selectedWeek).trim().toLowerCase() &&
+                            String(r.sopId).trim().toLowerCase() === String(policy.sopId).trim().toLowerCase() &&
+                            String(r.policyId).trim().toLowerCase() === String(policy.policyId).trim().toLowerCase()
                         );
                     });
                     
@@ -1477,10 +1477,10 @@
             const getPolicyStatus = (policy) => {
                 if (!userEmail || !sopReadRecords) return null;
                 return sopReadRecords.find(r => 
-                    r.userEmail.toLowerCase() === userEmail &&
-                    r.weekCode === currentWeekCode &&
-                    r.sopId === policy.sopId &&
-                    r.policyId === policy.policyId
+                    String(r.userEmail).trim().toLowerCase() === String(userEmail).trim().toLowerCase() &&
+                    String(r.weekCode).trim().toLowerCase() === String(currentWeekCode).trim().toLowerCase() &&
+                    String(r.sopId).trim().toLowerCase() === String(policy.sopId).trim().toLowerCase() &&
+                    String(r.policyId).trim().toLowerCase() === String(policy.policyId).trim().toLowerCase()
                 );
             };
 
@@ -2732,23 +2732,25 @@
                     }
                     
                     fetchedSopMappings.forEach(m => {
-                        const sopName = fetchedSops.find(s => s.sopId === m.sopId)?.sopName || m.sopId;
-                        const sopDocId = fetchedSops.find(s => s.sopId === m.sopId)?.sopDocId || '';
-                        const sopObject = { id: m.sopId, name: sopName, docId: sopDocId };
+                        const matchedSop = fetchedSops.find(s => String(s.sopId).trim().toLowerCase() === String(m.sopId).trim().toLowerCase());
+                        const sopName = matchedSop?.sopName || m.sopId;
+                        const sopDocId = matchedSop?.sopDocId || '';
+                        const sopObject = { id: String(m.sopId).trim(), name: sopName, docId: sopDocId };
                         
                         if (m.type === 'dept') {
-                            const targetMapping = fetchedMappings.find(map => String(map.id).trim() === m.targetId);
+                            const targetMapping = fetchedMappings.find(map => String(map.id).trim().toLowerCase() === String(m.targetId).trim().toLowerCase());
                             if (targetMapping) {
-                                if (!targetMapping.sops.some(s => s.id === sopObject.id)) {
+                                if (!targetMapping.sops.some(s => String(s.id).trim().toLowerCase() === String(sopObject.id).trim().toLowerCase())) {
                                     targetMapping.sops.push({ ...sopObject });
                                 }
                             }
                         } else if (m.type === 'group') {
-                            const deptIds = groupToDepts[m.targetId] || [];
+                            const matchedGroupKey = Object.keys(groupToDepts).find(gKey => gKey.trim().toLowerCase() === String(m.targetId).trim().toLowerCase());
+                            const deptIds = matchedGroupKey ? groupToDepts[matchedGroupKey] : [];
                             deptIds.forEach(dId => {
-                                const targetMapping = fetchedMappings.find(map => String(map.id).trim() === dId);
+                                const targetMapping = fetchedMappings.find(map => String(map.id).trim().toLowerCase() === String(dId).trim().toLowerCase());
                                 if (targetMapping) {
-                                    if (!targetMapping.sops.some(s => s.id === sopObject.id)) {
+                                    if (!targetMapping.sops.some(s => String(s.id).trim().toLowerCase() === String(sopObject.id).trim().toLowerCase())) {
                                         targetMapping.sops.push({ ...sopObject });
                                     }
                                 }
@@ -3442,7 +3444,7 @@
                 
                 // Attach parsed policies to each resolved SOP
                 return docs.map(doc => {
-                    const policies = sops.filter(s => s.sopId === doc.id);
+                    const policies = sops.filter(s => String(s.sopId).trim().toLowerCase() === String(doc.id).trim().toLowerCase());
                     return {
                         ...doc,
                         policies: policies
@@ -4048,9 +4050,9 @@
                 }
             }, [showCompletedAudits, activeMetricTab]);
 
-            // Weekly SOP Reading Check for Coordinators
+            // Auto-check SOP Compliance on login or week change
             React.useEffect(() => {
-                if (!activeRole || activeRole.isMD || activeRole.isUnregistered) {
+                if (!activeRole || activeRole.isMD || activeRole.isUnregistered || !activeSopDocs || activeSopDocs.length === 0) {
                     setIsSopWizardOpen(false);
                     return;
                 }
@@ -4060,7 +4062,7 @@
                 activeSopDocs.forEach(sopDoc => {
                     if (sopDoc.policies) {
                         sopDoc.policies.forEach(policy => {
-                            if (policy.status !== 'Inactive') {
+                            if (String(policy.status).trim().toLowerCase() !== 'inactive') {
                                 activePolicies.push(policy);
                             }
                         });
@@ -4078,10 +4080,10 @@
                 
                 const missingAffirmations = activePolicies.filter(policy => {
                     return !sopReadRecords.some(record => 
-                        record.userEmail.toLowerCase() === userEmail &&
-                        record.weekCode === currentWeekCode &&
-                        record.sopId === policy.sopId &&
-                        record.policyId === policy.policyId
+                        String(record.userEmail).trim().toLowerCase() === String(userEmail).trim().toLowerCase() &&
+                        String(record.weekCode).trim().toLowerCase() === String(currentWeekCode).trim().toLowerCase() &&
+                        String(record.sopId).trim().toLowerCase() === String(policy.sopId).trim().toLowerCase() &&
+                        String(record.policyId).trim().toLowerCase() === String(policy.policyId).trim().toLowerCase()
                     );
                 });
 
@@ -5230,21 +5232,21 @@
                 return mappings.filter(map => {
                     const email = map.headEmail.toLowerCase();
                     const mappedSopIds = sopMappings
-                        .filter(m => m.type === 'dept' && String(m.targetId).trim() === String(map.id).trim())
-                        .map(m => m.sopId);
+                        .filter(m => String(m.type).trim().toLowerCase() === 'dept' && String(m.targetId).trim().toLowerCase() === String(map.id).trim().toLowerCase())
+                        .map(m => String(m.sopId).trim().toLowerCase());
                     const resolvedSopIds = new Set(mappedSopIds);
                     if (Array.isArray(map.sops)) {
-                        map.sops.forEach(s => resolvedSopIds.add(s.id));
+                        map.sops.forEach(s => resolvedSopIds.add(String(s.id).trim().toLowerCase()));
                     }
-                    const activePolicies = sops.filter(p => resolvedSopIds.has(p.sopId) && p.status !== 'Inactive');
+                    const activePolicies = sops.filter(p => resolvedSopIds.has(String(p.sopId).trim().toLowerCase()) && String(p.status).trim().toLowerCase() !== 'inactive');
                     if (activePolicies.length === 0) return false;
                     
                     const pendingPolicies = activePolicies.filter(policy => {
                         return !sopReadRecords.some(r => 
-                            r.userEmail.toLowerCase() === email &&
-                            r.weekCode === getCurrentWeekCode() &&
-                            r.sopId === policy.sopId &&
-                            r.policyId === policy.policyId
+                            String(r.userEmail).trim().toLowerCase() === String(email).trim().toLowerCase() &&
+                            String(r.weekCode).trim().toLowerCase() === String(getCurrentWeekCode()).trim().toLowerCase() &&
+                            String(r.sopId).trim().toLowerCase() === String(policy.sopId).trim().toLowerCase() &&
+                            String(r.policyId).trim().toLowerCase() === String(policy.policyId).trim().toLowerCase()
                         );
                     });
                     return pendingPolicies.length > 0;
