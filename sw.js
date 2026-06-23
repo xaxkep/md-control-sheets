@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bg-command-center-v10';
+const CACHE_NAME = 'bg-command-center-v12';
 
 const PRECACHE_ASSETS = [
   './',
@@ -7,9 +7,9 @@ const PRECACHE_ASSETS = [
   './icon-192.png',
   './icon-512.png',
   'https://cdn.tailwindcss.com',
-  'https://unpkg.com/react@18/umd/react.production.min.js',
-  'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
-  'https://unpkg.com/@babel/standalone/babel.min.js',
+  'https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js',
+  'https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js',
+  'https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js',
   'https://accounts.google.com/gsi/client',
   'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@300;400;500;600;700;800&display=swap'
 ];
@@ -79,6 +79,7 @@ self.addEventListener('fetch', (event) => {
   // Cache-First strategy for static CDN assets and fonts
   // Check cache first; if not found, fetch from network and save to cache
   const isCdnAsset = url.hostname.includes('unpkg.com') ||
+                      url.hostname.includes('jsdelivr.net') ||
                       url.hostname.includes('tailwindcss.com') ||
                       url.hostname.includes('fonts.gstatic.com') ||
                       url.hostname.includes('fonts.googleapis.com') ||
