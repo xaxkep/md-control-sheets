@@ -2880,7 +2880,7 @@
                                 const row = rows[i];
                                 const targetId = row[targetIdx] !== undefined ? String(row[targetIdx]).trim() : '';
                                 const type = row[typeIdx] !== undefined ? String(row[typeIdx]).trim().toLowerCase() : '';
-                                const sopId = row[sopIdIdx] !== undefined ? String(row[sopId]).trim() : '';
+                                const sopId = row[sopIdIdx] !== undefined ? String(row[sopIdIdx]).trim() : '';
                                 
                                 if (targetId && type && sopId) {
                                     fetchedSopMappings.push({ targetId, type, sopId });
