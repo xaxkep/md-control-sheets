@@ -565,6 +565,21 @@
                         map.sops.forEach(s => resolvedSopIds.add(String(s.id).trim().toLowerCase()));
                     }
                     
+                    // Resolve group-level mappings dynamically
+                    const groupIds = deptGroups
+                        .filter(g => String(g.deptId).trim().toLowerCase() === String(map.id).trim().toLowerCase())
+                        .map(g => String(g.groupId).trim().toLowerCase());
+                    
+                    const groupSopIds = sopMappings
+                        .filter(m => {
+                            const mType = String(m.type).trim().toLowerCase();
+                            const mTarget = String(m.targetId).trim().toLowerCase();
+                            return mType === 'group' && (groupIds.includes(mTarget) || mTarget === 'default');
+                        })
+                        .map(m => String(m.sopId).trim().toLowerCase());
+                        
+                    groupSopIds.forEach(id => resolvedSopIds.add(id));
+                    
                     const activePolicies = sops.filter(p => resolvedSopIds.has(String(p.sopId).trim().toLowerCase()) && String(p.status).trim().toLowerCase() !== 'inactive');
                     if (activePolicies.length === 0) return;
                     
@@ -588,7 +603,7 @@
                     }
                 });
                 return list;
-            }, [mappings, sops, sopMappings, sopReadRecords, selectedWeek]);
+            }, [mappings, sops, sopMappings, sopReadRecords, selectedWeek, deptGroups]);
 
             // Save SOPs to spreadsheet or local state
             const saveSops = async (updatedSops) => {
@@ -2441,6 +2456,12 @@
             const [mdEmail, setMdEmail] = React.useState(() => localStorage.getItem('pcil_mdEmail') || 'manan.mongia@super91.com');
             const [mdSopDocId, setMdSopDocId] = React.useState(() => localStorage.getItem('pcil_mdSopDocId') || '');
             
+            // Department groups state
+            const [deptGroups, setDeptGroups] = React.useState(() => {
+                const saved = localStorage.getItem('pcil_deptGroups');
+                return saved ? JSON.parse(saved) : [];
+            });
+            
             // PWA Setup Panel states
             const [showSetup, setShowSetup] = React.useState(false);
             const [setupClientId, setSetupClientId] = React.useState(clientId);
@@ -2699,6 +2720,7 @@
                     
                     // 4. Parse DeptGroups
                     const groupToDepts = {};
+                    const fetchedDeptGroups = [];
                     if (groupsRange && groupsRange.values && groupsRange.values.length > 0) {
                         const rows = groupsRange.values;
                         const headers = rows[0].map(h => String(h).trim());
@@ -2711,6 +2733,7 @@
                                 const groupId = row[groupIdx] !== undefined ? String(row[groupIdx]).trim() : '';
                                 const deptId = row[deptIdx] !== undefined ? String(row[deptIdx]).trim() : '';
                                 if (groupId && deptId) {
+                                    fetchedDeptGroups.push({ groupId, deptId });
                                     if (!groupToDepts[groupId]) groupToDepts[groupId] = [];
                                     if (!groupToDepts[groupId].includes(deptId)) groupToDepts[groupId].push(deptId);
                                 }
@@ -2834,6 +2857,14 @@
                         if (newSopMappingsStr !== oldSopMappingsStr) {
                             setSopMappings(fetchedSopMappings);
                             localStorage.setItem('pcil_sopMappings', newSopMappingsStr);
+                        }
+                    }
+                    if (fetchedDeptGroups.length > 0) {
+                        const newDeptGroupsStr = JSON.stringify(fetchedDeptGroups);
+                        const oldDeptGroupsStr = localStorage.getItem('pcil_deptGroups') || '';
+                        if (newDeptGroupsStr !== oldDeptGroupsStr) {
+                            setDeptGroups(fetchedDeptGroups);
+                            localStorage.setItem('pcil_deptGroups', newDeptGroupsStr);
                         }
                     }
                     const newReadRecordsStr = JSON.stringify(fetchedReadRecords);
@@ -3443,10 +3474,33 @@
                     // Coordinators
                     const coordinatorMappings = role.mappings || (role.mapping ? [role.mapping] : []);
                     coordinatorMappings.forEach(m => {
+                        // 1. Resolve explicit department SOPs
                         const parsedDeptSops = parseSops(m, m.deptName);
                         parsedDeptSops.forEach(d => {
-                            if (!docs.some(existing => existing.id === d.id && existing.name === d.name)) {
+                            if (!docs.some(existing => String(existing.id).trim().toLowerCase() === String(d.id).trim().toLowerCase())) {
                                 docs.push(d);
+                            }
+                        });
+                        
+                        // 2. Resolve group-level SOPs dynamically
+                        const groupIds = deptGroups
+                            .filter(g => String(g.deptId).trim().toLowerCase() === String(m.id).trim().toLowerCase())
+                            .map(g => String(g.groupId).trim().toLowerCase());
+                        
+                        const groupSopIds = sopMappings
+                            .filter(mapRule => {
+                                const mType = String(mapRule.type).trim().toLowerCase();
+                                const mTarget = String(mapRule.targetId).trim().toLowerCase();
+                                return mType === 'group' && (groupIds.includes(mTarget) || mTarget === 'default');
+                            })
+                            .map(mapRule => String(mapRule.sopId).trim().toLowerCase());
+                            
+                        groupSopIds.forEach(sopId => {
+                            const matchedSop = sops.find(s => String(s.sopId).trim().toLowerCase() === sopId);
+                            const sopName = matchedSop?.sopName || sopId;
+                            const sopDocId = matchedSop?.sopDocId || '';
+                            if (!docs.some(existing => String(existing.id).trim().toLowerCase() === sopId)) {
+                                docs.push({ id: sopId, name: sopName, docId: sopDocId });
                             }
                         });
                     });
@@ -3460,7 +3514,7 @@
                         policies: policies
                     };
                 });
-            }, [clientId, mdEmail, mappings, auth, mdSopDocId, isSandbox, sandboxRole, activeRole, filterDept, sops]);
+            }, [clientId, mdEmail, mappings, auth, mdSopDocId, isSandbox, sandboxRole, activeRole, filterDept, sops, deptGroups]);
 
             // Generic helper to send email using Gmail API
             const sendEmailViaGmail = async (toEmail, subject, bodyText) => {
@@ -5248,6 +5302,22 @@
                     if (Array.isArray(map.sops)) {
                         map.sops.forEach(s => resolvedSopIds.add(String(s.id).trim().toLowerCase()));
                     }
+                    
+                    // Resolve group-level mappings dynamically
+                    const groupIds = deptGroups
+                        .filter(g => String(g.deptId).trim().toLowerCase() === String(map.id).trim().toLowerCase())
+                        .map(g => String(g.groupId).trim().toLowerCase());
+                    
+                    const groupSopIds = sopMappings
+                        .filter(m => {
+                            const mType = String(m.type).trim().toLowerCase();
+                            const mTarget = String(m.targetId).trim().toLowerCase();
+                            return mType === 'group' && (groupIds.includes(mTarget) || mTarget === 'default');
+                        })
+                        .map(m => String(m.sopId).trim().toLowerCase());
+                        
+                    groupSopIds.forEach(id => resolvedSopIds.add(id));
+                    
                     const activePolicies = sops.filter(p => resolvedSopIds.has(String(p.sopId).trim().toLowerCase()) && String(p.status).trim().toLowerCase() !== 'inactive');
                     if (activePolicies.length === 0) return false;
                     
@@ -5261,7 +5331,7 @@
                     });
                     return pendingPolicies.length > 0;
                 }).length;
-            }, [mappings, sops, sopMappings, sopReadRecords]);
+            }, [mappings, sops, sopMappings, sopReadRecords, deptGroups]);
 
             // Calculate MD Cabin TV Dashboard metrics globally
             const cabinMetrics = React.useMemo(() => {
