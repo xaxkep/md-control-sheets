@@ -1516,7 +1516,7 @@
                     if (filterDept !== 'All') {
                         // Filtered department SOPs only
                         if (mappings) {
-                            const targetMapping = mappings.find(m => m.deptName === filterDept);
+                            const targetMapping = mappings.find(m => m.id === filterDept);
                             if (targetMapping) {
                                 const parsedDeptSops = parseSops(targetMapping, targetMapping.deptName);
                                 docs.push(...parsedDeptSops);
@@ -3602,7 +3602,7 @@
                                             <div className="text-lg md:text-2xl font-black tracking-tight text-teal-600">{activeSopDocs.length}</div>
                                             <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">
                                                 {activeRole.isMD 
-                                                    ? (filterDept === 'All' ? 'All SOPs' : `${filterDept} SOPs`)
+                                                    ? (filterDept === 'All' ? 'All SOPs' : `${mappings.find(m => m.id === filterDept)?.deptName || filterDept} SOPs`)
                                                     : 'My SOPs'
                                                 }
                                             </div>
