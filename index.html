@@ -684,11 +684,25 @@
             if (!dateStr) return new Date(0);
             const parts = String(dateStr).trim().split(/[\s\-\/]+/);
             if (parts.length >= 3) {
-                const day = parseInt(parts[0], 10);
-                const monthStr = parts[1];
-                const year = parseInt(parts[2], 10);
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                const monthIndex = months.findIndex(m => m.toLowerCase() === monthStr.toLowerCase());
+                let day = parseInt(parts[0], 10);
+                let monthStr = parts[1];
+                let year = parseInt(parts[2], 10);
+
+                // Handle YYYY-MM-DD format
+                if (parts[0].length === 4 && parts[2].length <= 2) {
+                    day = parseInt(parts[2], 10);
+                    year = parseInt(parts[0], 10);
+                }
+
+                // Try parsing month as a number (1-12)
+                let monthIndex = parseInt(monthStr, 10) - 1;
+
+                // Fallback to word-based month names if not a valid number
+                if (isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) {
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    monthIndex = months.findIndex(m => m.toLowerCase() === monthStr.toLowerCase());
+                }
+
                 if (monthIndex !== -1 && !isNaN(day) && !isNaN(year)) {
                     const fullYear = year < 100 ? 2000 + year : year;
                     let hours = 0;
