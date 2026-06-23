@@ -238,15 +238,1079 @@
             );
         }
 
-        // SOP Reader Component
-        function SOPReader({ activeSopDocs, onClose }) {
-            const [selectedIdx, setSelectedIdx] = React.useState(0);
-            const [iframeLoading, setIframeLoading] = React.useState(true);
+        // SOP Wizard Modal for weekly affirmation checks
+        function SOPWizardModal({ isOpen, activeSopDocs, activeRole, sopReadRecords, setSopReadRecords, isSandbox, onClose, auth, showNotification }) {
+            const [currentIdx, setCurrentIdx] = React.useState(0);
+            const [answers, setAnswers] = React.useState([]);
+            const [showReasonInput, setShowReasonInput] = React.useState(false);
+            const [deviationReason, setDeviationReason] = React.useState('');
+            const [submitting, setSubmitting] = React.useState(false);
 
-            // Reset loading state when document changes
+            // Get flat list of active policies to verify
+            const policiesToVerify = React.useMemo(() => {
+                const list = [];
+                if (!activeSopDocs) return [];
+                activeSopDocs.forEach(sop => {
+                    if (sop.policies) {
+                        sop.policies.forEach(p => {
+                            if (p.status !== 'Inactive') {
+                                list.push(p);
+                            }
+                        });
+                    }
+                });
+                return list;
+            }, [activeSopDocs]);
+
+            // Reset step index if policies change
             React.useEffect(() => {
-                setIframeLoading(true);
-            }, [selectedIdx, activeSopDocs]);
+                setCurrentIdx(0);
+                setAnswers([]);
+                setShowReasonInput(false);
+                setDeviationReason('');
+            }, [policiesToVerify]);
+
+            if (!isOpen || policiesToVerify.length === 0) return null;
+
+            const currentPolicy = policiesToVerify[currentIdx];
+            const isLast = currentIdx === policiesToVerify.length - 1;
+
+            const parseInlineStyles = (txt) => {
+                const parts = String(txt).split('**');
+                return parts.map((part, i) => {
+                    if (i % 2 === 1) {
+                        return <strong key={i} className="font-extrabold text-slate-900">{part}</strong>;
+                    }
+                    return part;
+                });
+            };
+
+            const renderFormattedPolicyText = (text) => {
+                if (!text) return '';
+                const lines = String(text).split('\n');
+                let isInsideList = false;
+                const elements = [];
+                
+                lines.forEach((line, index) => {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+                        if (!isInsideList) {
+                            isInsideList = true;
+                        }
+                        const content = trimmed.substring(2);
+                        elements.push(<li key={`li-${index}`} className="ml-5 list-disc mt-1 text-slate-700">{parseInlineStyles(content)}</li>);
+                    } else {
+                        isInsideList = false;
+                        elements.push(<p key={`p-${index}`} className="mt-2 text-sm leading-relaxed text-slate-650">{parseInlineStyles(line)}</p>);
+                    }
+                });
+                return <div className="space-y-1">{elements}</div>;
+            };
+
+            const handleAnswer = async (compliance, reason = '') => {
+                const record = {
+                    timestamp: formatDateTimeString(new Date()),
+                    userEmail: activeRole.email.toLowerCase(),
+                    department: activeRole.mapping?.deptName || 'Unknown',
+                    sopId: currentPolicy.sopId,
+                    policyId: currentPolicy.policyId,
+                    weekCode: getCurrentWeekCode(),
+                    compliance,
+                    reason
+                };
+
+                const newAnswers = [...answers, record];
+                setAnswers(newAnswers);
+
+                if (!isLast) {
+                    // Move to next step
+                    setCurrentIdx(prev => prev + 1);
+                    setShowReasonInput(false);
+                    setDeviationReason('');
+                } else {
+                    // Final submit
+                    setSubmitting(true);
+                    try {
+                        if (isSandbox) {
+                            // Update local sandbox db
+                            setSopReadRecords(prev => [...prev, ...newAnswers]);
+                            const savedRecords = JSON.parse(localStorage.getItem('pcil_sopReadRecords') || '[]');
+                            localStorage.setItem('pcil_sopReadRecords', JSON.stringify([...savedRecords, ...newAnswers]));
+                            onClose();
+                            showNotification('SOP compliance verification completed successfully in Demo Sandbox mode!', 'success');
+                        } else {
+                            // Write to Google Sheet
+                            const body = {
+                                values: newAnswers.map(ans => [
+                                    ans.timestamp,
+                                    ans.userEmail,
+                                    ans.department,
+                                    ans.sopId,
+                                    ans.policyId,
+                                    ans.weekCode,
+                                    ans.compliance,
+                                    ans.reason
+                                ])
+                            };
+                            const tokenVal = await ensureValidToken();
+                            const response = await fetch(
+                                `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values/SOPReadRecords!A:H:append?valueInputOption=USER_ENTERED`,
+                                {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${tokenVal}`,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(body)
+                                }
+                            );
+
+                            if (response.ok) {
+                                setSopReadRecords(prev => [...prev, ...newAnswers]);
+                                const savedRecords = JSON.parse(localStorage.getItem('pcil_sopReadRecords') || '[]');
+                                localStorage.setItem('pcil_sopReadRecords', JSON.stringify([...savedRecords, ...newAnswers]));
+                                onClose();
+                                showNotification('SOP compliance verification submitted successfully!', 'success');
+                            } else {
+                                throw new Error('Failed to append rows to Google Sheets');
+                            }
+                        }
+                    } catch (err) {
+                        console.error('[SOP Wizard] Submission failed:', err);
+                        showNotification('Failed to submit SOP compliance. Please try again.', 'error');
+                    } finally {
+                        setSubmitting(false);
+                    }
+                }
+            };
+
+            const progressPercent = Math.round(((currentIdx) / policiesToVerify.length) * 100);
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
+                    <div className="w-full max-w-xl bg-white border border-slate-200 rounded-3xl p-5 md:p-6 shadow-2xl flex flex-col gap-4 relative text-slate-800 max-h-[92vh] overflow-y-auto animate-scale-up">
+                        {submitting && (
+                            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-3xl z-10">
+                                <span className="h-10 w-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-3"></span>
+                                <span className="text-sm font-bold text-slate-600">Submitting your verification...</span>
+                            </div>
+                        )}
+
+                        <div className="flex flex-col gap-1.5 border-b border-slate-100 pb-3">
+                            <span className="text-[10px] uppercase font-extrabold tracking-wider text-teal-600">Weekly SOP Verification Checklist</span>
+                            <h3 className="text-lg font-extrabold text-slate-900 leading-tight">
+                                SOP Compliance Affirmation
+                            </h3>
+                            <p className="text-[11px] text-slate-500 font-medium">
+                                Please review and affirm your compliance for week <span className="font-bold text-slate-700">{getCurrentWeekCode()}</span>.
+                            </p>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                                <span>Policy {currentIdx + 1} of {policiesToVerify.length}</span>
+                                <span>{progressPercent}% Completed</span>
+                            </div>
+                            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div className="bg-teal-500 h-full rounded-full transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
+                            </div>
+                        </div>
+
+                        {/* Policy display card */}
+                        <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-200/60 rounded-2xl p-4 md:p-5 flex flex-col gap-3 shadow-inner">
+                            <div className="flex justify-between items-start gap-2 border-b border-slate-200/55 pb-2.5">
+                                <div>
+                                    <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-tight">{currentPolicy.sopName}</h4>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{currentPolicy.sopId}</span>
+                                </div>
+                                <span className="px-2 py-0.5 rounded bg-teal-50 text-[10px] font-bold text-teal-700 border border-teal-200/50 uppercase tracking-wider">{currentPolicy.policyId}</span>
+                            </div>
+
+                            {/* Render text editor formatted policies */}
+                            <div className="max-h-[30vh] overflow-y-auto pr-1">
+                                {renderFormattedPolicyText(currentPolicy.policyText)}
+                            </div>
+                        </div>
+
+                        {/* Interactive affirmation selectors */}
+                        {!showReasonInput ? (
+                            <div className="flex flex-col sm:flex-row gap-3 mt-1">
+                                <button
+                                    onClick={() => handleAnswer('Following')}
+                                    className="flex-1 py-3 px-4 rounded-xl font-extrabold text-sm text-white bg-emerald-600 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-600/10 hover:shadow-emerald-700/20 active:scale-95"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Following
+                                </button>
+                                <button
+                                    onClick={() => setShowReasonInput(true)}
+                                    className="flex-1 py-3 px-4 rounded-xl font-extrabold text-sm text-white bg-amber-600 hover:bg-amber-700 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-amber-600/10 hover:shadow-amber-700/20 active:scale-95"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    Not Following
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-3 mt-1 animate-slide-up">
+                                <label className="text-[11px] font-bold text-amber-750 flex items-center gap-1.5 bg-amber-50 border border-amber-200/50 rounded-xl p-2.5">
+                                    <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    <span>Please provide a detailed reason or deviation explanation for not following this policy.</span>
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    placeholder="Enter deviation reason (e.g. Broken hardware, pending IT ticket #456, etc.)..."
+                                    value={deviationReason}
+                                    onChange={(e) => setDeviationReason(e.target.value)}
+                                    className="w-full text-xs p-3 border border-amber-200 focus:border-amber-500 rounded-xl outline-none focus:ring-1 focus:ring-amber-500 transition-all font-medium text-slate-700 bg-amber-50/10 placeholder-slate-400"
+                                ></textarea>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setShowReasonInput(false)}
+                                        className="py-2.5 px-4 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer flex-1 text-center"
+                                    >
+                                        Back
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (!deviationReason.trim()) {
+                                                showNotification('Please enter a deviation reason to proceed.', 'warning');
+                                                return;
+                                            }
+                                            handleAnswer('Not Following', deviationReason.trim());
+                                        }}
+                                        className="py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 transition-all cursor-pointer flex-1 text-center shadow-md shadow-amber-600/10"
+                                    >
+                                        Submit Deviation
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // SOP Admin Dashboard for Managing Director (MD)
+        function SOPAdminDashboard({ onClose, sops, setSops, sopMappings, setSopMappings, sopReadRecords, setSopReadRecords, mappings, isSandbox, showNotification }) {
+            const [activeTab, setActiveTab] = React.useState('compliance'); // 'compliance' | 'policies' | 'mappings'
+            const [selectedWeek, setSelectedWeek] = React.useState(getCurrentWeekCode());
+            const [complianceSubTab, setComplianceSubTab] = React.useState('deviations-this'); // 'deviations-this' | 'deviations-last' | 'pending'
+            
+            // Policy Editor States
+            const [editingPolicy, setEditingPolicy] = React.useState(null); // { sopId, sopName, policyId, policyText, status, isNew }
+            const [newSopId, setNewSopId] = React.useState('');
+            const [newSopName, setNewSopName] = React.useState('');
+            const textareaRef = React.useRef(null);
+
+            // Mappings States
+            const [editingMapping, setEditingMapping] = React.useState(null); // { targetId, type, sopId, isNew }
+            const [newMappingTargetId, setNewMappingTargetId] = React.useState('');
+            const [newMappingType, setNewMappingType] = React.useState('dept'); // 'dept' | 'group'
+            const [newMappingSopId, setNewMappingSopId] = React.useState('');
+
+            // Get unique weeks present in records
+            const uniqueWeeks = React.useMemo(() => {
+                const weeks = new Set();
+                weeks.add(getCurrentWeekCode());
+                if (sopReadRecords) {
+                    sopReadRecords.forEach(r => {
+                        if (r.weekCode) weeks.add(r.weekCode);
+                    });
+                }
+                return Array.from(weeks).sort().reverse();
+            }, [sopReadRecords]);
+
+            // Calculate last week code relative to selected week
+            const lastWeekCode = React.useMemo(() => {
+                const match = selectedWeek.match(/(\d{4})-W(\d{2})/);
+                if (!match) return '';
+                const year = parseInt(match[1], 10);
+                const week = parseInt(match[2], 10);
+                if (week === 1) {
+                    return `${year - 1}-W52`;
+                }
+                const pad = (val) => String(val).padStart(2, '0');
+                return `${year}-W${pad(week - 1)}`;
+            }, [selectedWeek]);
+
+            // Filter deviation records
+            const deviationsThisWeek = React.useMemo(() => {
+                return sopReadRecords.filter(r => r.weekCode === selectedWeek && r.compliance === 'Not Following');
+            }, [sopReadRecords, selectedWeek]);
+
+            const deviationsLastWeek = React.useMemo(() => {
+                return sopReadRecords.filter(r => r.weekCode === lastWeekCode && r.compliance === 'Not Following');
+            }, [sopReadRecords, lastWeekCode]);
+
+            // Unverified coordinators
+            const unverifiedUsers = React.useMemo(() => {
+                const list = [];
+                if (!mappings || !sops || !sopMappings) return [];
+                
+                mappings.forEach(map => {
+                    const email = map.headEmail.toLowerCase();
+                    const mappedSopIds = sopMappings
+                        .filter(m => m.type === 'dept' && String(m.targetId).trim() === String(map.id).trim())
+                        .map(m => m.sopId);
+                    
+                    const resolvedSopIds = new Set(mappedSopIds);
+                    if (Array.isArray(map.sops)) {
+                        map.sops.forEach(s => resolvedSopIds.add(s.id));
+                    }
+                    
+                    const activePolicies = sops.filter(p => resolvedSopIds.has(p.sopId) && p.status !== 'Inactive');
+                    if (activePolicies.length === 0) return;
+                    
+                    const pendingPolicies = activePolicies.filter(policy => {
+                        return !sopReadRecords.some(r => 
+                            r.userEmail.toLowerCase() === email &&
+                            r.weekCode === selectedWeek &&
+                            r.sopId === policy.sopId &&
+                            r.policyId === policy.policyId
+                        );
+                    });
+                    
+                    if (pendingPolicies.length > 0) {
+                        list.push({
+                            headName: map.headName,
+                            headEmail: map.headEmail,
+                            deptName: map.deptName,
+                            pendingCount: pendingPolicies.length,
+                            pendingPolicies: pendingPolicies.map(p => `${p.sopName} (${p.policyId})`)
+                        });
+                    }
+                });
+                return list;
+            }, [mappings, sops, sopMappings, sopReadRecords, selectedWeek]);
+
+            // Save SOPs to spreadsheet or local state
+            const saveSops = async (updatedSops) => {
+                try {
+                    if (isSandbox) {
+                        setSops(updatedSops);
+                        localStorage.setItem('pcil_sops', JSON.stringify(updatedSops));
+                        showNotification('SOP policies updated in Sandbox local database!', 'success');
+                    } else {
+                        const headers = ['sopId', 'sopName', 'policyId', 'policyText', 'status'];
+                        const values = [
+                            headers,
+                            ...updatedSops.map(s => [s.sopId, s.sopName, s.policyId, s.policyText, s.status])
+                        ];
+                        const tokenVal = await ensureValidToken();
+                        const response = await fetch(
+                            `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values/SOPs!A:E?valueInputOption=USER_ENTERED`,
+                            {
+                                method: 'PUT',
+                                headers: {
+                                    'Authorization': `Bearer ${tokenVal}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ values })
+                            }
+                        );
+                        if (response.ok) {
+                            setSops(updatedSops);
+                            localStorage.setItem('pcil_sops', JSON.stringify(updatedSops));
+                            showNotification('SOP policies updated successfully in Google Sheets!', 'success');
+                        } else {
+                            throw new Error('Failed to update Google Sheet');
+                        }
+                    }
+                } catch (err) {
+                    console.error('[SOP Admin] Save policies failed:', err);
+                    showNotification('Failed to save policies changes.', 'error');
+                }
+            };
+
+            // Save SOP Mappings to spreadsheet or local state
+            const saveSopMappings = async (updatedMappings) => {
+                try {
+                    if (isSandbox) {
+                        setSopMappings(updatedMappings);
+                        localStorage.setItem('pcil_sopMappings', JSON.stringify(updatedMappings));
+                        showNotification('SOP mappings updated in Sandbox local database!', 'success');
+                    } else {
+                        const headers = ['targetId', 'type', 'sopId'];
+                        const values = [
+                            headers,
+                            ...updatedMappings.map(m => [m.targetId, m.type, m.sopId])
+                        ];
+                        const tokenVal = await ensureValidToken();
+                        const response = await fetch(
+                            `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values/SOPMappings!A:C?valueInputOption=USER_ENTERED`,
+                            {
+                                method: 'PUT',
+                                headers: {
+                                    'Authorization': `Bearer ${tokenVal}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ values })
+                            }
+                        );
+                        if (response.ok) {
+                            setSopMappings(updatedMappings);
+                            localStorage.setItem('pcil_sopMappings', JSON.stringify(updatedMappings));
+                            showNotification('SOP mappings updated successfully in Google Sheets!', 'success');
+                        } else {
+                            throw new Error('Failed to update Google Sheet');
+                        }
+                    }
+                } catch (err) {
+                    console.error('[SOP Admin] Save mappings failed:', err);
+                    showNotification('Failed to save mappings changes.', 'error');
+                }
+            };
+
+            const handleTextFormat = (formatType) => {
+                const textarea = textareaRef.current;
+                if (!textarea) return;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const text = textarea.value;
+                let formatted = '';
+
+                if (formatType === 'bold') {
+                    formatted = text.substring(0, start) + '**' + text.substring(start, end) + '**' + text.substring(end);
+                } else if (formatType === 'bullet') {
+                    const lines = text.substring(start, end).split('\n');
+                    const formattedLines = lines.map(line => line.startsWith('* ') ? line : `* ${line}`);
+                    formatted = text.substring(0, start) + formattedLines.join('\n') + text.substring(end);
+                }
+
+                setEditingPolicy(prev => ({ ...prev, policyText: formatted }));
+                setTimeout(() => {
+                    textarea.focus();
+                    textarea.setSelectionRange(start + 2, end + 2);
+                }, 50);
+            };
+
+            // Group sops for policies editor list
+            const groupedSops = React.useMemo(() => {
+                const groups = {};
+                sops.forEach(p => {
+                    if (!groups[p.sopId]) {
+                        groups[p.sopId] = { sopId: p.sopId, sopName: p.sopName, policies: [] };
+                    }
+                    groups[p.sopId].policies.push(p);
+                });
+                return Object.values(groups);
+            }, [sops]);
+
+            return (
+                <div className="flex flex-col gap-6 w-full animate-slide-up">
+                    {/* Header Controls */}
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-900 border border-slate-850 text-white rounded-3xl p-4 md:p-5 shadow-lg">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 className="text-base md:text-lg font-bold tracking-tight text-slate-100">
+                                    SOP Management Dashboard
+                                </h2>
+                                <p className="text-[10px] text-slate-400 font-medium font-sans">
+                                    Admin Controls & Compliance Audit Center
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Tabs Bar */}
+                        <div className="flex items-center gap-2.5 w-full md:w-auto">
+                            <div className="flex bg-slate-800 p-1 rounded-xl border border-slate-700 w-full md:w-auto">
+                                <button
+                                    onClick={() => setActiveTab('compliance')}
+                                    className={`flex-1 md:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                        activeTab === 'compliance' ? 'bg-teal-500 text-slate-900 shadow-md' : 'text-slate-300 hover:text-white'
+                                    }`}
+                                >
+                                    Compliance Logs
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('policies')}
+                                    className={`flex-1 md:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                        activeTab === 'policies' ? 'bg-teal-500 text-slate-900 shadow-md' : 'text-slate-300 hover:text-white'
+                                    }`}
+                                >
+                                    Policy Editor
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('mappings')}
+                                    className={`flex-1 md:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                        activeTab === 'mappings' ? 'bg-teal-500 text-slate-900 shadow-md' : 'text-slate-300 hover:text-white'
+                                    }`}
+                                >
+                                    SOP Mappings
+                                </button>
+                            </div>
+                            <button 
+                                onClick={onClose}
+                                className="px-3.5 py-1.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition-all cursor-pointer border border-slate-700 whitespace-nowrap"
+                            >
+                                Back to Console
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Content Section */}
+                    {activeTab === 'compliance' && (
+                        <div className="flex flex-col gap-5 animate-slide-up">
+                            {/* Compliance Filters Panel */}
+                            <div className="glass-panel p-4 rounded-3xl border border-slate-200/80 shadow-md flex items-center justify-between bg-white">
+                                <span className="text-xs font-extrabold text-slate-800 uppercase tracking-tight">Select Audit Week</span>
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        value={selectedWeek}
+                                        onChange={(e) => setSelectedWeek(e.target.value)}
+                                        className="text-xs font-bold p-2 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
+                                    >
+                                        {uniqueWeeks.map(w => (
+                                            <option key={w} value={w}>{w} {w === getCurrentWeekCode() ? '(Current)' : ''}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Compliance Subtabs */}
+                            <div className="flex border-b border-slate-200/85 pb-px">
+                                <button
+                                    onClick={() => setComplianceSubTab('deviations-this')}
+                                    className={`pb-2.5 px-4 text-xs font-extrabold border-b-2 transition-all cursor-pointer ${
+                                        complianceSubTab === 'deviations-this' ? 'border-teal-500 text-teal-650' : 'border-transparent text-slate-400 hover:text-slate-600'
+                                    }`}
+                                >
+                                    Deviations This Week ({deviationsThisWeek.length})
+                                </button>
+                                <button
+                                    onClick={() => setComplianceSubTab('deviations-last')}
+                                    className={`pb-2.5 px-4 text-xs font-extrabold border-b-2 transition-all cursor-pointer ${
+                                        complianceSubTab === 'deviations-last' ? 'border-teal-500 text-teal-650' : 'border-transparent text-slate-400 hover:text-slate-600'
+                                    }`}
+                                >
+                                    Deviations Last Week ({deviationsLastWeek.length})
+                                </button>
+                                <button
+                                    onClick={() => setComplianceSubTab('pending')}
+                                    className={`pb-2.5 px-4 text-xs font-extrabold border-b-2 transition-all cursor-pointer ${
+                                        complianceSubTab === 'pending' ? 'border-teal-500 text-teal-650' : 'border-transparent text-slate-400 hover:text-slate-600'
+                                    }`}
+                                >
+                                    Unverified Coordinators ({unverifiedUsers.length})
+                                </button>
+                            </div>
+
+                            {/* Compliance Lists */}
+                            <div className="glass-panel rounded-3xl border border-slate-200/80 shadow-xl p-5 bg-white min-h-[250px]">
+                                {complianceSubTab === 'deviations-this' && (
+                                    <div className="overflow-x-auto">
+                                        {deviationsThisWeek.length === 0 ? (
+                                            <div className="text-center py-12 text-slate-400 font-bold">No deviations recorded this week. Excellent compliance!</div>
+                                        ) : (
+                                            <table className="w-full text-left text-xs border-collapse">
+                                                <thead>
+                                                    <tr className="border-b border-slate-100 text-slate-400 uppercase font-extrabold tracking-wider text-[10px]">
+                                                        <th className="py-2.5 px-3">Coordinator</th>
+                                                        <th className="py-2.5 px-3">Department</th>
+                                                        <th className="py-2.5 px-3">SOP ID</th>
+                                                        <th className="py-2.5 px-3">Policy ID</th>
+                                                        <th className="py-2.5 px-3">Reason / Explanation</th>
+                                                        <th className="py-2.5 px-3">Time</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {deviationsThisWeek.map((r, i) => (
+                                                        <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 text-slate-700">
+                                                            <td className="py-3 px-3 font-bold">{r.userEmail}</td>
+                                                            <td className="py-3 px-3 font-bold text-slate-550">{r.department}</td>
+                                                            <td className="py-3 px-3 text-slate-500 uppercase">{r.sopId}</td>
+                                                            <td className="py-3 px-3 font-mono text-slate-800"><span className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">{r.policyId}</span></td>
+                                                            <td className="py-3 px-3 text-amber-700 bg-amber-50/20 border border-amber-100/30 rounded-xl font-medium max-w-xs">{r.reason}</td>
+                                                            <td className="py-3 px-3 text-[10px] text-slate-400">{r.timestamp}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        )}
+                                    </div>
+                                )}
+
+                                {complianceSubTab === 'deviations-last' && (
+                                    <div className="overflow-x-auto">
+                                        {deviationsLastWeek.length === 0 ? (
+                                            <div className="text-center py-12 text-slate-400 font-bold">No deviations recorded last week.</div>
+                                        ) : (
+                                            <table className="w-full text-left text-xs border-collapse">
+                                                <thead>
+                                                    <tr className="border-b border-slate-100 text-slate-400 uppercase font-extrabold tracking-wider text-[10px]">
+                                                        <th className="py-2.5 px-3">Coordinator</th>
+                                                        <th className="py-2.5 px-3">Department</th>
+                                                        <th className="py-2.5 px-3">SOP ID</th>
+                                                        <th className="py-2.5 px-3">Policy ID</th>
+                                                        <th className="py-2.5 px-3">Reason / Explanation</th>
+                                                        <th className="py-2.5 px-3">Time</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {deviationsLastWeek.map((r, i) => (
+                                                        <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 text-slate-700">
+                                                            <td className="py-3 px-3 font-bold">{r.userEmail}</td>
+                                                            <td className="py-3 px-3 font-bold text-slate-550">{r.department}</td>
+                                                            <td className="py-3 px-3 text-slate-500 uppercase">{r.sopId}</td>
+                                                            <td className="py-3 px-3 font-mono text-slate-800"><span className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">{r.policyId}</span></td>
+                                                            <td className="py-3 px-3 text-amber-700 bg-amber-50/20 border border-amber-100/30 rounded-xl font-medium max-w-xs">{r.reason}</td>
+                                                            <td className="py-3 px-3 text-[10px] text-slate-400">{r.timestamp}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        )}
+                                    </div>
+                                )}
+
+                                {complianceSubTab === 'pending' && (
+                                    <div className="overflow-x-auto">
+                                        {unverifiedUsers.length === 0 ? (
+                                            <div className="text-center py-12 text-slate-400 font-bold">All coordinators have completed their weekly verification!</div>
+                                        ) : (
+                                            <table className="w-full text-left text-xs border-collapse">
+                                                <thead>
+                                                    <tr className="border-b border-slate-100 text-slate-400 uppercase font-extrabold tracking-wider text-[10px]">
+                                                        <th className="py-2.5 px-3">Name</th>
+                                                        <th className="py-2.5 px-3">Email</th>
+                                                        <th className="py-2.5 px-3">Department</th>
+                                                        <th className="py-2.5 px-3">Unverified Count</th>
+                                                        <th className="py-2.5 px-3">Policies Pending</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {unverifiedUsers.map((user, i) => (
+                                                        <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 text-slate-700">
+                                                            <td className="py-3 px-3 font-bold text-slate-800">{user.headName}</td>
+                                                            <td className="py-3 px-3 font-medium text-slate-550">{user.headEmail}</td>
+                                                            <td className="py-3 px-3 font-bold text-teal-650">{user.deptName}</td>
+                                                            <td className="py-3 px-3 font-mono font-bold text-rose-600">{user.pendingCount} pending</td>
+                                                            <td className="py-3 px-3 text-[11px] text-slate-500 max-w-sm leading-relaxed">{user.pendingPolicies.join(', ')}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'policies' && (
+                        <div className="grid md:grid-cols-3 gap-6 items-start animate-slide-up">
+                            {/* SOPs and policies list */}
+                            <div className="md:col-span-2 flex flex-col gap-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-tight">Configured SOPs & Policies</h3>
+                                    <button
+                                        onClick={() => setEditingPolicy({ sopId: '', sopName: '', policyId: '', policyText: '', status: 'Active', isNew: true })}
+                                        className="py-1.5 px-3 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-teal-600/10 active:scale-95"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Create SOP / Policy
+                                    </button>
+                                </div>
+
+                                <div className="flex flex-col gap-4">
+                                    {groupedSops.length === 0 ? (
+                                        <div className="text-center p-12 bg-white border border-slate-200 rounded-3xl text-slate-400 font-bold">No policies configured yet. Click "Create SOP" to add.</div>
+                                    ) : (
+                                        groupedSops.map(group => (
+                                            <div key={group.sopId} className="bg-white border border-slate-200/80 shadow-md rounded-3xl p-5 flex flex-col gap-4">
+                                                <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                                                    <div>
+                                                        <h4 className="text-base font-extrabold text-slate-900 leading-tight">{group.sopName}</h4>
+                                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{group.sopId}</span>
+                                                    </div>
+                                                    <span className="px-2 py-0.5 rounded bg-teal-50 text-[10px] font-extrabold text-teal-700 border border-teal-200/40 uppercase tracking-wider">{group.policies.length} Policies</span>
+                                                </div>
+
+                                                <div className="flex flex-col gap-3">
+                                                    {group.policies.map(policy => (
+                                                        <div key={policy.policyId} className="flex justify-between items-center gap-4 bg-slate-50 border border-slate-200/50 rounded-2xl p-3 text-xs hover:bg-slate-50/80 transition-colors">
+                                                            <div className="flex items-center gap-3 flex-grow">
+                                                                <span className="h-6 w-6 rounded-lg bg-slate-200/70 border border-slate-300/40 text-[9px] font-extrabold text-slate-500 flex items-center justify-center uppercase">{policy.policyId}</span>
+                                                                <div className="flex flex-col gap-0.5 max-w-md">
+                                                                    <p className="font-bold text-slate-800 line-clamp-1">{policy.policyText.replace(/\*\*/g, '')}</p>
+                                                                    <span className={`text-[9px] font-extrabold uppercase tracking-wider ${policy.status === 'Active' ? 'text-emerald-600' : 'text-slate-400'}`}>{policy.status}</span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => setEditingPolicy({ ...policy, isNew: false })}
+                                                                    className="p-1.5 rounded-lg hover:bg-slate-200/80 text-slate-500 hover:text-slate-800 transition-all cursor-pointer border border-slate-200 bg-white"
+                                                                    title="Edit Policy"
+                                                                >
+                                                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                                    </svg>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const confirmed = confirm(`Are you sure you want to delete policy ${policy.policyId} from ${policy.sopName}?`);
+                                                                        if (confirmed) {
+                                                                            const updated = sops.filter(p => !(p.sopId === policy.sopId && p.policyId === policy.policyId));
+                                                                            saveSops(updated);
+                                                                        }
+                                                                    }}
+                                                                    className="p-1.5 rounded-lg hover:bg-rose-100 text-rose-500 hover:text-rose-700 transition-all cursor-pointer border border-rose-200 bg-white"
+                                                                    title="Delete Policy"
+                                                                >
+                                                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Editor Form Panel */}
+                            <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-xl bg-white flex flex-col gap-4">
+                                <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight">
+                                    {editingPolicy ? (editingPolicy.isNew ? 'New Policy Creator' : 'Edit Policy Details') : 'Select Policy to Edit'}
+                                </h3>
+
+                                {editingPolicy ? (
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SOP ID (e.g. SOP_IT)</label>
+                                            <input
+                                                type="text"
+                                                disabled={!editingPolicy.isNew}
+                                                value={editingPolicy.sopId}
+                                                onChange={(e) => setEditingPolicy(prev => ({ ...prev, sopId: e.target.value.trim().toUpperCase() }))}
+                                                className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150 disabled:text-slate-400"
+                                            />
+                                        </div>
+
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SOP Name (e.g. IT Security Policy)</label>
+                                            <input
+                                                type="text"
+                                                disabled={!editingPolicy.isNew}
+                                                value={editingPolicy.sopName}
+                                                onChange={(e) => setEditingPolicy(prev => ({ ...prev, sopName: e.target.value }))}
+                                                className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150"
+                                            />
+                                        </div>
+
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Policy ID (e.g. P1, P2)</label>
+                                            <input
+                                                type="text"
+                                                disabled={!editingPolicy.isNew}
+                                                value={editingPolicy.policyId}
+                                                onChange={(e) => setEditingPolicy(prev => ({ ...prev, policyId: e.target.value.trim().toUpperCase() }))}
+                                                className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150 disabled:text-slate-400"
+                                            />
+                                        </div>
+
+                                        <div className="flex flex-col gap-1.5">
+                                            <div className="flex justify-between items-center text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                                                <span>Policy Rule Text</span>
+                                                <div className="flex gap-1.5">
+                                                    <button
+                                                        onClick={() => handleTextFormat('bold')}
+                                                        className="px-2 py-0.5 rounded border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold hover:text-slate-700 cursor-pointer transition-all"
+                                                        title="Bold Selection (**)"
+                                                    >
+                                                        Bold
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleTextFormat('bullet')}
+                                                        className="px-2 py-0.5 rounded border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold hover:text-slate-700 cursor-pointer transition-all"
+                                                        title="Add Bullet Item (*)"
+                                                    >
+                                                        List
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <textarea
+                                                ref={textareaRef}
+                                                rows={6}
+                                                value={editingPolicy.policyText}
+                                                onChange={(e) => setEditingPolicy(prev => ({ ...prev, policyText: e.target.value }))}
+                                                className="w-full text-xs p-3 border border-slate-200 focus:border-teal-500 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 transition-all font-medium text-slate-700"
+                                            ></textarea>
+                                        </div>
+
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Status</label>
+                                            <select
+                                                value={editingPolicy.status}
+                                                onChange={(e) => setEditingPolicy(prev => ({ ...prev, status: e.target.value }))}
+                                                className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
+                                            >
+                                                <option value="Active">Active</option>
+                                                <option value="Inactive">Inactive</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="flex gap-3.5 mt-2">
+                                            <button
+                                                onClick={() => setEditingPolicy(null)}
+                                                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer text-center"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (!editingPolicy.sopId || !editingPolicy.sopName || !editingPolicy.policyId || !editingPolicy.policyText) {
+                                                        showNotification('Please fill in all policy fields.', 'warning');
+                                                        return;
+                                                    }
+                                                    
+                                                    let updated = [];
+                                                    if (editingPolicy.isNew) {
+                                                        // Check for duplicate policy ID inside same SOP
+                                                        if (sops.some(p => p.sopId === editingPolicy.sopId && p.policyId === editingPolicy.policyId)) {
+                                                            showNotification(`Policy ID ${editingPolicy.policyId} already exists inside SOP ${editingPolicy.sopId}.`, 'warning');
+                                                            return;
+                                                        }
+                                                        updated = [...sops, { 
+                                                            sopId: editingPolicy.sopId,
+                                                            sopName: editingPolicy.sopName,
+                                                            policyId: editingPolicy.policyId,
+                                                            policyText: editingPolicy.policyText,
+                                                            status: editingPolicy.status
+                                                        }];
+                                                    } else {
+                                                        updated = sops.map(p => 
+                                                            (p.sopId === editingPolicy.sopId && p.policyId === editingPolicy.policyId)
+                                                            ? { ...p, policyText: editingPolicy.policyText, status: editingPolicy.status }
+                                                            : p
+                                                        );
+                                                    }
+                                                    saveSops(updated);
+                                                    setEditingPolicy(null);
+                                                }}
+                                                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all cursor-pointer text-center shadow-md shadow-teal-600/10"
+                                            >
+                                                Save Policy
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 text-slate-400 font-bold border border-dashed border-slate-200 rounded-2.5xl p-6">
+                                        Select a policy to edit, or create a new SOP from the button above.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'mappings' && (
+                        <div className="grid md:grid-cols-3 gap-6 items-start animate-slide-up">
+                            {/* Mappings lists */}
+                            <div className="md:col-span-2 flex flex-col gap-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-tight">Active Mappings</h3>
+                                    <button
+                                        onClick={() => setEditingMapping({ targetId: '', type: 'dept', sopId: '', isNew: true })}
+                                        className="py-1.5 px-3 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Add Mapping
+                                    </button>
+                                </div>
+
+                                <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-md bg-white">
+                                    <div className="overflow-x-auto">
+                                        {sopMappings.length === 0 ? (
+                                            <div className="text-center py-8 text-slate-400 font-bold">No SOP mappings configured. Mapped coordinators will not see any policies.</div>
+                                        ) : (
+                                            <table className="w-full text-left text-xs border-collapse">
+                                                <thead>
+                                                    <tr className="border-b border-slate-100 text-slate-400 uppercase font-extrabold tracking-wider text-[10px]">
+                                                        <th className="py-2.5 px-3">Target ID</th>
+                                                        <th className="py-2.5 px-3">Type</th>
+                                                        <th className="py-2.5 px-3">SOP ID</th>
+                                                        <th className="py-2.5 px-3">Resolved Name</th>
+                                                        <th className="py-2.5 px-3 text-right">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {sopMappings.map((m, i) => {
+                                                        const sopName = sops.find(s => s.sopId === m.sopId)?.sopName || m.sopId;
+                                                        let resolvedTargetName = m.targetId;
+                                                        if (m.type === 'dept') {
+                                                            resolvedTargetName = mappings.find(map => String(map.id).trim() === m.targetId)?.deptName || `Dept ID: ${m.targetId}`;
+                                                        } else if (m.targetId === 'default') {
+                                                            resolvedTargetName = 'All Coordinators';
+                                                        }
+                                                        
+                                                        return (
+                                                            <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 text-slate-700">
+                                                                <td className="py-3 px-3 font-mono font-bold text-slate-800">{m.targetId}</td>
+                                                                <td className="py-3 px-3 uppercase text-[10px] font-extrabold tracking-wider">
+                                                                    <span className={`px-2 py-0.5 rounded ${m.type === 'dept' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/40' : 'bg-amber-50 text-amber-700 border border-amber-200/40'}`}>
+                                                                        {m.type}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="py-3 px-3 font-bold text-slate-500">{m.sopId}</td>
+                                                                <td className="py-3 px-3 text-slate-650 font-medium">{resolvedTargetName} &bull; <span className="text-[10px] text-slate-400 italic">{sopName}</span></td>
+                                                                <td className="py-3 px-3 text-right">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const confirmed = confirm(`Are you sure you want to delete this mapping?`);
+                                                                            if (confirmed) {
+                                                                                const updated = sopMappings.filter(item => !(item.targetId === m.targetId && item.sopId === m.sopId && item.type === m.type));
+                                                                                saveSopMappings(updated);
+                                                                            }
+                                                                        }}
+                                                                        className="p-1 rounded hover:bg-rose-100 text-rose-500 hover:text-rose-700 transition-all cursor-pointer border border-rose-250 bg-white"
+                                                                        title="Delete Mapping"
+                                                                    >
+                                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                        </svg>
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Mapping Creator Form */}
+                            <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-xl bg-white flex flex-col gap-4">
+                                <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight">
+                                    {editingMapping ? 'New Mapping Details' : 'Select Target to Map'}
+                                </h3>
+
+                                {editingMapping ? (
+                                    <div className="flex flex-col gap-4 animate-slide-up">
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Mapping Target Type</label>
+                                            <select
+                                                value={editingMapping.type}
+                                                onChange={(e) => {
+                                                    const type = e.target.value;
+                                                    setEditingMapping(prev => ({ ...prev, type, targetId: '' }));
+                                                }}
+                                                className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
+                                            >
+                                                <option value="dept">Department</option>
+                                                <option value="group">Group / default</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Target ID (Department or Group Name)</label>
+                                            {editingMapping.type === 'dept' ? (
+                                                <select
+                                                    value={editingMapping.targetId}
+                                                    onChange={(e) => setEditingMapping(prev => ({ ...prev, targetId: e.target.value }))}
+                                                    className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
+                                                >
+                                                    <option value="">Select a Department...</option>
+                                                    {mappings.map(map => (
+                                                        <option key={map.id} value={map.id}>{map.deptName} (ID: {map.id})</option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. default, managers, it_team"
+                                                    value={editingMapping.targetId}
+                                                    onChange={(e) => setEditingMapping(prev => ({ ...prev, targetId: e.target.value.trim().toLowerCase() }))}
+                                                    className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold"
+                                                />
+                                            )}
+                                        </div>
+
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Select SOP to Map</label>
+                                            <select
+                                                value={editingMapping.sopId}
+                                                onChange={(e) => setEditingMapping(prev => ({ ...prev, sopId: e.target.value }))}
+                                                className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
+                                            >
+                                                <option value="">Select an SOP...</option>
+                                                {groupedSops.map(group => (
+                                                    <option key={group.sopId} value={group.sopId}>{group.sopName} ({group.sopId})</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="flex gap-3.5 mt-2">
+                                            <button
+                                                onClick={() => setEditingMapping(null)}
+                                                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer text-center"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (!editingMapping.targetId || !editingMapping.sopId) {
+                                                        showNotification('Please select both target and SOP.', 'warning');
+                                                        return;
+                                                    }
+
+                                                    // Check for duplicate mapping
+                                                    if (sopMappings.some(item => item.targetId === editingMapping.targetId && item.sopId === editingMapping.sopId && item.type === editingMapping.type)) {
+                                                        showNotification('This mapping configuration already exists.', 'warning');
+                                                        return;
+                                                    }
+
+                                                    const updated = [...sopMappings, {
+                                                        targetId: editingMapping.targetId,
+                                                        type: editingMapping.type,
+                                                        sopId: editingMapping.sopId
+                                                    }];
+                                                    saveSopMappings(updated);
+                                                    setEditingMapping(null);
+                                                }}
+                                                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all cursor-pointer text-center shadow-md shadow-teal-600/10"
+                                            >
+                                                Create Mapping
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 text-slate-400 font-bold border border-dashed border-slate-200 rounded-2.5xl p-6">
+                                        Select "Add Mapping" above to link an SOP to a department or group.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // SOP Reader Component
+        function SOPReader({ activeSopDocs, onClose, setIsSopWizardOpen, sopReadRecords, activeRole }) {
+            const [selectedIdx, setSelectedIdx] = React.useState(0);
+            const [expandedPolicy, setExpandedPolicy] = React.useState(null);
 
             if (!activeSopDocs || activeSopDocs.length === 0) {
                 return (
@@ -256,10 +1320,10 @@
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
                         </div>
-                        <h3 className="text-xl font-bold text-slate-800">No SOP Document Configured</h3>
+                        <h3 className="text-xl font-bold text-slate-800">No SOP Configured</h3>
                         <p className="text-sm text-slate-500 leading-relaxed">
-                            Your department's Standard Operating Procedure (SOP) Google Doc has not been mapped yet. 
-                            Please provide your Google Doc ID to the administrator to configure it in the setup file.
+                            Your department's Standard Operating Procedure (SOP) has not been mapped yet. 
+                            Please configure it in the setup spreadsheet file.
                         </p>
                         <button 
                             onClick={onClose}
@@ -272,6 +1336,54 @@
             }
 
             const currentDoc = activeSopDocs[selectedIdx];
+            const currentWeekCode = getCurrentWeekCode();
+            const userEmail = activeRole?.email?.toLowerCase();
+
+            const getPolicyStatus = (policy) => {
+                if (!userEmail || !sopReadRecords) return null;
+                return sopReadRecords.find(r => 
+                    r.userEmail.toLowerCase() === userEmail &&
+                    r.weekCode === currentWeekCode &&
+                    r.sopId === policy.sopId &&
+                    r.policyId === policy.policyId
+                );
+            };
+
+            const parseInlineStyles = (txt) => {
+                const parts = String(txt).split('**');
+                return parts.map((part, i) => {
+                    if (i % 2 === 1) {
+                        return <strong key={i} className="font-extrabold text-slate-900">{part}</strong>;
+                    }
+                    return part;
+                });
+            };
+
+            const renderFormattedPolicyText = (text) => {
+                if (!text) return '';
+                const lines = String(text).split('\n');
+                let isInsideList = false;
+                const elements = [];
+                
+                lines.forEach((line, index) => {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+                        if (!isInsideList) {
+                            isInsideList = true;
+                        }
+                        const content = trimmed.substring(2);
+                        elements.push(<li key={`li-${index}`} className="ml-5 list-disc mt-1 text-slate-700">{parseInlineStyles(content)}</li>);
+                    } else {
+                        isInsideList = false;
+                        elements.push(<p key={`p-${index}`} className="mt-2 text-sm leading-relaxed text-slate-600 font-medium">{parseInlineStyles(line)}</p>);
+                    }
+                });
+                return <div className="space-y-1">{elements}</div>;
+            };
+
+            // Check if this SOP is old Google Doc fallback
+            const isOldDoc = currentDoc.policies && currentDoc.policies.length === 1 && currentDoc.policies[0].policyId === 'DOC';
+            const docId = isOldDoc ? currentDoc.policies[0].sopDocId : null;
 
             return (
                 <div className="flex flex-col gap-4 w-full animate-slide-up">
@@ -280,25 +1392,26 @@
                         <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                             </div>
                             <div>
                                 <h2 className="text-base md:text-lg font-bold tracking-tight text-slate-100">
                                     {currentDoc.name}
                                 </h2>
-                                <p className="text-[10px] text-slate-400 font-medium font-sans">Standard Operating Procedure Document</p>
+                                <p className="text-[10px] text-slate-400 font-medium font-sans">
+                                    Standard Operating Procedure Policies ({currentDoc.policies ? currentDoc.policies.length : 0} items)
+                                </p>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                            {/* Document selector dropdown/tabs if there are multiple SOPs */}
                             {activeSopDocs.length > 1 && (
                                 <div className="flex flex-wrap gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700 w-full sm:w-auto">
                                     {activeSopDocs.map((doc, idx) => (
                                         <button
                                             key={doc.id}
-                                            onClick={() => setSelectedIdx(idx)}
+                                            onClick={() => { setSelectedIdx(idx); setExpandedPolicy(null); }}
                                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                                 selectedIdx === idx 
                                                 ? 'bg-teal-500 text-slate-900 shadow-md' 
@@ -310,6 +1423,19 @@
                                     ))}
                                 </div>
                             )}
+                            
+                            {!activeRole?.isMD && !isOldDoc && (
+                                <button
+                                    onClick={() => setIsSopWizardOpen(true)}
+                                    className="px-3.5 py-1.5 text-xs font-bold text-slate-900 bg-teal-400 hover:bg-teal-350 rounded-xl transition-all cursor-pointer w-full sm:w-auto text-center shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Verify SOPs
+                                </button>
+                            )}
+
                             <button 
                                 onClick={onClose}
                                 className="px-3.5 py-1.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition-all cursor-pointer border border-slate-700 w-full sm:w-auto text-center"
@@ -319,23 +1445,102 @@
                         </div>
                     </div>
 
-                    {/* Document Embedder Container */}
-                    <div className="glass-panel rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden flex flex-col bg-white relative h-[600px] md:h-[calc(100vh-280px)] min-h-[500px]">
-                        {iframeLoading && (
-                            <div className="absolute inset-0 bg-slate-50/50 backdrop-blur-sm flex items-center justify-center z-10">
-                                <div className="flex flex-col items-center gap-3">
-                                    <span className="h-8 w-8 border-3 border-teal-500 border-t-transparent rounded-full animate-spin"></span>
-                                    <span className="text-xs text-slate-500 font-bold">Loading document viewer...</span>
+                    {/* SOP Content Render Box */}
+                    {isOldDoc && docId ? (
+                        <div className="glass-panel rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden flex flex-col bg-white h-[600px] md:h-[calc(100vh-280px)] min-h-[500px]">
+                            <iframe 
+                                src={`https://docs.google.com/document/d/${docId}/preview`}
+                                className="w-full h-full border-none"
+                                title="SOP Document Preview"
+                            ></iframe>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-3">
+                            {(!currentDoc.policies || currentDoc.policies.length === 0) ? (
+                                <div className="text-center p-12 bg-slate-50 border border-slate-200 rounded-3xl">
+                                    <p className="text-sm font-bold text-slate-400">No active policies found inside this SOP.</p>
                                 </div>
-                            </div>
-                        )}
-                        <iframe 
-                            src={`https://docs.google.com/document/d/${currentDoc.id}/preview`}
-                            className="w-full h-full border-none"
-                            onLoad={() => setIframeLoading(false)}
-                            title="SOP Document Preview"
-                        ></iframe>
-                    </div>
+                            ) : (
+                                <div className="grid gap-3">
+                                    {currentDoc.policies.map((policy) => {
+                                        const status = getPolicyStatus(policy);
+                                        const isExpanded = expandedPolicy === policy.policyId;
+
+                                        return (
+                                            <div 
+                                                key={policy.policyId}
+                                                className={`bg-white border rounded-2.5xl p-4 transition-all shadow-sm ${
+                                                    isExpanded ? 'border-teal-500 shadow-md ring-1 ring-teal-500/10' : 'border-slate-200 hover:border-slate-300'
+                                                }`}
+                                            >
+                                                <div 
+                                                    onClick={() => setExpandedPolicy(isExpanded ? null : policy.policyId)}
+                                                    className="flex items-center justify-between gap-4 cursor-pointer select-none"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-extrabold text-slate-500 border border-slate-200/60 uppercase">
+                                                            {policy.policyId}
+                                                        </span>
+                                                        <h4 className="text-sm font-bold text-slate-800 hover:text-slate-900 transition-colors line-clamp-1">
+                                                            {policy.policyText.split('\n')[0].replace(/\*\*/g, '')}
+                                                        </h4>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3.5">
+                                                        {/* Status Badge */}
+                                                        {status ? (
+                                                            status.compliance === 'Following' ? (
+                                                                <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-[10px] font-bold text-emerald-700 border border-emerald-200/50 flex items-center gap-1">
+                                                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                                                    Following
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-2.5 py-1 rounded-full bg-amber-50 text-[10px] font-bold text-amber-700 border border-amber-200/50 flex items-center gap-1">
+                                                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                                                                    Not Following
+                                                                </span>
+                                                            )
+                                                        ) : (
+                                                            <span className="px-2.5 py-1 rounded-full bg-slate-50 text-[10px] font-bold text-slate-500 border border-slate-200/60 flex items-center gap-1">
+                                                                <span className="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                                                                Pending Verification
+                                                            </span>
+                                                        )}
+
+                                                        <svg 
+                                                            className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-180 text-teal-500' : ''}`} 
+                                                            fill="none" 
+                                                            viewBox="0 0 24 24" 
+                                                            stroke="currentColor" 
+                                                            strokeWidth={2.5}
+                                                        >
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+
+                                                {/* Expanded content */}
+                                                {isExpanded && (
+                                                    <div className="mt-4 border-t border-slate-100 pt-3 flex flex-col gap-3 animate-slide-up">
+                                                        <div className="pr-4">
+                                                            {renderFormattedPolicyText(policy.policyText)}
+                                                        </div>
+
+                                                        {status && status.compliance === 'Not Following' && status.reason && (
+                                                            <div className="bg-amber-50/50 border border-amber-200/60 rounded-xl p-3 text-[11px] font-medium text-amber-900 mt-1 flex flex-col gap-1">
+                                                                <span className="text-[10px] font-extrabold uppercase text-amber-700 tracking-wider">Stated Deviation Reason</span>
+                                                                <p className="italic text-slate-650">"{status.reason}"</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -418,6 +1623,19 @@
                 [3, "इस सप्ताह \"Tobacco / Gutkha\" के लिए कम से कम एक बार Checking की गई。", ""]
             ]
         };
+
+        const DEFAULT_SOPS = [
+            { sopId: 'SOP_IT', sopName: 'IT Security Policy', policyId: 'P1', policyText: 'Screen Lock: Always lock your screen when leaving your desk.', status: 'Active' },
+            { sopId: 'SOP_IT', sopName: 'IT Security Policy', policyId: 'P2', policyText: 'Passwords: Do not share system passwords with anyone.', status: 'Active' },
+            { sopId: 'SOP_HR', sopName: 'HR General Rules', policyId: 'P1', policyText: 'Punctuality: Office hours start at 9:30 AM sharp.', status: 'Active' },
+            { sopId: 'SOP_HR', sopName: 'HR General Rules', policyId: 'P2', policyText: 'Leave requests: Submit leave requests at least 48 hours in advance.', status: 'Active' }
+        ];
+
+        const DEFAULT_SOP_MAPPINGS = [
+            { targetId: '1', type: 'dept', sopId: 'SOP_IT' },
+            { targetId: '1779858919556', type: 'dept', sopId: 'SOP_IT' },
+            { targetId: 'default', type: 'group', sopId: 'SOP_HR' }
+        ];
 
         const CENTRAL_CONFIG_SPREADSHEET_ID = '1-jaWRejpsk7EdKLuOJ4QKx5wr3HTGqvzMaiXvqilDrI';
 
@@ -678,6 +1896,17 @@
             const hours = String(date.getHours()).padStart(2, '0');
             const minutes = String(date.getMinutes()).padStart(2, '0');
             return `${dateStr} ${hours}:${minutes}`;
+        }
+
+        // Helper to get YYYY-Www week code
+        function getCurrentWeekCode(date = new Date()) {
+            const tempDate = new Date(date.valueOf());
+            // ISO week date standard: Thursday in current week decides the year
+            tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
+            const yearStart = new Date(tempDate.getFullYear(), 0, 1);
+            const weekNo = Math.ceil((((tempDate - yearStart) / 86400000) + 1) / 7);
+            const pad = (val) => String(val).padStart(2, '0');
+            return `${tempDate.getFullYear()}-W${pad(weekNo)}`;
         }
 
         function parseDateString(dateStr) {
@@ -1115,6 +2344,21 @@
             
             // Data Loading States
             const [directives, setDirectives] = React.useState([]);
+            
+            // SOP States
+            const [sops, setSops] = React.useState(() => {
+                const saved = localStorage.getItem('pcil_sops');
+                return saved ? JSON.parse(saved) : DEFAULT_SOPS;
+            });
+            const [sopMappings, setSopMappings] = React.useState(() => {
+                const saved = localStorage.getItem('pcil_sopMappings');
+                return saved ? JSON.parse(saved) : DEFAULT_SOP_MAPPINGS;
+            });
+            const [sopReadRecords, setSopReadRecords] = React.useState(() => {
+                const saved = localStorage.getItem('pcil_sopReadRecords');
+                return saved ? JSON.parse(saved) : [];
+            });
+            const [isSopWizardOpen, setIsSopWizardOpen] = React.useState(false);
             const [loading, setLoading] = React.useState(false);
             const [reminderLoading, setReminderLoading] = React.useState(false);
             const [syncStatuses, setSyncStatuses] = React.useState({}); // { spreadsheetId: { status: 'success'|'error', error: '' } }
@@ -1175,20 +2419,39 @@
                 if (!accessToken) return null;
                 try {
                     console.log('[Config] Fetching central configuration from Google Sheets...');
-                    const ranges = ['Settings!A:B', 'Mappings!A:Z', 'SOPs!A:C', 'DeptGroups!A:B', 'SOPMappings!A:C'];
-                    const rangeParams = ranges.map(r => `ranges=${encodeURIComponent(r)}`).join('&');
+                    let ranges = ['Settings!A:B', 'Mappings!A:Z', 'SOPs!A:Z', 'DeptGroups!A:B', 'SOPMappings!A:Z', 'SOPReadRecords!A:Z'];
+                    let rangeParams = ranges.map(r => `ranges=${encodeURIComponent(r)}`).join('&');
                     
-                    const response = await fetchWithRetry(
-                        `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values:batchGet?${rangeParams}`,
-                        {
-                            headers: {
-                                'Authorization': `Bearer ${accessToken}`
+                    let response;
+                    try {
+                        response = await fetchWithRetry(
+                            `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values:batchGet?${rangeParams}`,
+                            {
+                                headers: {
+                                    'Authorization': `Bearer ${accessToken}`
+                                }
                             }
+                        );
+                        if (!response.ok && response.status === 400) {
+                            console.warn('[Config] SOPReadRecords sheet might be missing, retrying without it...');
+                            ranges = ['Settings!A:B', 'Mappings!A:Z', 'SOPs!A:Z', 'DeptGroups!A:B', 'SOPMappings!A:Z'];
+                            rangeParams = ranges.map(r => `ranges=${encodeURIComponent(r)}`).join('&');
+                            response = await fetchWithRetry(
+                                `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values:batchGet?${rangeParams}`,
+                                {
+                                    headers: {
+                                        'Authorization': `Bearer ${accessToken}`
+                                    }
+                                }
+                            );
                         }
-                    );
+                    } catch (fetchErr) {
+                        console.error('[Config] Failed to fetch central configuration:', fetchErr);
+                        throw fetchErr;
+                    }
                     
-                    if (!response.ok) {
-                        throw new Error(`Failed to fetch config sheet. Status: ${response.status}`);
+                    if (!response || !response.ok) {
+                        throw new Error(`Failed to fetch config sheet. Status: ${response ? response.status : 'unknown'}`);
                     }
                     
                     const data = await response.json();
@@ -1196,7 +2459,12 @@
                         throw new Error('Invalid response structure: valueRanges not found');
                     }
                     
-                    const [settingsRange, mappingsRange, sopsRange, groupsRange, mappingsSopRange] = data.valueRanges;
+                    const settingsRange = data.valueRanges[0];
+                    const mappingsRange = data.valueRanges[1];
+                    const sopsRange = data.valueRanges[2];
+                    const groupsRange = data.valueRanges[3];
+                    const mappingsSopRange = data.valueRanges[4];
+                    const readRecordsRange = data.valueRanges[5];
                     
                     // 1. Parse Settings
                     let fetchedClientId = '';
@@ -1235,23 +2503,45 @@
                         }
                     }
                     
-                    // 3. Parse SOPs List
-                    const sopsDict = {};
+                    // 3. Parse SOPs List (Row-based with policies & backward compatibility)
+                    const fetchedSops = [];
                     if (sopsRange && sopsRange.values && sopsRange.values.length > 0) {
                         const rows = sopsRange.values;
                         const headers = rows[0].map(h => String(h).trim());
                         const idIdx = headers.indexOf('sopId');
                         const nameIdx = headers.indexOf('sopName');
-                        const docIdIdx = headers.indexOf('sopDocId');
+                        const policyIdIdx = headers.indexOf('policyId');
+                        const policyTextIdx = headers.indexOf('policyText');
+                        const statusIdx = headers.indexOf('status');
                         
-                        if (idIdx !== -1 && nameIdx !== -1 && docIdIdx !== -1) {
+                        if (idIdx !== -1 && nameIdx !== -1) {
+                            const isOldFormat = policyIdIdx === -1 || policyTextIdx === -1;
                             for (let i = 1; i < rows.length; i++) {
                                 const row = rows[i];
                                 const sopId = row[idIdx] !== undefined ? String(row[idIdx]).trim() : '';
                                 const sopName = row[nameIdx] !== undefined ? String(row[nameIdx]).trim() : '';
-                                const sopDocId = row[docIdIdx] !== undefined ? String(row[docIdIdx]).trim() : '';
-                                if (sopId && sopDocId) {
-                                    sopsDict[sopId] = { name: sopName, id: sopDocId };
+                                if (!sopId) continue;
+                                
+                                if (isOldFormat) {
+                                    const docIdIdx = headers.indexOf('sopDocId');
+                                    const docId = docIdIdx !== -1 && row[docIdIdx] !== undefined ? String(row[docIdIdx]).trim() : '';
+                                    if (docId) {
+                                        fetchedSops.push({
+                                            sopId,
+                                            sopName,
+                                            policyId: 'DOC',
+                                            policyText: `Google Doc Pointer: [Open Document](https://docs.google.com/document/d/${docId}/preview)`,
+                                            status: 'Active',
+                                            sopDocId: docId
+                                        });
+                                    }
+                                } else {
+                                    const policyId = row[policyIdIdx] !== undefined ? String(row[policyIdIdx]).trim() : '';
+                                    const policyText = row[policyTextIdx] !== undefined ? String(row[policyTextIdx]).trim() : '';
+                                    const status = statusIdx !== -1 && row[statusIdx] !== undefined ? String(row[statusIdx]).trim() : 'Active';
+                                    if (policyId && policyText) {
+                                        fetchedSops.push({ sopId, sopName, policyId, policyText, status });
+                                    }
                                 }
                             }
                         }
@@ -1271,18 +2561,15 @@
                                 const groupId = row[groupIdx] !== undefined ? String(row[groupIdx]).trim() : '';
                                 const deptId = row[deptIdx] !== undefined ? String(row[deptIdx]).trim() : '';
                                 if (groupId && deptId) {
-                                    if (!groupToDepts[groupId]) {
-                                        groupToDepts[groupId] = [];
-                                    }
-                                    if (!groupToDepts[groupId].includes(deptId)) {
-                                        groupToDepts[groupId].push(deptId);
-                                    }
+                                    if (!groupToDepts[groupId]) groupToDepts[groupId] = [];
+                                    if (!groupToDepts[groupId].includes(deptId)) groupToDepts[groupId].push(deptId);
                                 }
                             }
                         }
                     }
                     
-                    // 5. Parse SOPMappings and attach to fetchedMappings
+                    // 5. Parse SOP Mappings & attach sops to fetchedMappings for backward compatibility
+                    const fetchedSopMappings = [];
                     if (mappingsSopRange && mappingsSopRange.values && mappingsSopRange.values.length > 0) {
                         const rows = mappingsSopRange.values;
                         const headers = rows[0].map(h => String(h).trim());
@@ -1295,62 +2582,123 @@
                                 const row = rows[i];
                                 const targetId = row[targetIdx] !== undefined ? String(row[targetIdx]).trim() : '';
                                 const type = row[typeIdx] !== undefined ? String(row[typeIdx]).trim().toLowerCase() : '';
-                                const sopId = row[sopIdIdx] !== undefined ? String(row[sopIdIdx]).trim() : '';
+                                const sopId = row[sopIdIdx] !== undefined ? String(row[sopId]).trim() : '';
                                 
-                                if (targetId && type && sopId && sopsDict[sopId]) {
-                                    const sopObject = sopsDict[sopId];
-                                    if (type === 'dept') {
-                                        const targetMapping = fetchedMappings.find(m => String(m.id).trim() === targetId);
-                                        if (targetMapping) {
-                                            if (!targetMapping.sops.some(s => s.id === sopObject.id)) {
-                                                targetMapping.sops.push({ ...sopObject });
-                                            }
-                                        }
-                                    } else if (type === 'group') {
-                                        const deptIds = groupToDepts[targetId] || [];
-                                        deptIds.forEach(dId => {
-                                            const targetMapping = fetchedMappings.find(m => String(m.id).trim() === dId);
-                                            if (targetMapping) {
-                                                if (!targetMapping.sops.some(s => s.id === sopObject.id)) {
-                                                    targetMapping.sops.push({ ...sopObject });
-                                                    }
-                                                }
-                                            });
-                                        }
-                                    }
+                                if (targetId && type && sopId) {
+                                    fetchedSopMappings.push({ targetId, type, sopId });
                                 }
                             }
                         }
+                    }
+                    
+                    fetchedSopMappings.forEach(m => {
+                        const sopName = fetchedSops.find(s => s.sopId === m.sopId)?.sopName || m.sopId;
+                        const sopDocId = fetchedSops.find(s => s.sopId === m.sopId)?.sopDocId || '';
+                        const sopObject = { id: m.sopId, name: sopName, docId: sopDocId };
                         
-                        // 6. Save to localStorage & update states only if they have changed
-                        if (fetchedClientId && fetchedClientId !== clientId) {
-                            setClientId(fetchedClientId);
-                            localStorage.setItem('pcil_clientId', fetchedClientId);
+                        if (m.type === 'dept') {
+                            const targetMapping = fetchedMappings.find(map => String(map.id).trim() === m.targetId);
+                            if (targetMapping) {
+                                if (!targetMapping.sops.some(s => s.id === sopObject.id)) {
+                                    targetMapping.sops.push({ ...sopObject });
+                                }
+                            }
+                        } else if (m.type === 'group') {
+                            const deptIds = groupToDepts[m.targetId] || [];
+                            deptIds.forEach(dId => {
+                                const targetMapping = fetchedMappings.find(map => String(map.id).trim() === dId);
+                                if (targetMapping) {
+                                    if (!targetMapping.sops.some(s => s.id === sopObject.id)) {
+                                        targetMapping.sops.push({ ...sopObject });
+                                    }
+                                }
+                            });
                         }
-                        if (fetchedMdEmail && fetchedMdEmail !== mdEmail) {
-                            setMdEmail(fetchedMdEmail);
-                            localStorage.setItem('pcil_mdEmail', fetchedMdEmail);
-                        }
-                        if (fetchedMdSopDocId !== undefined && fetchedMdSopDocId !== mdSopDocId) {
-                            setMdSopDocId(fetchedMdSopDocId);
-                            localStorage.setItem('pcil_mdSopDocId', fetchedMdSopDocId);
-                        }
-                        if (fetchedMappings.length > 0) {
-                            const newMappingsStr = JSON.stringify(fetchedMappings);
-                            const oldMappingsStr = localStorage.getItem('pcil_mappings') || '';
-                            if (newMappingsStr !== oldMappingsStr) {
-                                setMappings(fetchedMappings);
-                                localStorage.setItem('pcil_mappings', newMappingsStr);
+                    });
+                    
+                    // 6. Parse SOPReadRecords
+                    const fetchedReadRecords = [];
+                    if (readRecordsRange && readRecordsRange.values && readRecordsRange.values.length > 0) {
+                        const rows = readRecordsRange.values;
+                        const headers = rows[0].map(h => String(h).trim());
+                        const timestampIdx = headers.indexOf('Timestamp');
+                        const emailIdx = headers.indexOf('User Email');
+                        const deptIdx = headers.indexOf('Department');
+                        const sopIdIdx = headers.indexOf('SOP ID');
+                        const policyIdIdx = headers.indexOf('Policy ID');
+                        const weekIdx = headers.indexOf('Week Code');
+                        const statusIdx = headers.indexOf('Compliance Status');
+                        const reasonIdx = headers.indexOf('Deviation Reason');
+                        
+                        if (emailIdx !== -1 && weekIdx !== -1 && policyIdIdx !== -1) {
+                            for (let i = 1; i < rows.length; i++) {
+                                const row = rows[i];
+                                fetchedReadRecords.push({
+                                    timestamp: timestampIdx !== -1 && row[timestampIdx] !== undefined ? String(row[timestampIdx]).trim() : '',
+                                    userEmail: row[emailIdx] !== undefined ? String(row[emailIdx]).trim().toLowerCase() : '',
+                                    department: deptIdx !== -1 && row[deptIdx] !== undefined ? String(row[deptIdx]).trim() : '',
+                                    sopId: sopIdIdx !== -1 && row[sopIdIdx] !== undefined ? String(row[sopIdIdx]).trim() : '',
+                                    policyId: row[policyIdIdx] !== undefined ? String(row[policyIdIdx]).trim() : '',
+                                    weekCode: row[weekIdx] !== undefined ? String(row[weekIdx]).trim() : '',
+                                    compliance: statusIdx !== -1 && row[statusIdx] !== undefined ? String(row[statusIdx]).trim() : '',
+                                    reason: reasonIdx !== -1 && row[reasonIdx] !== undefined ? String(row[reasonIdx]).trim() : ''
+                                });
                             }
                         }
-                        console.log('[Config] Successfully loaded configuration from spreadsheet. Mappings loaded:', fetchedMappings.length);
-                        return fetchedMappings;
-                    } catch (err) {
-                        console.error('[Config] Failed to fetch central configuration:', err);
-                        showNotification('Using cached configuration. Failed to update from server.', 'warning');
-                        return null;
                     }
-                };
+                    
+                    // 7. Save to localStorage & update states only if they have changed
+                    if (fetchedClientId && fetchedClientId !== clientId) {
+                        setClientId(fetchedClientId);
+                        localStorage.setItem('pcil_clientId', fetchedClientId);
+                    }
+                    if (fetchedMdEmail && fetchedMdEmail !== mdEmail) {
+                        setMdEmail(fetchedMdEmail);
+                        localStorage.setItem('pcil_mdEmail', fetchedMdEmail);
+                    }
+                    if (fetchedMdSopDocId !== undefined && fetchedMdSopDocId !== mdSopDocId) {
+                        setMdSopDocId(fetchedMdSopDocId);
+                        localStorage.setItem('pcil_mdSopDocId', fetchedMdSopDocId);
+                    }
+                    if (fetchedMappings.length > 0) {
+                        const newMappingsStr = JSON.stringify(fetchedMappings);
+                        const oldMappingsStr = localStorage.getItem('pcil_mappings') || '';
+                        if (newMappingsStr !== oldMappingsStr) {
+                            setMappings(fetchedMappings);
+                            localStorage.setItem('pcil_mappings', newMappingsStr);
+                        }
+                    }
+                    if (fetchedSops.length > 0) {
+                        const newSopsStr = JSON.stringify(fetchedSops);
+                        const oldSopsStr = localStorage.getItem('pcil_sops') || '';
+                        if (newSopsStr !== oldSopsStr) {
+                            setSops(fetchedSops);
+                            localStorage.setItem('pcil_sops', newSopsStr);
+                        }
+                    }
+                    if (fetchedSopMappings.length > 0) {
+                        const newSopMappingsStr = JSON.stringify(fetchedSopMappings);
+                        const oldSopMappingsStr = localStorage.getItem('pcil_sopMappings') || '';
+                        if (newSopMappingsStr !== oldSopMappingsStr) {
+                            setSopMappings(fetchedSopMappings);
+                            localStorage.setItem('pcil_sopMappings', newSopMappingsStr);
+                        }
+                    }
+                    const newReadRecordsStr = JSON.stringify(fetchedReadRecords);
+                    const oldReadRecordsStr = localStorage.getItem('pcil_sopReadRecords') || '';
+                    if (newReadRecordsStr !== oldReadRecordsStr) {
+                        setSopReadRecords(fetchedReadRecords);
+                        localStorage.setItem('pcil_sopReadRecords', newReadRecordsStr);
+                    }
+                    
+                    console.log('[Config] Configuration loaded. Mappings:', fetchedMappings.length, 'SOPs:', fetchedSops.length);
+                    return fetchedMappings;
+                } catch (err) {
+                    console.error('[Config] Failed to fetch central configuration:', err);
+                    showNotification('Using cached configuration. Failed to update from server.', 'warning');
+                    return null;
+                }
+            };
 
             // Close modals on Escape key press
             React.useEffect(() => {
@@ -1952,8 +3300,15 @@
                     });
                 }
                 
-                return docs;
-            }, [clientId, mdEmail, mappings, auth, mdSopDocId, isSandbox, sandboxRole, activeRole, filterDept]);
+                // Attach parsed policies to each resolved SOP
+                return docs.map(doc => {
+                    const policies = sops.filter(s => s.sopId === doc.id);
+                    return {
+                        ...doc,
+                        policies: policies
+                    };
+                });
+            }, [clientId, mdEmail, mappings, auth, mdSopDocId, isSandbox, sandboxRole, activeRole, filterDept, sops]);
 
             // Generic helper to send email using Gmail API
             const sendEmailViaGmail = async (toEmail, subject, bodyText) => {
@@ -2552,6 +3907,50 @@
                     setActiveMetricTab('All');
                 }
             }, [showCompletedAudits, activeMetricTab]);
+
+            // Weekly SOP Reading Check for Coordinators
+            React.useEffect(() => {
+                if (!activeRole || activeRole.isMD || activeRole.isUnregistered) {
+                    setIsSopWizardOpen(false);
+                    return;
+                }
+
+                // Get active policies for mapped SOPs
+                const activePolicies = [];
+                activeSopDocs.forEach(sopDoc => {
+                    if (sopDoc.policies) {
+                        sopDoc.policies.forEach(policy => {
+                            if (policy.status !== 'Inactive') {
+                                activePolicies.push(policy);
+                            }
+                        });
+                    }
+                });
+
+                if (activePolicies.length === 0) {
+                    setIsSopWizardOpen(false);
+                    return;
+                }
+
+                // Check if user has read all mapped policies for the current week
+                const currentWeekCode = getCurrentWeekCode();
+                const userEmail = activeRole.email.toLowerCase();
+                
+                const missingAffirmations = activePolicies.filter(policy => {
+                    return !sopReadRecords.some(record => 
+                        record.userEmail.toLowerCase() === userEmail &&
+                        record.weekCode === currentWeekCode &&
+                        record.sopId === policy.sopId &&
+                        record.policyId === policy.policyId
+                    );
+                });
+
+                if (missingAffirmations.length > 0) {
+                    setIsSopWizardOpen(true);
+                } else {
+                    setIsSopWizardOpen(false);
+                }
+            }, [activeRole, activeSopDocs, sopReadRecords]);
 
             // Parse sheet rows, identifying headers dynamically
             const parseSheetRows = (values, mapping) => {
@@ -4118,7 +5517,28 @@
 
                                 {/* Main Console Grid */}
                                 {activeMetricTab === 'SOP' ? (
-                                    <SOPReader activeSopDocs={activeSopDocs} onClose={() => setActiveMetricTab('All')} />
+                                    activeRole?.isMD ? (
+                                        <SOPAdminDashboard
+                                            onClose={() => setActiveMetricTab('All')}
+                                            sops={sops}
+                                            setSops={setSops}
+                                            sopMappings={sopMappings}
+                                            setSopMappings={setSopMappings}
+                                            sopReadRecords={sopReadRecords}
+                                            setSopReadRecords={setSopReadRecords}
+                                            mappings={mappings}
+                                            isSandbox={isSandbox}
+                                            showNotification={showNotification}
+                                        />
+                                    ) : (
+                                        <SOPReader 
+                                            activeSopDocs={activeSopDocs} 
+                                            onClose={() => setActiveMetricTab('All')} 
+                                            setIsSopWizardOpen={setIsSopWizardOpen}
+                                            sopReadRecords={sopReadRecords}
+                                            activeRole={activeRole}
+                                        />
+                                    )
                                 ) : (
                                     <div className="flex flex-col gap-6">
                                     
@@ -4729,6 +6149,19 @@
                             </div>
                         )}
                     </main>
+
+                    {/* SOP Compliance Wizard Modal */}
+                    <SOPWizardModal
+                        isOpen={isSopWizardOpen}
+                        activeSopDocs={activeSopDocs}
+                        activeRole={activeRole}
+                        sopReadRecords={sopReadRecords}
+                        setSopReadRecords={setSopReadRecords}
+                        isSandbox={isSandbox}
+                        onClose={() => setIsSopWizardOpen(false)}
+                        auth={auth}
+                        showNotification={showNotification}
+                    />
 
                     {/* Edit Directive Modal */}
                     {editingDirective && (
