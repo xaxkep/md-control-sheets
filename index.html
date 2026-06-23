@@ -1331,6 +1331,30 @@
                 return diffMs > 72 * 60 * 60 * 1000;
             };
 
+            const isDirectiveOverdue = (d) => {
+                if (!d) return false;
+                const isPending = d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted';
+                if (!isPending) return false;
+                if (d.type === 'WSR') return false;
+
+                // 1. If target date is specified and is a valid calendar date
+                if (d.targetDate && d.targetDate !== 'Immediate' && d.targetDate !== '-') {
+                    const targetDateObj = parseDateString(d.targetDate);
+                    if (targetDateObj && !isNaN(targetDateObj.getTime()) && targetDateObj.getTime() !== 0) {
+                        const todayDate = new Date();
+                        todayDate.setHours(0, 0, 0, 0);
+
+                        const targetDateMidnight = new Date(targetDateObj);
+                        targetDateMidnight.setHours(0, 0, 0, 0);
+
+                        return todayDate.getTime() > targetDateMidnight.getTime();
+                    }
+                }
+
+                // 2. Otherwise fall back to 72 hours
+                return isPendingMoreThan72Hours(d.date);
+            };
+
             const triggerIndividualReminder = async (d) => {
                 if (!isSandbox) {
                     try {
@@ -1830,10 +1854,7 @@
                 }
 
                 // 3. Process 72h Overdue Pending Directives
-                const overdueDirectives = allDirectives.filter(d => {
-                    const isPending = d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted';
-                    return isPending && d.type !== 'WSR' && isPendingMoreThan72Hours(d.date);
-                });
+                const overdueDirectives = allDirectives.filter(d => isDirectiveOverdue(d));
 
                 for (const d of overdueDirectives) {
                     const uniqueKey = `${d.spreadsheetId}_${d.sheetTabName}_${d.excelRowNumber}_Overdue72h`;
@@ -3865,7 +3886,7 @@
                                                                     'Checked & Confirmed': 'bg-emerald-500 border-none text-white font-bold'
                                                                 };
 
-                                                                const isOverdue72h = d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted' && isPendingMoreThan72Hours(d.date);
+                                                                const isOverdue72h = isDirectiveOverdue(d);
 
                                                                 return (
                                                                     <tr 
@@ -4104,7 +4125,7 @@
                                                             Completed: 'bg-emerald-50 border border-emerald-150 text-emerald-700',
                                                             'Checked & Confirmed': 'bg-emerald-500 border-none text-white'
                                                         };
-                                                        const isOverdue72h = d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted' && isPendingMoreThan72Hours(d.date);
+                                                        const isOverdue72h = isDirectiveOverdue(d);
 
                                                         return (
                                                             <div 
@@ -4677,7 +4698,7 @@
                                         <div className="flex justify-between border-b border-slate-100 pb-2.5">
                                             <span className="font-bold text-slate-400 text-xs uppercase tracking-wider">Pending For</span>
                                             <span className={`font-bold font-mono ${
-                                                isPendingMoreThan72Hours(selectedDirective.date) 
+                                                isDirectiveOverdue(selectedDirective) 
                                                 ? 'text-rose-600 font-extrabold animate-pulse' 
                                                 : 'text-teal-600'
                                             }`}>⏳ {getPendingElapsedTime(selectedDirective.date)}</span>
