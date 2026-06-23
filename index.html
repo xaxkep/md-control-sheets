@@ -2634,7 +2634,17 @@
                             const row = rows[i];
                             const mapping = {};
                             headers.forEach((header, index) => {
-                                mapping[header] = row[index] !== undefined ? String(row[index]).trim() : '';
+                                const val = row[index] !== undefined ? String(row[index]).trim() : '';
+                                mapping[header] = val;
+                                // Case-insensitive normalized fallbacks
+                                const lowerHeader = header.toLowerCase();
+                                if (lowerHeader === 'id' || lowerHeader === 'deptid') mapping.id = val;
+                                if (lowerHeader === 'deptname' || lowerHeader === 'department') mapping.deptName = val;
+                                if (lowerHeader === 'headname') mapping.headName = val;
+                                if (lowerHeader === 'heademail') mapping.headEmail = val;
+                                if (lowerHeader === 'spreadsheetid') mapping.spreadsheetId = val;
+                                if (lowerHeader === 'sheettabname') mapping.sheetTabName = val;
+                                if (lowerHeader === 'sopdocid') mapping.sopDocId = val;
                             });
                             mapping.sops = [];
                             if (mapping.id && mapping.deptName) {
@@ -2648,11 +2658,11 @@
                     if (sopsRange && sopsRange.values && sopsRange.values.length > 0) {
                         const rows = sopsRange.values;
                         const headers = rows[0].map(h => String(h).trim());
-                        const idIdx = headers.indexOf('sopId');
-                        const nameIdx = headers.indexOf('sopName');
-                        const policyIdIdx = headers.indexOf('policyId');
-                        const policyTextIdx = headers.indexOf('policyText');
-                        const statusIdx = headers.indexOf('status');
+                        const idIdx = headers.findIndex(h => h.toLowerCase() === 'sopid');
+                        const nameIdx = headers.findIndex(h => h.toLowerCase() === 'sopname');
+                        const policyIdIdx = headers.findIndex(h => h.toLowerCase() === 'policyid');
+                        const policyTextIdx = headers.findIndex(h => h.toLowerCase() === 'policytext');
+                        const statusIdx = headers.findIndex(h => h.toLowerCase() === 'status');
                         
                         if (idIdx !== -1 && nameIdx !== -1) {
                             const isOldFormat = policyIdIdx === -1 || policyTextIdx === -1;
@@ -2663,7 +2673,7 @@
                                 if (!sopId) continue;
                                 
                                 if (isOldFormat) {
-                                    const docIdIdx = headers.indexOf('sopDocId');
+                                    const docIdIdx = headers.findIndex(h => h.toLowerCase() === 'sopdocid' || h.toLowerCase() === 'docid' || h.toLowerCase() === 'sopdoc' || h.toLowerCase() === 'documentid');
                                     const docId = docIdIdx !== -1 && row[docIdIdx] !== undefined ? String(row[docIdIdx]).trim() : '';
                                     if (docId) {
                                         fetchedSops.push({
@@ -2692,8 +2702,8 @@
                     if (groupsRange && groupsRange.values && groupsRange.values.length > 0) {
                         const rows = groupsRange.values;
                         const headers = rows[0].map(h => String(h).trim());
-                        const groupIdx = headers.indexOf('groupId');
-                        const deptIdx = headers.indexOf('deptId');
+                        const groupIdx = headers.findIndex(h => h.toLowerCase() === 'groupid');
+                        const deptIdx = headers.findIndex(h => h.toLowerCase() === 'deptid');
                         
                         if (groupIdx !== -1 && deptIdx !== -1) {
                             for (let i = 1; i < rows.length; i++) {
@@ -2713,9 +2723,9 @@
                     if (mappingsSopRange && mappingsSopRange.values && mappingsSopRange.values.length > 0) {
                         const rows = mappingsSopRange.values;
                         const headers = rows[0].map(h => String(h).trim());
-                        const targetIdx = headers.indexOf('targetId') !== -1 ? headers.indexOf('targetId') : headers.findIndex(h => h.includes('groupId/deptId') || h.includes('groupId') || h.includes('deptId'));
-                        const typeIdx = headers.indexOf('type');
-                        const sopIdIdx = headers.indexOf('sopId');
+                        const targetIdx = headers.findIndex(h => h.toLowerCase() === 'targetid' || h.toLowerCase().includes('groupid/deptid') || h.toLowerCase() === 'groupid' || h.toLowerCase() === 'deptid');
+                        const typeIdx = headers.findIndex(h => h.toLowerCase() === 'type');
+                        const sopIdIdx = headers.findIndex(h => h.toLowerCase() === 'sopid');
                         
                         if (targetIdx !== -1 && typeIdx !== -1 && sopIdIdx !== -1) {
                             for (let i = 1; i < rows.length; i++) {
@@ -2763,14 +2773,14 @@
                     if (readRecordsRange && readRecordsRange.values && readRecordsRange.values.length > 0) {
                         const rows = readRecordsRange.values;
                         const headers = rows[0].map(h => String(h).trim());
-                        const timestampIdx = headers.indexOf('Timestamp');
-                        const emailIdx = headers.indexOf('User Email');
-                        const deptIdx = headers.indexOf('Department');
-                        const sopIdIdx = headers.indexOf('SOP ID');
-                        const policyIdIdx = headers.indexOf('Policy ID');
-                        const weekIdx = headers.indexOf('Week Code');
-                        const statusIdx = headers.indexOf('Compliance Status');
-                        const reasonIdx = headers.indexOf('Deviation Reason');
+                        const timestampIdx = headers.findIndex(h => h.toLowerCase() === 'timestamp');
+                        const emailIdx = headers.findIndex(h => h.toLowerCase() === 'user email' || h.toLowerCase() === 'useremail' || h.toLowerCase() === 'email');
+                        const deptIdx = headers.findIndex(h => h.toLowerCase() === 'department' || h.toLowerCase() === 'dept');
+                        const sopIdIdx = headers.findIndex(h => h.toLowerCase() === 'sop id' || h.toLowerCase() === 'sopid');
+                        const policyIdIdx = headers.findIndex(h => h.toLowerCase() === 'policy id' || h.toLowerCase() === 'policyid');
+                        const weekIdx = headers.findIndex(h => h.toLowerCase() === 'week code' || h.toLowerCase() === 'weekcode');
+                        const statusIdx = headers.findIndex(h => h.toLowerCase() === 'compliance status' || h.toLowerCase() === 'compliancestatus' || h.toLowerCase() === 'status');
+                        const reasonIdx = headers.findIndex(h => h.toLowerCase() === 'deviation reason' || h.toLowerCase() === 'deviationreason' || h.toLowerCase() === 'reason');
                         
                         if (emailIdx !== -1 && weekIdx !== -1 && policyIdIdx !== -1) {
                             for (let i = 1; i < rows.length; i++) {
@@ -5262,8 +5272,8 @@
                 const overdue = nonWsr.filter(d => isDirectiveOverdue(d)).length;
                 const awaitingAudit = nonWsr.filter(d => d.status === 'Completed' && d.verification !== 'Done' && d.verification !== 'Verified').length;
                 
-                const sopNotFollowedThis = sopReadRecords.filter(r => r.weekCode === getCurrentWeekCode() && r.compliance === 'Not Following').length;
-                const sopNotFollowedLast = sopReadRecords.filter(r => r.weekCode === getLastWeekCode() && r.compliance === 'Not Following').length;
+                const sopNotFollowedThis = sopReadRecords.filter(r => String(r.weekCode).trim().toLowerCase() === String(getCurrentWeekCode()).trim().toLowerCase() && String(r.compliance).trim().toLowerCase() === 'not following').length;
+                const sopNotFollowedLast = sopReadRecords.filter(r => String(r.weekCode).trim().toLowerCase() === String(getLastWeekCode()).trim().toLowerCase() && String(r.compliance).trim().toLowerCase() === 'not following').length;
                 
                 return {
                     pending,
