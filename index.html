@@ -22,8 +22,8 @@
     <style>
         body { 
             font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', sans-serif;
-            background-color: #060913; /* Deep space black */
-            color: #e2e8f0;
+            background-color: #f8fafc; /* Slate-50 */
+            color: #1e293b;
         }
         body::before {
             content: '';
@@ -32,9 +32,9 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: radial-gradient(circle at 15% 15%, rgba(20, 184, 166, 0.09) 0%, transparent 45%),
-                        radial-gradient(circle at 85% 85%, rgba(99, 102, 241, 0.09) 0%, transparent 45%),
-                        radial-gradient(circle at 50% 50%, rgba(244, 63, 94, 0.02) 0%, transparent 60%);
+            background: radial-gradient(circle at 15% 15%, rgba(20, 184, 166, 0.04) 0%, transparent 45%),
+                        radial-gradient(circle at 85% 85%, rgba(99, 102, 241, 0.04) 0%, transparent 45%),
+                        radial-gradient(circle at 50% 50%, rgba(244, 63, 94, 0.01) 0%, transparent 60%);
             z-index: -1;
             pointer-events: none;
         }
@@ -43,14 +43,14 @@
             font-family: 'Noto Sans Devanagari', sans-serif;
         }
         .glass-panel {
-            background: rgba(11, 16, 30, 0.7);
+            background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(226, 232, 240, 0.8);
         }
         .glass-panel-hover:hover {
-            border-color: rgba(99, 102, 241, 0.3);
-            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.45), 0 10px 15px -6px rgba(0, 0, 0, 0.35);
+            border-color: rgba(99, 102, 241, 0.2);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 8px 15px -6px rgba(0, 0, 0, 0.03);
         }
         /* Custom scrollbars */
         ::-webkit-scrollbar {
@@ -58,14 +58,14 @@
             height: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: #060913;
+            background: #f1f5f9;
         }
         ::-webkit-scrollbar-thumb {
-            background: #1e293b;
+            background: #cbd5e1;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #334155;
+            background: #94a3b8;
         }
         @keyframes fadeIn {
             from { opacity: 0; }
@@ -85,116 +85,9 @@
         h1, h2, h3, h4, h5, h6, th, .uppercase.tracking-wider, .font-bold.text-slate-400 {
             font-weight: 500 !important;
         }
-        h1, h2, h3, h4, h5, h6 {
-            color: #f8fafc !important;
-        }
-        .text-slate-800, .text-slate-700 {
-            color: #f1f5f9 !important;
-        }
-        .text-slate-600, .text-slate-500 {
-            color: #94a3b8 !important;
-        }
-        .text-slate-400 {
-            color: #64748b !important;
-        }
-        .bg-white {
-            background-color: #0f172a !important; /* Slate-900 */
-        }
-        .bg-white\/90, .bg-white\/85, .bg-white\/80 {
-            background-color: rgba(15, 23, 42, 0.85) !important;
-        }
-        .border-slate-200, .border-slate-200\/80, .border-slate-100 {
-            border-color: rgba(255, 255, 255, 0.06) !important;
-        }
-        .divide-slate-100 > * + * {
-            border-color: rgba(255, 255, 255, 0.06) !important;
-        }
-        input, select, textarea {
-            background-color: rgba(15, 23, 42, 0.6) !important;
-            border-color: rgba(255, 255, 255, 0.08) !important;
-            color: #f8fafc !important;
-        }
-        input:focus, select:focus, textarea:focus {
-            border-color: #14b8a6 !important; /* Teal-500 */
-            box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.15) !important;
-        }
-        .bg-slate-50 {
-            background-color: #0b0f19 !important;
-        }
-        .bg-slate-100 {
-            background-color: #1e293b !important; /* Slate-800 */
-        }
-        .bg-slate-100:hover {
-            background-color: #334155 !important;
-        }
-        .hover\:bg-slate-200:hover {
-            background-color: #334155 !important;
-        }
-        .text-slate-705 {
-            color: #cbd5e1 !important;
-        }
-        /* Table enhancements */
-        table thead tr {
-            background-color: #0b0f19 !important;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.08) !important;
-        }
-        table tbody tr:hover {
-            background-color: rgba(255, 255, 255, 0.02) !important;
-        }
-
-        /* Premium Chip Badges */
-        .bg-indigo-50 {
-            background-color: rgba(99, 102, 241, 0.12) !important;
-            color: #a5b4fc !important;
-            border-color: rgba(99, 102, 241, 0.25) !important;
-        }
-        .bg-rose-50 {
-            background-color: rgba(244, 63, 94, 0.12) !important;
-            color: #fda4af !important;
-            border-color: rgba(244, 63, 94, 0.25) !important;
-        }
-        .bg-amber-50 {
-            background-color: rgba(245, 158, 11, 0.12) !important;
-            color: #fde047 !important;
-            border-color: rgba(245, 158, 11, 0.25) !important;
-        }
-        .bg-teal-50 {
-            background-color: rgba(20, 184, 166, 0.12) !important;
-            color: #99f6e4 !important;
-            border-color: rgba(20, 184, 166, 0.25) !important;
-        }
-        .bg-violet-50 {
-            background-color: rgba(139, 92, 246, 0.12) !important;
-            color: #d8b4fe !important;
-            border-color: rgba(139, 92, 246, 0.25) !important;
-        }
-        .bg-pink-50 {
-            background-color: rgba(236, 72, 153, 0.12) !important;
-            color: #fbcfe8 !important;
-            border-color: rgba(236, 72, 153, 0.25) !important;
-        }
-        .bg-sky-50 {
-            background-color: rgba(14, 165, 233, 0.12) !important;
-            color: #bae6fd !important;
-            border-color: rgba(14, 165, 233, 0.25) !important;
-        }
-        .bg-emerald-50 {
-            background-color: rgba(16, 185, 129, 0.12) !important;
-            color: #a7f3d0 !important;
-            border-color: rgba(16, 185, 129, 0.25) !important;
-        }
-        .border-indigo-150 {
-            border-color: rgba(99, 102, 241, 0.2) !important;
-        }
-        .border-amber-200 {
-            border-color: rgba(245, 158, 11, 0.25) !important;
-        }
-        .border-slate-150 {
-            border-color: rgba(255, 255, 255, 0.08) !important;
-        }
     </style>
 </head>
-<body class="text-slate-100 bg-[#060913] min-h-screen flex flex-col selection:bg-teal-500/20 selection:text-teal-300">
+<body class="text-slate-800 bg-[#f8fafc] min-h-screen flex flex-col selection:bg-teal-500/20 selection:text-teal-900">
     <!-- Global Error Fallback UI -->
     <div id="error-fallback" style="display:none; padding: 24px; background: #fff5f5; color: #c53030; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid #fc8181; margin: 24px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 9999; position: relative;">
         <h2 style="margin-top: 0; font-size: 20px; font-weight: 700;">MD Command Center: Startup Error</h2>
