@@ -1,4 +1,4 @@
-const CACHE_NAME = 'md-command-center-v6';
+const CACHE_NAME = 'md-command-center-v7';
 
 const PRECACHE_ASSETS = [
   './',
