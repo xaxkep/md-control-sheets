@@ -1307,22 +1307,26 @@
                             }
                         }
                         
-                        // 6. Save to localStorage & update states
-                        if (fetchedClientId) {
+                        // 6. Save to localStorage & update states only if they have changed
+                        if (fetchedClientId && fetchedClientId !== clientId) {
                             setClientId(fetchedClientId);
                             localStorage.setItem('pcil_clientId', fetchedClientId);
                         }
-                        if (fetchedMdEmail) {
+                        if (fetchedMdEmail && fetchedMdEmail !== mdEmail) {
                             setMdEmail(fetchedMdEmail);
                             localStorage.setItem('pcil_mdEmail', fetchedMdEmail);
                         }
-                        if (fetchedMdSopDocId !== undefined) {
+                        if (fetchedMdSopDocId !== undefined && fetchedMdSopDocId !== mdSopDocId) {
                             setMdSopDocId(fetchedMdSopDocId);
                             localStorage.setItem('pcil_mdSopDocId', fetchedMdSopDocId);
                         }
                         if (fetchedMappings.length > 0) {
-                            setMappings(fetchedMappings);
-                            localStorage.setItem('pcil_mappings', JSON.stringify(fetchedMappings));
+                            const newMappingsStr = JSON.stringify(fetchedMappings);
+                            const oldMappingsStr = localStorage.getItem('pcil_mappings') || '';
+                            if (newMappingsStr !== oldMappingsStr) {
+                                setMappings(fetchedMappings);
+                                localStorage.setItem('pcil_mappings', newMappingsStr);
+                            }
                         }
                         console.log('[Config] Successfully loaded configuration from spreadsheet. Mappings loaded:', fetchedMappings.length);
                         return fetchedMappings;
