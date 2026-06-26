@@ -539,6 +539,7 @@
             const [selectedWeek, setSelectedWeek] = React.useState(getCurrentWeekCode());
             const [complianceSubTab, setComplianceSubTab] = React.useState('deviations-this'); // 'deviations-this' | 'deviations-last' | 'pending'
             const [expandedCoordinators, setExpandedCoordinators] = React.useState({});
+            const [isNewSopIdOption, setIsNewSopIdOption] = React.useState(false);
             
             const toggleExpandCoordinator = (email) => {
                 setExpandedCoordinators(prev => ({
@@ -579,6 +580,18 @@
                 }
                 return Array.from(weeks).sort().reverse();
             }, [sopReadRecords]);
+
+            const uniqueSopsList = React.useMemo(() => {
+                const map = new Map();
+                if (sops) {
+                    sops.forEach(s => {
+                        if (s.sopId && !map.has(s.sopId)) {
+                            map.set(s.sopId, s.sopName || s.sopId);
+                        }
+                    });
+                }
+                return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+            }, [sops]);
 
             // Calculate last week code relative to selected week
             const lastWeekCode = React.useMemo(() => {
@@ -1136,7 +1149,10 @@
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-tight">Configured SOPs & Policies</h3>
                                     <button
-                                        onClick={() => setEditingPolicy({ sopId: '', sopName: '', policyId: '', policyText: '', status: 'Active', isNew: true })}
+                                        onClick={() => {
+                                            setIsNewSopIdOption(false);
+                                            setEditingPolicy({ sopId: '', sopName: '', policyId: '', policyText: '', status: 'Active', isNew: true });
+                                        }}
                                         className="py-1.5 px-3 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-teal-600/10 active:scale-95"
                                     >
                                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -1173,7 +1189,10 @@
 
                                                             <div className="flex gap-2">
                                                                 <button
-                                                                    onClick={() => setEditingPolicy({ ...policy, isNew: false })}
+                                                                    onClick={() => {
+                                                                        setIsNewSopIdOption(false);
+                                                                        setEditingPolicy({ ...policy, isNew: false });
+                                                                    }}
                                                                     className="p-1.5 rounded-lg hover:bg-slate-200/80 text-slate-500 hover:text-slate-800 transition-all cursor-pointer border border-slate-200 bg-white"
                                                                     title="Edit Policy"
                                                                 >
@@ -1216,23 +1235,61 @@
                                     <div className="flex flex-col gap-4">
                                         <div className="flex flex-col gap-1">
                                             <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SOP ID (e.g. SOP_IT)</label>
-                                            <input
-                                                type="text"
-                                                disabled={!editingPolicy.isNew}
-                                                value={editingPolicy.sopId}
-                                                onChange={(e) => setEditingPolicy(prev => ({ ...prev, sopId: e.target.value.trim().toUpperCase() }))}
-                                                className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150 disabled:text-slate-400"
-                                            />
+                                            {editingPolicy.isNew ? (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <select
+                                                        value={isNewSopIdOption ? 'NEW' : (editingPolicy.sopId || '')}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            if (val === 'NEW') {
+                                                                setIsNewSopIdOption(true);
+                                                                setEditingPolicy(prev => ({ ...prev, sopId: '', sopName: '' }));
+                                                            } else {
+                                                                setIsNewSopIdOption(false);
+                                                                const found = uniqueSopsList.find(s => s.id === val);
+                                                                setEditingPolicy(prev => ({
+                                                                    ...prev,
+                                                                    sopId: val,
+                                                                    sopName: found ? found.name : ''
+                                                                }));
+                                                            }
+                                                        }}
+                                                        className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold bg-white text-slate-700 cursor-pointer"
+                                                    >
+                                                        <option value="">Select SOP ID...</option>
+                                                        <option value="NEW">[Create New SOP ID]</option>
+                                                        {uniqueSopsList.map(s => (
+                                                            <option key={s.id} value={s.id}>{s.id} ({s.name})</option>
+                                                        ))}
+                                                    </select>
+                                                    {isNewSopIdOption && (
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Enter new SOP ID (e.g. SOP_FINANCE)"
+                                                            value={editingPolicy.sopId || ''}
+                                                            onChange={(e) => setEditingPolicy(prev => ({ ...prev, sopId: e.target.value.trim().toUpperCase() }))}
+                                                            className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold animate-slide-up"
+                                                        />
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <input
+                                                    type="text"
+                                                    disabled={true}
+                                                    value={editingPolicy.sopId}
+                                                    className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none transition-all font-bold bg-slate-150 text-slate-400"
+                                                />
+                                            )}
                                         </div>
 
                                         <div className="flex flex-col gap-1">
                                             <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SOP Name (e.g. IT Security Policy)</label>
                                             <input
                                                 type="text"
-                                                disabled={!editingPolicy.isNew}
-                                                value={editingPolicy.sopName}
+                                                disabled={!editingPolicy.isNew || (!isNewSopIdOption && !!editingPolicy.sopId)}
+                                                value={editingPolicy.sopName || ''}
                                                 onChange={(e) => setEditingPolicy(prev => ({ ...prev, sopName: e.target.value }))}
-                                                className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150"
+                                                className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150 disabled:text-slate-400"
                                             />
                                         </div>
 
@@ -1290,8 +1347,11 @@
 
                                         <div className="flex gap-3.5 mt-2">
                                             <button
-                                                onClick={() => setEditingPolicy(null)}
-                                                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer text-center"
+                                                onClick={() => {
+                                                    setIsNewSopIdOption(false);
+                                                    setEditingPolicy(null);
+                                                }}
+                                                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-550 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer text-center"
                                             >
                                                 Cancel
                                             </button>
@@ -1324,6 +1384,7 @@
                                                         );
                                                     }
                                                     saveSops(updated);
+                                                    setIsNewSopIdOption(false);
                                                     setEditingPolicy(null);
                                                 }}
                                                 className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all cursor-pointer text-center shadow-md shadow-teal-600/10"
