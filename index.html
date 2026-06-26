@@ -258,68 +258,10 @@
 
         // SOP Wizard Modal for weekly affirmation checks
         function SOPWizardModal({ isOpen, activeSopDocs, activeRole, sopReadRecords, setSopReadRecords, isSandbox, onClose, auth, showNotification, ensureValidToken }) {
-            const [currentIdx, setCurrentIdx] = React.useState(0);
-            const [answers, setAnswers] = React.useState([]);
             const [showReasonInput, setShowReasonInput] = React.useState(false);
             const [deviationReason, setDeviationReason] = React.useState('');
             const [submitting, setSubmitting] = React.useState(false);
-
-            const handleClose = async () => {
-                if (answers.length > 0) {
-                    setSubmitting(true);
-                    try {
-                        if (isSandbox) {
-                            setSopReadRecords(prev => [...prev, ...answers]);
-                            const savedRecords = JSON.parse(localStorage.getItem('pcil_sopReadRecords') || '[]');
-                            localStorage.setItem('pcil_sopReadRecords', JSON.stringify([...savedRecords, ...answers]));
-                            onClose();
-                            showNotification('Your SOP progress was saved locally in Demo Sandbox mode!', 'success');
-                        } else {
-                            const body = {
-                                values: answers.map(ans => [
-                                    ans.timestamp,
-                                    ans.userEmail,
-                                    ans.department,
-                                    ans.sopId,
-                                    ans.policyId,
-                                    ans.weekCode,
-                                    ans.compliance,
-                                    ans.reason
-                                ])
-                            };
-                            const tokenVal = await ensureValidToken();
-                            const response = await fetch(
-                                `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values/SOPReadRecords!A:A:append?valueInputOption=USER_ENTERED`,
-                                {
-                                    method: 'POST',
-                                    headers: {
-                                        'Authorization': `Bearer ${tokenVal}`,
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(body)
-                                }
-                            );
-
-                            if (response.ok) {
-                                setSopReadRecords(prev => [...prev, ...answers]);
-                                const savedRecords = JSON.parse(localStorage.getItem('pcil_sopReadRecords') || '[]');
-                                localStorage.setItem('pcil_sopReadRecords', JSON.stringify([...savedRecords, ...answers]));
-                                onClose();
-                                showNotification('Your SOP progress has been saved successfully!', 'success');
-                            } else {
-                                throw new Error('Failed to append rows to Google Sheets');
-                            }
-                        }
-                    } catch (err) {
-                        console.error('[SOP Wizard] Saving progress failed:', err);
-                        showNotification('Failed to save your progress. Please try again.', 'error');
-                    } finally {
-                        setSubmitting(false);
-                    }
-                } else {
-                    onClose();
-                }
-            };
+            const [initialTotalCount, setInitialTotalCount] = React.useState(0);
 
             // Get flat list of active policies to verify
             const policiesToVerify = React.useMemo(() => {
@@ -337,18 +279,22 @@
                 return list;
             }, [activeSopDocs]);
 
-            // Reset step index if policies change
+            // Set initial count when modal opens
             React.useEffect(() => {
-                setCurrentIdx(0);
-                setAnswers([]);
-                setShowReasonInput(false);
-                setDeviationReason('');
-            }, [policiesToVerify]);
+                if (isOpen) {
+                    setInitialTotalCount(policiesToVerify.length);
+                    setShowReasonInput(false);
+                    setDeviationReason('');
+                }
+            }, [isOpen]);
+
+            const handleClose = () => {
+                onClose();
+            };
 
             if (!isOpen || policiesToVerify.length === 0) return null;
 
-            const currentPolicy = policiesToVerify[currentIdx];
-            const isLast = currentIdx === policiesToVerify.length - 1;
+            const currentPolicy = policiesToVerify[0]; // Always show the first remaining policy
 
             const parseInlineStyles = (txt) => {
                 const parts = String(txt).split('**');
@@ -394,72 +340,76 @@
                     reason
                 };
 
-                const newAnswers = [...answers, record];
-                setAnswers(newAnswers);
-
-                if (!isLast) {
-                    // Move to next step
-                    setCurrentIdx(prev => prev + 1);
-                    setShowReasonInput(false);
-                    setDeviationReason('');
-                } else {
-                    // Final submit
-                    setSubmitting(true);
-                    try {
-                        if (isSandbox) {
-                            // Update local sandbox db
-                            setSopReadRecords(prev => [...prev, ...newAnswers]);
-                            const savedRecords = JSON.parse(localStorage.getItem('pcil_sopReadRecords') || '[]');
-                            localStorage.setItem('pcil_sopReadRecords', JSON.stringify([...savedRecords, ...newAnswers]));
+                setSubmitting(true);
+                try {
+                    if (isSandbox) {
+                        setSopReadRecords(prev => [...prev, record]);
+                        const savedRecords = JSON.parse(localStorage.getItem('pcil_sopReadRecords') || '[]');
+                        localStorage.setItem('pcil_sopReadRecords', JSON.stringify([...savedRecords, record]));
+                        showNotification('Policy compliance saved locally in Demo Sandbox mode!', 'success');
+                        
+                        if (policiesToVerify.length <= 1) {
                             onClose();
-                            showNotification('SOP compliance verification completed successfully in Demo Sandbox mode!', 'success');
+                            showNotification('SOP compliance verification completed successfully!', 'success');
                         } else {
-                            // Write to Google Sheet
-                            const body = {
-                                values: newAnswers.map(ans => [
-                                    ans.timestamp,
-                                    ans.userEmail,
-                                    ans.department,
-                                    ans.sopId,
-                                    ans.policyId,
-                                    ans.weekCode,
-                                    ans.compliance,
-                                    ans.reason
-                                ])
-                            };
-                            const tokenVal = await ensureValidToken();
-                            const response = await fetch(
-                                `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values/SOPReadRecords!A:A:append?valueInputOption=USER_ENTERED`,
-                                {
-                                    method: 'POST',
-                                    headers: {
-                                        'Authorization': `Bearer ${tokenVal}`,
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(body)
-                                }
-                            );
-
-                            if (response.ok) {
-                                setSopReadRecords(prev => [...prev, ...newAnswers]);
-                                const savedRecords = JSON.parse(localStorage.getItem('pcil_sopReadRecords') || '[]');
-                                localStorage.setItem('pcil_sopReadRecords', JSON.stringify([...savedRecords, ...newAnswers]));
-                                onClose();
-                                showNotification('SOP compliance verification submitted successfully!', 'success');
-                            } else {
-                                throw new Error('Failed to append rows to Google Sheets');
-                            }
+                            setShowReasonInput(false);
+                            setDeviationReason('');
                         }
-                    } catch (err) {
-                        console.error('[SOP Wizard] Submission failed:', err);
-                        showNotification('Failed to submit SOP compliance. Please try again.', 'error');
-                    } finally {
-                        setSubmitting(false);
+                    } else {
+                        const body = {
+                            values: [[
+                                record.timestamp,
+                                record.userEmail,
+                                record.department,
+                                record.sopId,
+                                record.policyId,
+                                record.weekCode,
+                                record.compliance,
+                                record.reason
+                            ]]
+                        };
+                        const tokenVal = await ensureValidToken();
+                        const response = await fetch(
+                            `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values/SOPReadRecords!A:A:append?valueInputOption=USER_ENTERED`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${tokenVal}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(body)
+                            }
+                        );
+
+                        if (response.ok) {
+                            setSopReadRecords(prev => [...prev, record]);
+                            const savedRecords = JSON.parse(localStorage.getItem('pcil_sopReadRecords') || '[]');
+                            localStorage.setItem('pcil_sopReadRecords', JSON.stringify([...savedRecords, record]));
+                            showNotification('Policy compliance saved successfully!', 'success');
+                            
+                            if (policiesToVerify.length <= 1) {
+                                onClose();
+                                showNotification('SOP compliance verification completed successfully!', 'success');
+                            } else {
+                                setShowReasonInput(false);
+                                setDeviationReason('');
+                            }
+                        } else {
+                            throw new Error('Failed to append row to Google Sheets');
+                        }
                     }
+                } catch (err) {
+                    console.error('[SOP Wizard] Submission failed:', err);
+                    showNotification('Failed to submit compliance record. Please try again.', 'error');
+                } finally {
+                    setSubmitting(false);
                 }
             };
 
-            const progressPercent = Math.round(((currentIdx) / policiesToVerify.length) * 100);
+            const progressPercent = initialTotalCount > 0 
+                ? Math.round(((initialTotalCount - policiesToVerify.length) / initialTotalCount) * 100) 
+                : 0;
+            const currentStepNum = initialTotalCount - policiesToVerify.length + 1;
 
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
@@ -495,7 +445,7 @@
                         {/* Progress bar */}
                         <div className="flex flex-col gap-1.5">
                             <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
-                                <span>Policy {currentIdx + 1} of {policiesToVerify.length}</span>
+                                <span>Policy {currentStepNum} of {initialTotalCount}</span>
                                 <span>{progressPercent}% Completed</span>
                             </div>
                             <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
@@ -2608,6 +2558,7 @@
                 return saved ? JSON.parse(saved) : [];
             });
             const [isSopWizardOpen, setIsSopWizardOpen] = React.useState(false);
+            const [hasClosedWizardSession, setHasClosedWizardSession] = React.useState(false);
             const [loading, setLoading] = React.useState(false);
             const [reminderLoading, setReminderLoading] = React.useState(false);
             const [syncStatuses, setSyncStatuses] = React.useState({}); // { spreadsheetId: { status: 'success'|'error', error: '' } }
@@ -4202,8 +4153,15 @@
                 }
             }, [showCompletedAudits, activeMetricTab]);
 
+            // Reset wizard session closed flag on role change
+            React.useEffect(() => {
+                setHasClosedWizardSession(false);
+            }, [activeRole]);
+
             // Auto-check SOP Compliance on login or week change
             React.useEffect(() => {
+                if (hasClosedWizardSession) return;
+                
                 if (!activeRole || activeRole.isMD || activeRole.isUnregistered || !activeSopDocs || activeSopDocs.length === 0) {
                     setIsSopWizardOpen(false);
                     return;
@@ -6033,7 +5991,10 @@
                                         <SOPReader 
                                             activeSopDocs={activeSopDocs} 
                                             onClose={() => setActiveMetricTab('All')} 
-                                            setIsSopWizardOpen={setIsSopWizardOpen}
+                                            setIsSopWizardOpen={(val) => {
+                                                setHasClosedWizardSession(false);
+                                                setIsSopWizardOpen(val);
+                                            }}
                                             sopReadRecords={sopReadRecords}
                                             activeRole={activeRole}
                                         />
@@ -6657,7 +6618,10 @@
                         sopReadRecords={sopReadRecords}
                         setSopReadRecords={setSopReadRecords}
                         isSandbox={isSandbox}
-                        onClose={() => setIsSopWizardOpen(false)}
+                        onClose={() => {
+                            setIsSopWizardOpen(false);
+                            setHasClosedWizardSession(true);
+                        }}
                         auth={auth}
                         showNotification={showNotification}
                         ensureValidToken={ensureValidToken}
