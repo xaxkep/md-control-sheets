@@ -538,6 +538,14 @@
             const [activeTab, setActiveTab] = React.useState('compliance'); // 'compliance' | 'policies' | 'mappings'
             const [selectedWeek, setSelectedWeek] = React.useState(getCurrentWeekCode());
             const [complianceSubTab, setComplianceSubTab] = React.useState('deviations-this'); // 'deviations-this' | 'deviations-last' | 'pending'
+            const [expandedCoordinators, setExpandedCoordinators] = React.useState({});
+            
+            const toggleExpandCoordinator = (email) => {
+                setExpandedCoordinators(prev => ({
+                    ...prev,
+                    [email.toLowerCase()]: !prev[email.toLowerCase()]
+                }));
+            };
             
             // Policy Editor States
             const [editingPolicy, setEditingPolicy] = React.useState(null); // { sopId, sopName, policyId, policyText, status, isNew }
@@ -584,6 +592,38 @@
             const deviationsLastWeek = React.useMemo(() => {
                 return sopReadRecords.filter(r => r.weekCode === lastWeekCode && r.compliance === 'Not Following');
             }, [sopReadRecords, lastWeekCode]);
+
+            const groupedDeviationsThisWeek = React.useMemo(() => {
+                const groups = {};
+                deviationsThisWeek.forEach(r => {
+                    const key = r.userEmail.toLowerCase();
+                    if (!groups[key]) {
+                        groups[key] = {
+                            userEmail: r.userEmail,
+                            department: r.department,
+                            deviations: []
+                        };
+                    }
+                    groups[key].deviations.push(r);
+                });
+                return Object.values(groups);
+            }, [deviationsThisWeek]);
+
+            const groupedDeviationsLastWeek = React.useMemo(() => {
+                const groups = {};
+                deviationsLastWeek.forEach(r => {
+                    const key = r.userEmail.toLowerCase();
+                    if (!groups[key]) {
+                        groups[key] = {
+                            userEmail: r.userEmail,
+                            department: r.department,
+                            deviations: []
+                        };
+                    }
+                    groups[key].deviations.push(r);
+                });
+                return Object.values(groups);
+            }, [deviationsLastWeek]);
 
             // Unverified coordinators
             const unverifiedUsers = React.useMemo(() => {
@@ -864,31 +904,71 @@
                             <div className="glass-panel rounded-3xl border border-slate-200/80 shadow-xl p-5 bg-white min-h-[250px]">
                                 {complianceSubTab === 'deviations-this' && (
                                     <div className="overflow-x-auto">
-                                        {deviationsThisWeek.length === 0 ? (
+                                        {groupedDeviationsThisWeek.length === 0 ? (
                                             <div className="text-center py-12 text-slate-400 font-bold">No deviations recorded this week. Excellent compliance!</div>
                                         ) : (
                                             <table className="w-full text-left text-xs border-collapse">
                                                 <thead>
-                                                    <tr className="border-b border-slate-100 text-slate-400 uppercase font-extrabold tracking-wider text-[10px]">
-                                                        <th className="py-2.5 px-3">Coordinator</th>
-                                                        <th className="py-2.5 px-3">Department</th>
-                                                        <th className="py-2.5 px-3">SOP ID</th>
-                                                        <th className="py-2.5 px-3">Policy ID</th>
-                                                        <th className="py-2.5 px-3">Reason / Explanation</th>
-                                                        <th className="py-2.5 px-3">Time</th>
+                                                    <tr className="border-b border-slate-200 text-slate-500 uppercase font-extrabold tracking-wider text-[10px] bg-slate-50/60">
+                                                        <th className="py-2.5 px-4 w-1/3">Coordinator</th>
+                                                        <th className="py-2.5 px-4 w-1/3">Department</th>
+                                                        <th className="py-2.5 px-4 w-1/6 text-center">Deviations</th>
+                                                        <th className="py-2.5 px-4 w-1/6 text-center">Actions</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {deviationsThisWeek.map((r, i) => (
-                                                        <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 text-slate-700">
-                                                            <td className="py-3 px-3 font-bold">{r.userEmail}</td>
-                                                            <td className="py-3 px-3 font-bold text-slate-550">{r.department}</td>
-                                                            <td className="py-3 px-3 text-slate-500 uppercase">{r.sopId}</td>
-                                                            <td className="py-3 px-3 font-mono text-slate-800"><span className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">{r.policyId}</span></td>
-                                                            <td className="py-3 px-3 text-amber-700 bg-amber-50/20 border border-amber-100/30 rounded-xl font-medium max-w-xs">{r.reason}</td>
-                                                            <td className="py-3 px-3 text-[10px] text-slate-400">{r.timestamp}</td>
-                                                        </tr>
-                                                    ))}
+                                                    {groupedDeviationsThisWeek.map((group, idx) => {
+                                                        const isExpanded = !!expandedCoordinators[group.userEmail.toLowerCase()];
+                                                        return (
+                                                            <React.Fragment key={idx}>
+                                                                <tr 
+                                                                    onClick={() => toggleExpandCoordinator(group.userEmail)}
+                                                                    className="border-b border-slate-100 hover:bg-slate-50/80 text-slate-700 cursor-pointer transition-all"
+                                                                >
+                                                                    <td className="py-3.5 px-4 font-bold text-slate-900">{group.userEmail}</td>
+                                                                    <td className="py-3.5 px-4 font-bold text-slate-550">{group.department}</td>
+                                                                    <td className="py-3.5 px-4 text-center">
+                                                                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                                                            {group.deviations.length}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="py-3.5 px-4 text-center text-slate-400">
+                                                                        <span className="inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 font-extrabold text-xs">
+                                                                            {isExpanded ? 'Hide Details' : 'View Details'}
+                                                                            <svg className={`w-3.5 h-3.5 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                                                            </svg>
+                                                                        </span>
+                                                                    </td>
+                                                                </tr>
+                                                                {isExpanded && (
+                                                                    <tr>
+                                                                        <td colSpan={4} className="p-0 bg-slate-50/50 border-b border-slate-100">
+                                                                            <div className="px-6 py-4 border-l-4 border-teal-500 bg-slate-50/30 flex flex-col gap-3">
+                                                                                <h5 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 mb-1">Detailed Deviations for {group.userEmail}</h5>
+                                                                                <div className="flex flex-col gap-2.5">
+                                                                                    {group.deviations.map((dev, dIdx) => (
+                                                                                        <div key={dIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+                                                                                            <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <span className="px-2 py-0.5 rounded bg-slate-150 text-[10px] font-bold text-slate-700 border border-slate-200 uppercase tracking-wider">{dev.sopId}</span>
+                                                                                                    <span className="px-2 py-0.5 rounded bg-teal-50 text-[10px] font-bold text-teal-700 border border-teal-200/50 uppercase tracking-wider">{dev.policyId}</span>
+                                                                                                </div>
+                                                                                                <span className="text-[10px] text-slate-400 font-medium">{dev.timestamp}</span>
+                                                                                            </div>
+                                                                                            <div className="text-xs font-semibold text-amber-700 bg-amber-50/40 border border-amber-100/60 rounded-xl p-3 leading-relaxed">
+                                                                                                {dev.reason}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                )}
+                                                            </React.Fragment>
+                                                        );
+                                                    })}
                                                 </tbody>
                                             </table>
                                         )}
@@ -897,31 +977,71 @@
 
                                 {complianceSubTab === 'deviations-last' && (
                                     <div className="overflow-x-auto">
-                                        {deviationsLastWeek.length === 0 ? (
+                                        {groupedDeviationsLastWeek.length === 0 ? (
                                             <div className="text-center py-12 text-slate-400 font-bold">No deviations recorded last week.</div>
                                         ) : (
                                             <table className="w-full text-left text-xs border-collapse">
                                                 <thead>
-                                                    <tr className="border-b border-slate-100 text-slate-400 uppercase font-extrabold tracking-wider text-[10px]">
-                                                        <th className="py-2.5 px-3">Coordinator</th>
-                                                        <th className="py-2.5 px-3">Department</th>
-                                                        <th className="py-2.5 px-3">SOP ID</th>
-                                                        <th className="py-2.5 px-3">Policy ID</th>
-                                                        <th className="py-2.5 px-3">Reason / Explanation</th>
-                                                        <th className="py-2.5 px-3">Time</th>
+                                                    <tr className="border-b border-slate-200 text-slate-500 uppercase font-extrabold tracking-wider text-[10px] bg-slate-50/60">
+                                                        <th className="py-2.5 px-4 w-1/3">Coordinator</th>
+                                                        <th className="py-2.5 px-4 w-1/3">Department</th>
+                                                        <th className="py-2.5 px-4 w-1/6 text-center">Deviations</th>
+                                                        <th className="py-2.5 px-4 w-1/6 text-center">Actions</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {deviationsLastWeek.map((r, i) => (
-                                                        <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 text-slate-700">
-                                                            <td className="py-3 px-3 font-bold">{r.userEmail}</td>
-                                                            <td className="py-3 px-3 font-bold text-slate-550">{r.department}</td>
-                                                            <td className="py-3 px-3 text-slate-500 uppercase">{r.sopId}</td>
-                                                            <td className="py-3 px-3 font-mono text-slate-800"><span className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">{r.policyId}</span></td>
-                                                            <td className="py-3 px-3 text-amber-700 bg-amber-50/20 border border-amber-100/30 rounded-xl font-medium max-w-xs">{r.reason}</td>
-                                                            <td className="py-3 px-3 text-[10px] text-slate-400">{r.timestamp}</td>
-                                                        </tr>
-                                                    ))}
+                                                    {groupedDeviationsLastWeek.map((group, idx) => {
+                                                        const isExpanded = !!expandedCoordinators[group.userEmail.toLowerCase()];
+                                                        return (
+                                                            <React.Fragment key={idx}>
+                                                                <tr 
+                                                                    onClick={() => toggleExpandCoordinator(group.userEmail)}
+                                                                    className="border-b border-slate-100 hover:bg-slate-50/80 text-slate-700 cursor-pointer transition-all"
+                                                                >
+                                                                    <td className="py-3.5 px-4 font-bold text-slate-900">{group.userEmail}</td>
+                                                                    <td className="py-3.5 px-4 font-bold text-slate-550">{group.department}</td>
+                                                                    <td className="py-3.5 px-4 text-center">
+                                                                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                                                            {group.deviations.length}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="py-3.5 px-4 text-center text-slate-400">
+                                                                        <span className="inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 font-extrabold text-xs">
+                                                                            {isExpanded ? 'Hide Details' : 'View Details'}
+                                                                            <svg className={`w-3.5 h-3.5 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                                                            </svg>
+                                                                        </span>
+                                                                    </td>
+                                                                </tr>
+                                                                {isExpanded && (
+                                                                    <tr>
+                                                                        <td colSpan={4} className="p-0 bg-slate-50/50 border-b border-slate-100">
+                                                                            <div className="px-6 py-4 border-l-4 border-teal-500 bg-slate-50/30 flex flex-col gap-3">
+                                                                                <h5 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 mb-1">Detailed Deviations for {group.userEmail}</h5>
+                                                                                <div className="flex flex-col gap-2.5">
+                                                                                    {group.deviations.map((dev, dIdx) => (
+                                                                                        <div key={dIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+                                                                                            <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <span className="px-2 py-0.5 rounded bg-slate-150 text-[10px] font-bold text-slate-700 border border-slate-200 uppercase tracking-wider">{dev.sopId}</span>
+                                                                                                    <span className="px-2 py-0.5 rounded bg-teal-50 text-[10px] font-bold text-teal-700 border border-teal-200/50 uppercase tracking-wider">{dev.policyId}</span>
+                                                                                                </div>
+                                                                                                <span className="text-[10px] text-slate-400 font-medium">{dev.timestamp}</span>
+                                                                                            </div>
+                                                                                            <div className="text-xs font-semibold text-amber-700 bg-amber-50/40 border border-amber-100/60 rounded-xl p-3 leading-relaxed">
+                                                                                                {dev.reason}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                )}
+                                                            </React.Fragment>
+                                                        );
+                                                    })}
                                                 </tbody>
                                             </table>
                                         )}
