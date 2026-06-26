@@ -2558,7 +2558,6 @@
                 return saved ? JSON.parse(saved) : [];
             });
             const [isSopWizardOpen, setIsSopWizardOpen] = React.useState(false);
-            const [hasClosedWizardSession, setHasClosedWizardSession] = React.useState(false);
             const [loading, setLoading] = React.useState(false);
             const [reminderLoading, setReminderLoading] = React.useState(false);
             const [syncStatuses, setSyncStatuses] = React.useState({}); // { spreadsheetId: { status: 'success'|'error', error: '' } }
@@ -4153,16 +4152,21 @@
                 }
             }, [showCompletedAudits, activeMetricTab]);
 
-            // Reset wizard session closed flag on role change
-            React.useEffect(() => {
-                setHasClosedWizardSession(false);
-            }, [activeRole]);
-
             // Auto-check SOP Compliance on login or week change
             React.useEffect(() => {
-                if (hasClosedWizardSession) return;
-                
-                if (!activeRole || activeRole.isMD || activeRole.isUnregistered || !activeSopDocs || activeSopDocs.length === 0) {
+                // Check if user dismissed the wizard within the last 10 minutes
+                const lastDismissedStr = localStorage.getItem('pcil_lastSopDismissedTime');
+                if (lastDismissedStr) {
+                    const lastDismissed = parseInt(lastDismissedStr, 10);
+                    const tenMinutes = 10 * 60 * 1000;
+                    if (Date.now() - lastDismissed < tenMinutes) {
+                        setIsSopWizardOpen(false);
+                        return;
+                    }
+                }
+
+                const role = getActiveUserRole();
+                if (!role || role.isMD || role.isUnregistered || !activeSopDocs || activeSopDocs.length === 0) {
                     setIsSopWizardOpen(false);
                     return;
                 }
@@ -4202,7 +4206,7 @@
                 } else {
                     setIsSopWizardOpen(false);
                 }
-            }, [activeRole, activeSopDocs, sopReadRecords]);
+            }, [auth, activeSopDocs, sopReadRecords]);
 
             // Parse sheet rows, identifying headers dynamically
             const parseSheetRows = (values, mapping) => {
@@ -5992,7 +5996,7 @@
                                             activeSopDocs={activeSopDocs} 
                                             onClose={() => setActiveMetricTab('All')} 
                                             setIsSopWizardOpen={(val) => {
-                                                setHasClosedWizardSession(false);
+                                                localStorage.removeItem('pcil_lastSopDismissedTime');
                                                 setIsSopWizardOpen(val);
                                             }}
                                             sopReadRecords={sopReadRecords}
@@ -6620,7 +6624,7 @@
                         isSandbox={isSandbox}
                         onClose={() => {
                             setIsSopWizardOpen(false);
-                            setHasClosedWizardSession(true);
+                            localStorage.setItem('pcil_lastSopDismissedTime', Date.now().toString());
                         }}
                         auth={auth}
                         showNotification={showNotification}

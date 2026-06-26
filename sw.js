@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bg-command-center-v20';
+const CACHE_NAME = 'bg-command-center-v21';
 
 const PRECACHE_ASSETS = [
   './',
