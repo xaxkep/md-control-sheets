@@ -1949,7 +1949,7 @@
                                 </div>
                             )}
                         </div>
-                    )})}
+                    )}
                 </div>
             );
         }
@@ -3311,11 +3311,23 @@
                     if (sopsRange && sopsRange.values && sopsRange.values.length > 0) {
                         const rows = sopsRange.values;
                         const headers = rows[0].map(h => String(h).trim());
-                        const idIdx = headers.findIndex(h => h.toLowerCase() === 'sopid');
-                        const nameIdx = headers.findIndex(h => h.toLowerCase() === 'sopname');
-                        const policyIdIdx = headers.findIndex(h => h.toLowerCase() === 'policyid');
-                        const policyTextIdx = headers.findIndex(h => h.toLowerCase() === 'policytext');
-                        const statusIdx = headers.findIndex(h => h.toLowerCase() === 'status');
+                        const idIdx = headers.findIndex(h => {
+                            const clean = h.toLowerCase().replace(/[\s_-]/g, '');
+                            return clean === 'sopid' || clean === 'sop';
+                        });
+                        const nameIdx = headers.findIndex(h => {
+                            const clean = h.toLowerCase().replace(/[\s_-]/g, '');
+                            return clean === 'sopname' || clean === 'name';
+                        });
+                        const policyIdIdx = headers.findIndex(h => {
+                            const clean = h.toLowerCase().replace(/[\s_-]/g, '');
+                            return clean === 'policyid' || clean === 'policy';
+                        });
+                        const policyTextIdx = headers.findIndex(h => {
+                            const clean = h.toLowerCase().replace(/[\s_-]/g, '');
+                            return clean === 'policytext' || clean === 'text' || clean === 'description';
+                        });
+                        const statusIdx = headers.findIndex(h => h.toLowerCase().trim() === 'status');
                         
                         if (idIdx !== -1 && nameIdx !== -1) {
                             const isOldFormat = policyIdIdx === -1 || policyTextIdx === -1;
@@ -3356,8 +3368,14 @@
                     if (groupsRange && groupsRange.values && groupsRange.values.length > 0) {
                         const rows = groupsRange.values;
                         const headers = rows[0].map(h => String(h).trim());
-                        const groupIdx = headers.findIndex(h => h.toLowerCase() === 'groupid');
-                        const deptIdx = headers.findIndex(h => h.toLowerCase() === 'deptid');
+                        const groupIdx = headers.findIndex(h => {
+                            const clean = h.toLowerCase().replace(/[\s_-]/g, '');
+                            return clean === 'groupid' || clean === 'group' || clean === 'groupname';
+                        });
+                        const deptIdx = headers.findIndex(h => {
+                            const clean = h.toLowerCase().replace(/[\s_-]/g, '');
+                            return clean === 'deptid' || clean === 'dept' || clean === 'departmentid' || clean === 'department';
+                        });
                         
                         if (groupIdx !== -1 && deptIdx !== -1) {
                             for (let i = 1; i < rows.length; i++) {
@@ -3378,9 +3396,15 @@
                     if (mappingsSopRange && mappingsSopRange.values && mappingsSopRange.values.length > 0) {
                         const rows = mappingsSopRange.values;
                         const headers = rows[0].map(h => String(h).trim());
-                        const targetIdx = headers.findIndex(h => h.toLowerCase() === 'targetid' || h.toLowerCase().includes('groupid/deptid') || h.toLowerCase() === 'groupid' || h.toLowerCase() === 'deptid');
-                        const typeIdx = headers.findIndex(h => h.toLowerCase() === 'type');
-                        const sopIdIdx = headers.findIndex(h => h.toLowerCase() === 'sopid');
+                        const targetIdx = headers.findIndex(h => {
+                            const clean = h.toLowerCase().replace(/[\s_-]/g, '');
+                            return clean === 'targetid' || clean === 'groupid' || clean === 'deptid' || clean.includes('groupiddeptid');
+                        });
+                        const typeIdx = headers.findIndex(h => h.toLowerCase().trim() === 'type');
+                        const sopIdIdx = headers.findIndex(h => {
+                            const clean = h.toLowerCase().replace(/[\s_-]/g, '');
+                            return clean === 'sopid' || clean === 'sop';
+                        });
                         
                         if (targetIdx !== -1 && typeIdx !== -1 && sopIdIdx !== -1) {
                             for (let i = 1; i < rows.length; i++) {
@@ -3483,7 +3507,7 @@
                             localStorage.setItem('pcil_sops', newSopsStr);
                         }
                     }
-                    if (fetchedSopMappings.length > 0) {
+                    if (mappingsSopRange && mappingsSopRange.values) {
                         const newSopMappingsStr = JSON.stringify(fetchedSopMappings);
                         const oldSopMappingsStr = localStorage.getItem('pcil_sopMappings') || '';
                         if (newSopMappingsStr !== oldSopMappingsStr) {
@@ -3491,7 +3515,7 @@
                             localStorage.setItem('pcil_sopMappings', newSopMappingsStr);
                         }
                     }
-                    if (fetchedDeptGroups.length > 0) {
+                    if (groupsRange && groupsRange.values) {
                         const newDeptGroupsStr = JSON.stringify(fetchedDeptGroups);
                         const oldDeptGroupsStr = localStorage.getItem('pcil_deptGroups') || '';
                         if (newDeptGroupsStr !== oldDeptGroupsStr) {
