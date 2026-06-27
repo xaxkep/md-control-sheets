@@ -534,7 +534,7 @@
         }
 
         // SOP Admin Dashboard for Managing Director (MD)
-        function SOPAdminDashboard({ onClose, sops, setSops, sopMappings, setSopMappings, sopReadRecords, setSopReadRecords, mappings, isSandbox, showNotification, deptGroups, ensureValidToken, mdEmail }) {
+        function SOPAdminDashboard({ onClose, sops, setSops, sopMappings, setSopMappings, sopReadRecords, setSopReadRecords, mappings, isSandbox, showNotification, deptGroups, setDeptGroups, ensureValidToken, mdEmail }) {
             const [activeTab, setActiveTab] = React.useState('compliance'); // 'compliance' | 'policies' | 'mappings'
             const [selectedWeek, setSelectedWeek] = React.useState(getCurrentWeekCode());
             const [complianceSubTab, setComplianceSubTab] = React.useState('deviations-this'); // 'deviations-this' | 'deviations-last' | 'pending'
@@ -564,6 +564,68 @@
                     ...prev,
                     [sopId.toLowerCase()]: !prev[sopId.toLowerCase()]
                 }));
+            };
+
+            const [mappingsSubTab, setMappingsSubTab] = React.useState('active-mappings'); // 'active-mappings' | 'groups'
+            const [editingGroup, setEditingGroup] = React.useState(null); // { groupId: '', deptIds: [], isNew: true }
+            const [isNewGroupInline, setIsNewGroupInline] = React.useState(false);
+            const [inlineGroupMembers, setInlineGroupMembers] = React.useState([]);
+
+            const uniqueGroups = React.useMemo(() => {
+                const groups = {};
+                if (deptGroups) {
+                    deptGroups.forEach(g => {
+                        if (!groups[g.groupId]) {
+                            groups[g.groupId] = {
+                                groupId: g.groupId,
+                                deptIds: []
+                            };
+                        }
+                        if (g.deptId && !groups[g.groupId].deptIds.includes(g.deptId)) {
+                            groups[g.groupId].deptIds.push(g.deptId);
+                        }
+                    });
+                }
+                return Object.values(groups);
+            }, [deptGroups]);
+
+            // Save DeptGroups to spreadsheet or local state
+            const saveDeptGroups = async (updatedGroups) => {
+                try {
+                    if (isSandbox) {
+                        setDeptGroups(updatedGroups);
+                        localStorage.setItem('pcil_deptGroups', JSON.stringify(updatedGroups));
+                        showNotification('Department groups updated in Sandbox local database!', 'success');
+                    } else {
+                        const headers = ['groupId', 'deptId'];
+                        const values = [
+                            headers,
+                            ...updatedGroups.map(g => [g.groupId, g.deptId])
+                        ];
+                        const tokenVal = await ensureValidToken();
+                        const response = await fetch(
+                            `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values/DeptGroups!A:B?valueInputOption=USER_ENTERED`,
+                            {
+                                method: 'PUT',
+                                headers: {
+                                    'Authorization': `Bearer ${tokenVal}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ values })
+                            }
+                        );
+                        if (response.ok) {
+                            setDeptGroups(updatedGroups);
+                            localStorage.setItem('pcil_deptGroups', JSON.stringify(updatedGroups));
+                            showNotification('Department groups updated successfully in Google Sheets!', 'success');
+                        } else {
+                            throw new Error('Failed to update Google Sheet');
+                        }
+                    }
+                } catch (err) {
+                    console.error('[SOP Admin] Save department groups failed:', err);
+                    showNotification('Failed to save group changes.', 'error');
+                }
             };
 
             // Policy Editor States
@@ -1425,189 +1487,469 @@
                             </div>
                         </div>
                     )}
-
                     {activeTab === 'mappings' && (
-                        <div className="grid md:grid-cols-3 gap-6 items-start animate-slide-up">
-                            {/* Mappings lists */}
-                            <div className="md:col-span-2 flex flex-col gap-4">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-tight">Active Mappings</h3>
-                                    <button
-                                        onClick={() => setEditingMapping({ targetId: '', type: 'dept', sopId: '', isNew: true })}
-                                        className="py-1.5 px-3 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95"
-                                    >
-                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        Add Mapping
-                                    </button>
-                                </div>
+                        <div className="flex flex-col gap-6 animate-slide-up">
+                            {/* Mappings subtabs */}
+                            <div className="flex border-b border-slate-200/85 pb-px mb-2">
+                                <button
+                                    onClick={() => {
+                                        setMappingsSubTab('active-mappings');
+                                        setEditingGroup(null);
+                                    }}
+                                    className={`pb-2.5 px-4 text-xs font-extrabold border-b-2 transition-all cursor-pointer ${
+                                        mappingsSubTab === 'active-mappings' ? 'border-teal-500 text-teal-650' : 'border-transparent text-slate-400 hover:text-slate-600'
+                                    }`}
+                                >
+                                    Active Mappings ({sopMappings.length})
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setMappingsSubTab('groups');
+                                        setEditingMapping(null);
+                                        setIsNewGroupInline(false);
+                                    }}
+                                    className={`pb-2.5 px-4 text-xs font-extrabold border-b-2 transition-all cursor-pointer ${
+                                        mappingsSubTab === 'groups' ? 'border-teal-500 text-teal-650' : 'border-transparent text-slate-400 hover:text-slate-600'
+                                    }`}
+                                >
+                                    Coordinators Groups ({uniqueGroups.length})
+                                </button>
+                            </div>
 
-                                <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-md bg-white">
-                                    <div className="overflow-x-auto">
-                                        {sopMappings.length === 0 ? (
-                                            <div className="text-center py-8 text-slate-400 font-bold">No SOP mappings configured. Mapped coordinators will not see any policies.</div>
-                                        ) : (
-                                            <table className="w-full text-left text-xs border-collapse">
-                                                <thead>
-                                                    <tr className="border-b border-slate-100 text-slate-400 uppercase font-extrabold tracking-wider text-[10px]">
-                                                        <th className="py-2.5 px-3">Target ID</th>
-                                                        <th className="py-2.5 px-3">Type</th>
-                                                        <th className="py-2.5 px-3">SOP ID</th>
-                                                        <th className="py-2.5 px-3">Resolved Name</th>
-                                                        <th className="py-2.5 px-3 text-right">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {sopMappings.map((m, i) => {
-                                                        const sopName = sops.find(s => s.sopId === m.sopId)?.sopName || m.sopId;
-                                                        let resolvedTargetName = m.targetId;
-                                                        if (m.type === 'dept') {
-                                                            resolvedTargetName = mappings.find(map => String(map.id).trim() === m.targetId)?.deptName || `Dept ID: ${m.targetId}`;
-                                                        } else if (m.targetId === 'default') {
-                                                            resolvedTargetName = 'All Coordinators';
-                                                        }
-                                                        
-                                                        return (
-                                                            <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 text-slate-700">
-                                                                <td className="py-3 px-3 font-mono font-bold text-slate-800">{m.targetId}</td>
-                                                                <td className="py-3 px-3 uppercase text-[10px] font-extrabold tracking-wider">
-                                                                    <span className={`px-2 py-0.5 rounded ${m.type === 'dept' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/40' : 'bg-amber-50 text-amber-700 border border-amber-200/40'}`}>
-                                                                        {m.type}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="py-3 px-3 font-bold text-slate-500">{m.sopId}</td>
-                                                                <td className="py-3 px-3 text-slate-650 font-medium">{resolvedTargetName} &bull; <span className="text-[10px] text-slate-400 italic">{sopName}</span></td>
-                                                                <td className="py-3 px-3 text-right">
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            const confirmed = confirm(`Are you sure you want to delete this mapping?`);
-                                                                            if (confirmed) {
-                                                                                const updated = sopMappings.filter(item => !(item.targetId === m.targetId && item.sopId === m.sopId && item.type === m.type));
-                                                                                saveSopMappings(updated);
-                                                                            }
-                                                                        }}
-                                                                        className="p-1 rounded hover:bg-rose-100 text-rose-500 hover:text-rose-700 transition-all cursor-pointer border border-rose-250 bg-white"
-                                                                        title="Delete Mapping"
-                                                                    >
-                                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                        </svg>
-                                                                    </button>
-                                                                </td>
+                            {mappingsSubTab === 'active-mappings' && (
+                                <div className="grid md:grid-cols-3 gap-6 items-start">
+                                    {/* Mappings list */}
+                                    <div className="md:col-span-2 flex flex-col gap-4">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-tight">Active Mappings</h3>
+                                            <button
+                                                onClick={() => {
+                                                    setIsNewGroupInline(false);
+                                                    setEditingMapping({ targetId: '', type: 'dept', sopId: '', isNew: true });
+                                                }}
+                                                className="py-1.5 px-3 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                                </svg>
+                                                Add Mapping
+                                            </button>
+                                        </div>
+
+                                        <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-md bg-white">
+                                            <div className="overflow-x-auto">
+                                                {sopMappings.length === 0 ? (
+                                                    <div className="text-center py-8 text-slate-400 font-bold">No SOP mappings configured. Mapped coordinators will not see any policies.</div>
+                                                ) : (
+                                                    <table className="w-full text-left text-xs border-collapse">
+                                                        <thead>
+                                                            <tr className="border-b border-slate-100 text-slate-400 uppercase font-extrabold tracking-wider text-[10px]">
+                                                                <th className="py-2.5 px-3">Target ID</th>
+                                                                <th className="py-2.5 px-3">Type</th>
+                                                                <th className="py-2.5 px-3">SOP ID</th>
+                                                                <th className="py-2.5 px-3">Resolved Name</th>
+                                                                <th className="py-2.5 px-3 text-right">Actions</th>
                                                             </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
+                                                        </thead>
+                                                        <tbody>
+                                                            {sopMappings.map((m, i) => {
+                                                                const sopName = sops.find(s => s.sopId === m.sopId)?.sopName || m.sopId;
+                                                                let resolvedTargetName = m.targetId;
+                                                                if (m.type === 'dept') {
+                                                                    resolvedTargetName = mappings.find(map => String(map.id).trim() === m.targetId)?.deptName || `Dept ID: ${m.targetId}`;
+                                                                } else if (m.targetId === 'default') {
+                                                                    resolvedTargetName = 'All Coordinators';
+                                                                }
+                                                                
+                                                                return (
+                                                                    <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 text-slate-700">
+                                                                        <td className="py-3 px-3 font-mono font-bold text-slate-800">{m.targetId}</td>
+                                                                        <td className="py-3 px-3 uppercase text-[10px] font-extrabold tracking-wider">
+                                                                            <span className={`px-2 py-0.5 rounded ${m.type === 'dept' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/40' : 'bg-amber-50 text-amber-700 border border-amber-200/40'}`}>
+                                                                                {m.type}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="py-3 px-3 font-bold text-slate-500">{m.sopId}</td>
+                                                                        <td className="py-3 px-3 text-slate-650 font-medium">{resolvedTargetName} &bull; <span className="text-[10px] text-slate-400 italic">{sopName}</span></td>
+                                                                        <td className="py-3 px-3 text-right">
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    const confirmed = confirm(`Are you sure you want to delete this mapping?`);
+                                                                                    if (confirmed) {
+                                                                                        const updated = sopMappings.filter(item => !(item.targetId === m.targetId && item.sopId === m.sopId && item.type === m.type));
+                                                                                        saveSopMappings(updated);
+                                                                                    }
+                                                                                }}
+                                                                                className="p-1 rounded hover:bg-rose-100 text-rose-500 hover:text-rose-700 transition-all cursor-pointer border border-rose-250 bg-white"
+                                                                                title="Delete Mapping"
+                                                                            >
+                                                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                                </svg>
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Mapping Creator Form */}
+                                    <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-xl bg-white flex flex-col gap-4">
+                                        <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight">
+                                            {editingMapping ? 'New Mapping Details' : 'Select Target to Map'}
+                                        </h3>
+
+                                        {editingMapping ? (
+                                            <div className="flex flex-col gap-4 animate-slide-up">
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Mapping Target Type</label>
+                                                    <select
+                                                        value={editingMapping.type}
+                                                        onChange={(e) => {
+                                                            const type = e.target.value;
+                                                            setIsNewGroupInline(false);
+                                                            setEditingMapping(prev => ({ ...prev, type, targetId: '' }));
+                                                        }}
+                                                        className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
+                                                    >
+                                                        <option value="dept">Department</option>
+                                                        <option value="group">Group / default</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Target ID (Department or Group Name)</label>
+                                                    {editingMapping.type === 'dept' ? (
+                                                        <select
+                                                            value={editingMapping.targetId}
+                                                            onChange={(e) => setEditingMapping(prev => ({ ...prev, targetId: e.target.value }))}
+                                                            className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
+                                                        >
+                                                            <option value="">Select a Department...</option>
+                                                            {mappings.map(map => (
+                                                                <option key={map.id} value={map.id}>{map.deptName} (ID: {map.id})</option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <div className="flex flex-col gap-2">
+                                                            <select
+                                                                value={isNewGroupInline ? 'NEW' : (editingMapping.targetId || '')}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value;
+                                                                    if (val === 'NEW') {
+                                                                        setIsNewGroupInline(true);
+                                                                        setInlineGroupMembers([]);
+                                                                        setEditingMapping(prev => ({ ...prev, targetId: '' }));
+                                                                    } else {
+                                                                        setIsNewGroupInline(false);
+                                                                        setEditingMapping(prev => ({ ...prev, targetId: val }));
+                                                                    }
+                                                                }}
+                                                                className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
+                                                            >
+                                                                <option value="">Select a Group...</option>
+                                                                <option value="NEW">[Create New Group & Map]</option>
+                                                                {uniqueGroups.map(g => (
+                                                                    <option key={g.groupId} value={g.groupId}>{g.groupId} ({g.deptIds.length} members)</option>
+                                                                ))}
+                                                            </select>
+                                                            {isNewGroupInline && (
+                                                                <div className="flex flex-col gap-2 border border-dashed border-teal-200 bg-teal-50/10 rounded-2xl p-3 animate-slide-up">
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="Enter new Group Name (e.g. sales_team)"
+                                                                        value={editingMapping.targetId}
+                                                                        onChange={(e) => setEditingMapping(prev => ({ ...prev, targetId: e.target.value.trim().toLowerCase() }))}
+                                                                        className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold bg-white"
+                                                                    />
+                                                                    <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto bg-white p-2.5 rounded-xl border border-slate-200">
+                                                                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Select Group Members</span>
+                                                                        {mappings.map(map => {
+                                                                            const isChecked = inlineGroupMembers.includes(map.id);
+                                                                            return (
+                                                                                <label key={map.id} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                                                                    <input
+                                                                                        type="checkbox"
+                                                                                        checked={isChecked}
+                                                                                        onChange={() => {
+                                                                                            if (isChecked) {
+                                                                                                setInlineGroupMembers(prev => prev.filter(id => id !== map.id));
+                                                                                            } else {
+                                                                                                setInlineGroupMembers(prev => [...prev, map.id]);
+                                                                                            }
+                                                                                        }}
+                                                                                        className="rounded text-teal-600 focus:ring-teal-500"
+                                                                                    />
+                                                                                    <span>{map.headName} ({map.deptName})</span>
+                                                                                </label>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Select SOP to Map</label>
+                                                    <select
+                                                        value={editingMapping.sopId}
+                                                        onChange={(e) => setEditingMapping(prev => ({ ...prev, sopId: e.target.value }))}
+                                                        className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
+                                                    >
+                                                        <option value="">Select an SOP...</option>
+                                                        {groupedSops.map(group => (
+                                                            <option key={group.sopId} value={group.sopId}>{group.sopName} ({group.sopId})</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                <div className="flex gap-3.5 mt-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingMapping(null);
+                                                            setIsNewGroupInline(false);
+                                                        }}
+                                                        className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-550 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer text-center"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (!editingMapping.targetId || !editingMapping.sopId) {
+                                                                showNotification('Please select both target and SOP.', 'warning');
+                                                                return;
+                                                            }
+
+                                                            if (isNewGroupInline) {
+                                                                if (inlineGroupMembers.length === 0) {
+                                                                    showNotification('Please select at least one member for the new group.', 'warning');
+                                                                    return;
+                                                                }
+                                                                if (deptGroups.some(g => g.groupId.toLowerCase() === editingMapping.targetId.toLowerCase())) {
+                                                                    showNotification(`Group "${editingMapping.targetId}" already exists. Please select it from the list.`, 'warning');
+                                                                    return;
+                                                                }
+
+                                                                const newGroupRows = inlineGroupMembers.map(id => ({
+                                                                    groupId: editingMapping.targetId,
+                                                                    deptId: id
+                                                                }));
+                                                                const updatedGroups = [...deptGroups, ...newGroupRows];
+                                                                await saveDeptGroups(updatedGroups);
+                                                            }
+
+                                                            // Check for duplicate mapping
+                                                            if (sopMappings.some(item => item.targetId === editingMapping.targetId && item.sopId === editingMapping.sopId && item.type === editingMapping.type)) {
+                                                                showNotification('This mapping configuration already exists.', 'warning');
+                                                                return;
+                                                            }
+
+                                                            const updated = [...sopMappings, {
+                                                                targetId: editingMapping.targetId,
+                                                                type: editingMapping.type,
+                                                                sopId: editingMapping.sopId
+                                                            }];
+                                                            saveSopMappings(updated);
+                                                            setEditingMapping(null);
+                                                            setIsNewGroupInline(false);
+                                                        }}
+                                                        className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all cursor-pointer text-center shadow-md shadow-teal-600/10"
+                                                    >
+                                                        Create Mapping
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12 text-slate-400 font-bold border border-dashed border-slate-200 rounded-2.5xl p-6">
+                                                Select "Add Mapping" above to link an SOP to a department or group.
+                                            </div>
                                         )}
                                     </div>
                                 </div>
-                            </div>
+                            )}
 
-                            {/* Mapping Creator Form */}
-                            <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-xl bg-white flex flex-col gap-4">
-                                <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight">
-                                    {editingMapping ? 'New Mapping Details' : 'Select Target to Map'}
-                                </h3>
-
-                                {editingMapping ? (
-                                    <div className="flex flex-col gap-4 animate-slide-up">
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Mapping Target Type</label>
-                                            <select
-                                                value={editingMapping.type}
-                                                onChange={(e) => {
-                                                    const type = e.target.value;
-                                                    setEditingMapping(prev => ({ ...prev, type, targetId: '' }));
-                                                }}
-                                                className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
+                            {mappingsSubTab === 'groups' && (
+                                <div className="grid md:grid-cols-3 gap-6 items-start">
+                                    {/* Groups list */}
+                                    <div className="md:col-span-2 flex flex-col gap-4">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-tight">Configured Groups</h3>
+                                            <button
+                                                onClick={() => setEditingGroup({ groupId: '', deptIds: [], isNew: true })}
+                                                className="py-1.5 px-3 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95"
                                             >
-                                                <option value="dept">Department</option>
-                                                <option value="group">Group / default</option>
-                                            </select>
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                                </svg>
+                                                Create Group
+                                            </button>
                                         </div>
 
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Target ID (Department or Group Name)</label>
-                                            {editingMapping.type === 'dept' ? (
-                                                <select
-                                                    value={editingMapping.targetId}
-                                                    onChange={(e) => setEditingMapping(prev => ({ ...prev, targetId: e.target.value }))}
-                                                    className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
-                                                >
-                                                    <option value="">Select a Department...</option>
-                                                    {mappings.map(map => (
-                                                        <option key={map.id} value={map.id}>{map.deptName} (ID: {map.id})</option>
-                                                    ))}
-                                                </select>
+                                        <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-md bg-white">
+                                            {uniqueGroups.length === 0 ? (
+                                                <div className="text-center py-8 text-slate-400 font-bold">No groups defined yet. Click "Create Group" to define one.</div>
                                             ) : (
-                                                <input
-                                                    type="text"
-                                                    placeholder="e.g. default, managers, it_team"
-                                                    value={editingMapping.targetId}
-                                                    onChange={(e) => setEditingMapping(prev => ({ ...prev, targetId: e.target.value.trim().toLowerCase() }))}
-                                                    className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold"
-                                                />
+                                                <div className="flex flex-col gap-4">
+                                                    {uniqueGroups.map((g, idx) => (
+                                                        <div key={idx} className="border border-slate-200/60 rounded-2xl p-4 bg-slate-50/30 flex justify-between items-start gap-4">
+                                                            <div className="flex flex-col gap-2 min-w-0 flex-grow">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-mono font-bold text-slate-900 text-sm px-2.5 py-0.5 bg-slate-100 border border-slate-200 rounded-xl">{g.groupId}</span>
+                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{g.deptIds.length} Members</span>
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                                                    {g.deptIds.map(dId => {
+                                                                        const member = mappings.find(map => String(map.id).trim() === dId);
+                                                                        return (
+                                                                            <span key={dId} className="px-2 py-0.5 rounded bg-indigo-50/50 text-indigo-700 border border-indigo-200/40 text-[10px] font-bold">
+                                                                                {member ? `${member.headName} (${member.deptName})` : `ID: ${dId}`}
+                                                                            </span>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => setEditingGroup({ groupId: g.groupId, deptIds: [...g.deptIds], isNew: false })}
+                                                                    className="p-1.5 rounded-lg hover:bg-slate-200/80 text-slate-500 hover:text-slate-800 transition-all cursor-pointer border border-slate-200 bg-white"
+                                                                    title="Edit Group Members"
+                                                                >
+                                                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                                    </svg>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const confirmed = confirm(`Are you sure you want to delete group "${g.groupId}"? All of its members and related SOP mappings will be deleted.`);
+                                                                        if (confirmed) {
+                                                                            const updatedGroups = deptGroups.filter(item => item.groupId.toLowerCase() !== g.groupId.toLowerCase());
+                                                                            saveDeptGroups(updatedGroups);
+
+                                                                            const updatedMappings = sopMappings.filter(item => !(item.type === 'group' && item.targetId.toLowerCase() === g.groupId.toLowerCase()));
+                                                                            saveSopMappings(updatedMappings);
+                                                                        }
+                                                                    }}
+                                                                    className="p-1.5 rounded-lg hover:bg-rose-100 text-rose-500 hover:text-rose-700 transition-all cursor-pointer border border-rose-250 bg-white"
+                                                                    title="Delete Group"
+                                                                >
+                                                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             )}
                                         </div>
-
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Select SOP to Map</label>
-                                            <select
-                                                value={editingMapping.sopId}
-                                                onChange={(e) => setEditingMapping(prev => ({ ...prev, sopId: e.target.value }))}
-                                                className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
-                                            >
-                                                <option value="">Select an SOP...</option>
-                                                {groupedSops.map(group => (
-                                                    <option key={group.sopId} value={group.sopId}>{group.sopName} ({group.sopId})</option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="flex gap-3.5 mt-2">
-                                            <button
-                                                onClick={() => setEditingMapping(null)}
-                                                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer text-center"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    if (!editingMapping.targetId || !editingMapping.sopId) {
-                                                        showNotification('Please select both target and SOP.', 'warning');
-                                                        return;
-                                                    }
-
-                                                    // Check for duplicate mapping
-                                                    if (sopMappings.some(item => item.targetId === editingMapping.targetId && item.sopId === editingMapping.sopId && item.type === editingMapping.type)) {
-                                                        showNotification('This mapping configuration already exists.', 'warning');
-                                                        return;
-                                                    }
-
-                                                    const updated = [...sopMappings, {
-                                                        targetId: editingMapping.targetId,
-                                                        type: editingMapping.type,
-                                                        sopId: editingMapping.sopId
-                                                    }];
-                                                    saveSopMappings(updated);
-                                                    setEditingMapping(null);
-                                                }}
-                                                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all cursor-pointer text-center shadow-md shadow-teal-600/10"
-                                            >
-                                                Create Mapping
-                                            </button>
-                                        </div>
                                     </div>
-                                ) : (
-                                    <div className="text-center py-12 text-slate-400 font-bold border border-dashed border-slate-200 rounded-2.5xl p-6">
-                                        Select "Add Mapping" above to link an SOP to a department or group.
+
+                                    {/* Group Editor Form */}
+                                    <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-xl bg-white flex flex-col gap-4">
+                                        <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight">
+                                            {editingGroup ? (editingGroup.isNew ? 'Create New Group' : 'Edit Group Members') : 'Select Group to Edit'}
+                                        </h3>
+
+                                        {editingGroup ? (
+                                            <div className="flex flex-col gap-4 animate-slide-up">
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Group Name (ID)</label>
+                                                    <input
+                                                        type="text"
+                                                        disabled={!editingGroup.isNew}
+                                                        placeholder="e.g. managers, sales_team"
+                                                        value={editingGroup.groupId}
+                                                        onChange={(e) => setEditingGroup(prev => ({ ...prev, groupId: e.target.value.trim().toLowerCase() }))}
+                                                        className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150 disabled:text-slate-400 bg-slate-50"
+                                                    />
+                                                </div>
+
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Group Members</label>
+                                                    <div className="flex flex-col gap-2 bg-slate-50/55 p-3 rounded-2xl border border-slate-200/50 max-h-60 overflow-y-auto">
+                                                        {mappings.map(map => {
+                                                            const isChecked = editingGroup.deptIds.includes(map.id);
+                                                            return (
+                                                                <label key={map.id} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={isChecked}
+                                                                        onChange={() => {
+                                                                            if (isChecked) {
+                                                                                setEditingGroup(prev => ({
+                                                                                    ...prev,
+                                                                                    deptIds: prev.deptIds.filter(id => id !== map.id)
+                                                                                }));
+                                                                            } else {
+                                                                                setEditingGroup(prev => ({
+                                                                                    ...prev,
+                                                                                    deptIds: [...prev.deptIds, map.id]
+                                                                                }));
+                                                                            }
+                                                                        }}
+                                                                        className="rounded text-teal-600 focus:ring-teal-500"
+                                                                    />
+                                                                    <span>{map.headName} ({map.deptName})</span>
+                                                                </label>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex gap-3.5 mt-2">
+                                                    <button
+                                                        onClick={() => setEditingGroup(null)}
+                                                        className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-550 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer text-center"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (!editingGroup.groupId) {
+                                                                showNotification('Please enter a group name.', 'warning');
+                                                                return;
+                                                            }
+                                                            if (editingGroup.deptIds.length === 0) {
+                                                                showNotification('Please select at least one group member.', 'warning');
+                                                                return;
+                                                            }
+
+                                                            if (editingGroup.isNew && deptGroups.some(g => g.groupId.toLowerCase() === editingGroup.groupId.toLowerCase())) {
+                                                                showNotification(`Group "${editingGroup.groupId}" already exists.`, 'warning');
+                                                                return;
+                                                            }
+
+                                                            const updatedGroups = deptGroups.filter(g => g.groupId.toLowerCase() !== editingGroup.groupId.toLowerCase());
+                                                            editingGroup.deptIds.forEach(id => {
+                                                                updatedGroups.push({ groupId: editingGroup.groupId, deptId: id });
+                                                            });
+
+                                                            saveDeptGroups(updatedGroups);
+                                                            setEditingGroup(null);
+                                                        }}
+                                                        className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all cursor-pointer text-center shadow-md shadow-teal-600/10"
+                                                    >
+                                                        Save Group
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12 text-slate-400 font-bold border border-dashed border-slate-200 rounded-2.5xl p-6">
+                                                Select a group to edit, or click "Create Group" to define a new group.
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
-                    )}
+                    )})}
                 </div>
             );
         }
@@ -6240,6 +6582,7 @@
                                             isSandbox={isSandbox}
                                             showNotification={showNotification}
                                             deptGroups={deptGroups}
+                                            setDeptGroups={setDeptGroups}
                                             ensureValidToken={ensureValidToken}
                                             mdEmail={mdEmail}
                                         />
