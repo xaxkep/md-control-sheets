@@ -3229,7 +3229,7 @@
                     let response;
                     try {
                         response = await fetchWithRetry(
-                            `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values:batchGet?${rangeParams}`,
+                            `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values:batchGet?${rangeParams}&_cb=${Date.now()}`,
                             {
                                 headers: {
                                     'Authorization': `Bearer ${accessToken}`
@@ -3241,7 +3241,7 @@
                             ranges = ['Settings!A:B', 'Mappings!A:Z', 'SOPs!A:Z', 'DeptGroups!A:B', 'SOPMappings!A:Z'];
                             rangeParams = ranges.map(r => `ranges=${encodeURIComponent(r)}`).join('&');
                             response = await fetchWithRetry(
-                                `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values:batchGet?${rangeParams}`,
+                                `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values:batchGet?${rangeParams}&_cb=${Date.now()}`,
                                 {
                                     headers: {
                                         'Authorization': `Bearer ${accessToken}`
@@ -4644,7 +4644,7 @@
                             const activeTabName = (map.sheetTabName || 'Master Data').trim();
                             const quotedTab = `'${activeTabName.replace(/'/g, "''")}'`;
                             const response = await fetchWithRetry(
-                                `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values:batchGet?ranges=${encodeURIComponent(quotedTab + '!A1:Z1000')}&valueRenderOption=FORMATTED_VALUE`,
+                                `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values:batchGet?ranges=${encodeURIComponent(quotedTab + '!A1:Z1000')}&valueRenderOption=FORMATTED_VALUE&_cb=${Date.now()}`,
                                 {
                                     headers: { 'Authorization': `Bearer ${auth.accessToken}` }
                                 }
@@ -4683,7 +4683,7 @@
                         try {
                             const queryParams = ranges.map(r => `ranges=${encodeURIComponent(r)}`).join('&');
                             const response = await fetchWithRetry(
-                                `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values:batchGet?${queryParams}&valueRenderOption=FORMATTED_VALUE`,
+                                `https://sheets.googleapis.com/v4/spreadsheets/${map.spreadsheetId}/values:batchGet?${queryParams}&valueRenderOption=FORMATTED_VALUE&_cb=${Date.now()}`,
                                 {
                                     headers: { 'Authorization': `Bearer ${auth.accessToken}` }
                                 }
