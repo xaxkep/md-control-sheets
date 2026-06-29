@@ -290,6 +290,37 @@
                 return list;
             }, [activeSopDocs, sopReadRecords, activeRole]);
 
+            const currentPolicy = policiesToVerify[0]; // Always show the first remaining policy
+
+            const allActivePolicies = React.useMemo(() => {
+                const list = [];
+                if (!activeSopDocs) return [];
+                activeSopDocs.forEach(sop => {
+                    if (sop.policies) {
+                        sop.policies.forEach(p => {
+                            if (p.status !== 'Inactive') {
+                                list.push(p);
+                            }
+                        });
+                    }
+                });
+                return list;
+            }, [activeSopDocs]);
+
+            const currentPolicyIndex = React.useMemo(() => {
+                if (!currentPolicy || !allActivePolicies) return -1;
+                return allActivePolicies.findIndex(p => 
+                    String(p.sopId).trim().toLowerCase() === String(currentPolicy.sopId).trim().toLowerCase() &&
+                    String(p.policyId).trim().toLowerCase() === String(currentPolicy.policyId).trim().toLowerCase()
+                );
+            }, [currentPolicy, allActivePolicies]);
+
+            const currentStepNum = currentPolicyIndex !== -1 ? currentPolicyIndex + 1 : 1;
+            const totalPoliciesCount = allActivePolicies.length;
+            const progressPercent = totalPoliciesCount > 0 
+                ? Math.round(((currentStepNum - 1) / totalPoliciesCount) * 100) 
+                : 0;
+
             // Set initial count when modal opens
             React.useEffect(() => {
                 if (isOpen) {
@@ -304,8 +335,6 @@
             };
 
             if (!isOpen || policiesToVerify.length === 0) return null;
-
-            const currentPolicy = policiesToVerify[0]; // Always show the first remaining policy
 
             const parseInlineStyles = (txt) => {
                 const parts = String(txt).split('**');
@@ -417,34 +446,7 @@
                 }
             };
 
-            const allActivePolicies = React.useMemo(() => {
-                const list = [];
-                if (!activeSopDocs) return [];
-                activeSopDocs.forEach(sop => {
-                    if (sop.policies) {
-                        sop.policies.forEach(p => {
-                            if (p.status !== 'Inactive') {
-                                list.push(p);
-                            }
-                        });
-                    }
-                });
-                return list;
-            }, [activeSopDocs]);
 
-            const currentPolicyIndex = React.useMemo(() => {
-                if (!currentPolicy || !allActivePolicies) return -1;
-                return allActivePolicies.findIndex(p => 
-                    String(p.sopId).trim().toLowerCase() === String(currentPolicy.sopId).trim().toLowerCase() &&
-                    String(p.policyId).trim().toLowerCase() === String(currentPolicy.policyId).trim().toLowerCase()
-                );
-            }, [currentPolicy, allActivePolicies]);
-
-            const currentStepNum = currentPolicyIndex !== -1 ? currentPolicyIndex + 1 : 1;
-            const totalPoliciesCount = allActivePolicies.length;
-            const progressPercent = totalPoliciesCount > 0 
-                ? Math.round(((currentStepNum - 1) / totalPoliciesCount) * 100) 
-                : 0;
 
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
