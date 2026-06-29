@@ -267,17 +267,28 @@
             const policiesToVerify = React.useMemo(() => {
                 const list = [];
                 if (!activeSopDocs) return [];
+                const currentWeekCode = getCurrentWeekCode();
+                const userEmail = activeRole?.email?.toLowerCase();
+                
                 activeSopDocs.forEach(sop => {
                     if (sop.policies) {
                         sop.policies.forEach(p => {
                             if (p.status !== 'Inactive') {
-                                list.push(p);
+                                const alreadyAnswered = sopReadRecords && sopReadRecords.some(record => 
+                                    String(record.userEmail).trim().toLowerCase() === String(userEmail).trim().toLowerCase() &&
+                                    String(record.weekCode).trim().toLowerCase() === String(currentWeekCode).trim().toLowerCase() &&
+                                    String(record.sopId).trim().toLowerCase() === String(p.sopId).trim().toLowerCase() &&
+                                    String(record.policyId).trim().toLowerCase() === String(p.policyId).trim().toLowerCase()
+                                );
+                                if (!alreadyAnswered) {
+                                    list.push(p);
+                                }
                             }
                         });
                     }
                 });
                 return list;
-            }, [activeSopDocs]);
+            }, [activeSopDocs, sopReadRecords, activeRole]);
 
             // Set initial count when modal opens
             React.useEffect(() => {
