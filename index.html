@@ -580,24 +580,17 @@
         function SOPAdminDashboard({ onClose, sops, setSops, sopMappings, setSopMappings, sopReadRecords, setSopReadRecords, mappings, isSandbox, showNotification, deptGroups, setDeptGroups, ensureValidToken, mdEmail }) {
             const [activeTab, setActiveTab] = React.useState('compliance'); // 'compliance' | 'policies' | 'mappings'
             const [selectedWeek, setSelectedWeek] = React.useState(getCurrentWeekCode());
-            const [complianceSubTab, setComplianceSubTab] = React.useState('deviations-this'); // 'deviations-this' | 'deviations-last' | 'pending'
-            const [expandedCoordinators, setExpandedCoordinators] = React.useState({});
             const [isNewSopIdOption, setIsNewSopIdOption] = React.useState(false);
+            const [expandedCell, setExpandedCell] = React.useState({ coordinatorEmail: '', tab: '' });
             
-            const toggleExpandCoordinator = (email) => {
-                setExpandedCoordinators(prev => ({
-                    ...prev,
-                    [email.toLowerCase()]: !prev[email.toLowerCase()]
-                }));
-            };
-
-            const [expandedUnverifiedCoordinators, setExpandedUnverifiedCoordinators] = React.useState({});
-            
-            const toggleExpandUnverified = (email) => {
-                setExpandedUnverifiedCoordinators(prev => ({
-                    ...prev,
-                    [email.toLowerCase()]: !prev[email.toLowerCase()]
-                }));
+            const toggleExpandCell = (email, tabName) => {
+                const lowerEmail = email.toLowerCase();
+                setExpandedCell(prev => {
+                    if (prev.coordinatorEmail === lowerEmail && prev.tab === tabName) {
+                        return { coordinatorEmail: '', tab: '' };
+                    }
+                    return { coordinatorEmail: lowerEmail, tab: tabName };
+                });
             };
             
             const [expandedSops, setExpandedSops] = React.useState({});
