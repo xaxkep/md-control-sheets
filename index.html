@@ -6105,41 +6105,10 @@
                     />
                     
                     {/* Header */}
-                    <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 text-white shadow-lg transition-all duration-300">
-                        {/* Tab Switcher Bar at the very top */}
-                        {activeRole && (
-                            <div className="bg-slate-950 border-b border-slate-800/60 py-2 px-3 md:px-6">
-                                <div className="max-w-7xl mx-auto flex justify-center">
-                                    <div className="flex bg-slate-900/60 p-0.5 rounded-xl border border-slate-800/80 text-[9px] md:text-[11px] gap-0.5 shadow-inner">
-                                        <button 
-                                            onClick={() => setActiveMetricTab('All')}
-                                            className={`px-4 py-1.5 rounded-lg font-extrabold tracking-wider uppercase transition-all cursor-pointer ${
-                                                activeMetricTab !== 'SOP' 
-                                                ? 'bg-gradient-to-r from-teal-400 to-indigo-500 text-slate-950 shadow-md font-black' 
-                                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
-                                            }`}
-                                        >
-                                            Task Management
-                                        </button>
-                                        <button 
-                                            onClick={() => setActiveMetricTab('SOP')}
-                                            className={`px-4 py-1.5 rounded-lg font-extrabold tracking-wider uppercase transition-all cursor-pointer ${
-                                                activeMetricTab === 'SOP' 
-                                                ? 'bg-gradient-to-r from-teal-400 to-indigo-500 text-slate-950 shadow-md font-black' 
-                                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
-                                            }`}
-                                        >
-                                            SOP Management
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Main Header Row */}
-                        <div className="max-w-7xl mx-auto flex flex-row items-center justify-between gap-2 md:gap-4 py-2.5 px-3 md:py-3.5 md:px-6">
+                    <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 text-white shadow-lg py-2.5 px-3 md:py-3.5 md:px-6 transition-all duration-300">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
                             {/* Brand Logo & Name */}
-                            <div className="flex items-center gap-2 md:gap-3">
+                            <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
                                 <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-gradient-to-tr from-teal-400 to-indigo-500 flex items-center justify-center shadow-md shadow-indigo-500/10">
                                     <Icon name="sheet" className="w-4 h-4 md:w-5 md:h-5 text-slate-900" />
                                 </div>
@@ -6150,6 +6119,32 @@
                                     <p className="text-[10px] md:text-xs text-slate-400 font-medium">Google Sheets Engine</p>
                                 </div>
                             </div>
+
+                            {/* Centered Tab Switcher in the Header Heading Section */}
+                            {activeRole && (
+                                <div className="flex bg-slate-950/60 p-0.5 rounded-xl border border-slate-800/80 text-[9px] md:text-[11px] gap-0.5 shadow-inner">
+                                    <button 
+                                        onClick={() => setActiveMetricTab('All')}
+                                        className={`px-3.5 py-1.5 rounded-lg font-extrabold tracking-wider uppercase transition-all cursor-pointer ${
+                                            activeMetricTab !== 'SOP' 
+                                            ? 'bg-gradient-to-r from-teal-400 to-indigo-500 text-slate-950 shadow-md font-black' 
+                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
+                                        }`}
+                                    >
+                                        Task Management
+                                    </button>
+                                    <button 
+                                        onClick={() => setActiveMetricTab('SOP')}
+                                        className={`px-3.5 py-1.5 rounded-lg font-extrabold tracking-wider uppercase transition-all cursor-pointer ${
+                                            activeMetricTab === 'SOP' 
+                                            ? 'bg-gradient-to-r from-teal-400 to-indigo-500 text-slate-950 shadow-md font-black' 
+                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
+                                        }`}
+                                    >
+                                        SOP Management
+                                    </button>
+                                </div>
+                            )}
 
                             {/* Active Persona Banner for Sandbox */}
                             {isSandbox && (
@@ -6583,7 +6578,8 @@
                                 )}
 
                                 {/* Metrics Cards (Top Panel) */}
-                                <div className={`grid grid-cols-2 ${activeRole && !activeRole.isUnregistered ? (showCompletedAudits ? 'md:grid-cols-6' : 'md:grid-cols-5') : 'md:grid-cols-4'} gap-3 md:gap-4`}>
+                                {activeMetricTab !== 'SOP' && (
+                                    <div className={`grid grid-cols-2 ${activeRole && !activeRole.isUnregistered ? (showCompletedAudits ? 'md:grid-cols-6' : 'md:grid-cols-5') : 'md:grid-cols-4'} gap-3 md:gap-4`}>
                                     {/* Pending Tasks Card */}
                                     <div 
                                         onClick={() => setActiveMetricTab(activeMetricTab === 'Pending' ? 'All' : 'Pending')}
@@ -6699,9 +6695,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                )}
 
                                     {/* Consolidated Mappings Status Panel (MD view only) */}
-                                    {activeRole.isMD && (
+                                    {activeMetricTab !== 'SOP' && activeRole.isMD && (
                                         <div className="glass-panel p-3 rounded-2xl border border-slate-200 bg-white/85 shadow flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs relative z-30">
                                             <div className="flex items-center gap-2">
                                             <span className="font-bold text-slate-400 text-[10px] md:text-xs">Sync Status:</span>
