@@ -700,69 +700,18 @@
                 return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
             }, [sops]);
 
-            // Calculate last week code relative to selected week
-            const lastWeekCode = React.useMemo(() => {
-                const match = selectedWeek.match(/(\d{4})-W(\d{2})/);
-                if (!match) return '';
-                const year = parseInt(match[1], 10);
-                const week = parseInt(match[2], 10);
-                if (week === 1) {
-                    return `${year - 1}-W52`;
-                }
-                const pad = (val) => String(val).padStart(2, '0');
-                return `${year}-W${pad(week - 1)}`;
-            }, [selectedWeek]);
-
-            // Filter deviation records
-            const deviationsThisWeek = React.useMemo(() => {
-                return sopReadRecords.filter(r => r.weekCode === selectedWeek && r.compliance === 'Not Following');
-            }, [sopReadRecords, selectedWeek]);
-
-            const deviationsLastWeek = React.useMemo(() => {
-                return sopReadRecords.filter(r => r.weekCode === lastWeekCode && r.compliance === 'Not Following');
-            }, [sopReadRecords, lastWeekCode]);
-
-            const groupedDeviationsThisWeek = React.useMemo(() => {
-                const groups = {};
-                deviationsThisWeek.forEach(r => {
-                    const key = r.userEmail.toLowerCase();
-                    if (!groups[key]) {
-                        groups[key] = {
-                            userEmail: r.userEmail,
-                            department: r.department,
-                            deviations: []
-                        };
-                    }
-                    groups[key].deviations.push(r);
-                });
-                return Object.values(groups);
-            }, [deviationsThisWeek]);
-
-            const groupedDeviationsLastWeek = React.useMemo(() => {
-                const groups = {};
-                deviationsLastWeek.forEach(r => {
-                    const key = r.userEmail.toLowerCase();
-                    if (!groups[key]) {
-                        groups[key] = {
-                            userEmail: r.userEmail,
-                            department: r.department,
-                            deviations: []
-                        };
-                    }
-                    groups[key].deviations.push(r);
-                });
-                return Object.values(groups);
-            }, [deviationsLastWeek]);
-
-            // Unverified coordinators
-            const unverifiedUsers = React.useMemo(() => {
-                const list = [];
-                if (!mappings || !sops || !sopMappings) return [];
+            // Calculate coordinator compliance details for the selected week
+            const coordinatorComplianceData = React.useMemo(() => {
+                if (!mappings || !sops || !sopMappings || !sopReadRecords) return [];
                 const mdEmailsList = (mdEmail || '').split(',').map(e => e.trim().toLowerCase());
                 
-                mappings.forEach(map => {
+                return mappings.filter(map => {
                     const email = map.headEmail.toLowerCase();
-                    if (mdEmailsList.includes(email)) return;
+                    return !mdEmailsList.includes(email);
+                }).map(map => {
+                    const email = map.headEmail.toLowerCase();
+                    
+                    // Resolve assigned SOP IDs
                     const mappedSopIds = sopMappings
                         .filter(m => String(m.type).trim().toLowerCase() === 'dept' && String(m.targetId).trim().toLowerCase() === String(map.id).trim().toLowerCase())
                         .map(m => String(m.sopId).trim().toLowerCase());
@@ -788,28 +737,42 @@
                     groupSopIds.forEach(id => resolvedSopIds.add(id));
                     
                     const activePolicies = sops.filter(p => resolvedSopIds.has(String(p.sopId).trim().toLowerCase()) && String(p.status).trim().toLowerCase() !== 'inactive');
-                    if (activePolicies.length === 0) return;
                     
-                    const pendingPolicies = activePolicies.filter(policy => {
-                        return !sopReadRecords.some(r => 
+                    const followingPolicies = [];
+                    const notFollowingPolicies = [];
+                    const pendingPolicies = [];
+                    
+                    activePolicies.forEach(policy => {
+                        const record = sopReadRecords.find(r => 
                             String(r.userEmail).trim().toLowerCase() === String(email).trim().toLowerCase() &&
                             String(r.weekCode).trim().toLowerCase() === String(selectedWeek).trim().toLowerCase() &&
                             String(r.sopId).trim().toLowerCase() === String(policy.sopId).trim().toLowerCase() &&
                             String(r.policyId).trim().toLowerCase() === String(policy.policyId).trim().toLowerCase()
                         );
+                        
+                        if (record) {
+                            if (record.compliance === 'Following') {
+                                followingPolicies.push({ ...policy, record });
+                            } else if (record.compliance === 'Not Following') {
+                                notFollowingPolicies.push({ ...policy, record });
+                            } else {
+                                pendingPolicies.push(policy);
+                            }
+                        } else {
+                            pendingPolicies.push(policy);
+                        }
                     });
                     
-                    if (pendingPolicies.length > 0) {
-                        list.push({
-                            headName: map.headName,
-                            headEmail: map.headEmail,
-                            deptName: map.deptName,
-                            pendingCount: pendingPolicies.length,
-                            pendingPolicies: pendingPolicies.map(p => `${p.sopName} (${p.policyId})`)
-                        });
-                    }
+                    return {
+                        headName: map.headName,
+                        headEmail: map.headEmail,
+                        deptName: map.deptName,
+                        following: followingPolicies,
+                        notFollowing: notFollowingPolicies,
+                        pending: pendingPolicies,
+                        total: activePolicies
+                    };
                 });
-                return list;
             }, [mappings, sops, sopMappings, sopReadRecords, selectedWeek, deptGroups, mdEmail]);
 
             // Save SOPs to spreadsheet or local state
