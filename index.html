@@ -1002,250 +1002,237 @@
                                 </div>
                             </div>
 
-                            {/* Compliance Subtabs */}
-                            <div className="flex border-b border-slate-200/85 pb-px">
-                                <button
-                                    onClick={() => setComplianceSubTab('deviations-this')}
-                                    className={`pb-2.5 px-4 text-xs font-extrabold border-b-2 transition-all cursor-pointer ${
-                                        complianceSubTab === 'deviations-this' ? 'border-teal-500 text-teal-650' : 'border-transparent text-slate-400 hover:text-slate-600'
-                                    }`}
-                                >
-                                    Deviations This Week ({deviationsThisWeek.length})
-                                </button>
-                                <button
-                                    onClick={() => setComplianceSubTab('deviations-last')}
-                                    className={`pb-2.5 px-4 text-xs font-extrabold border-b-2 transition-all cursor-pointer ${
-                                        complianceSubTab === 'deviations-last' ? 'border-teal-500 text-teal-650' : 'border-transparent text-slate-400 hover:text-slate-600'
-                                    }`}
-                                >
-                                    Deviations Last Week ({deviationsLastWeek.length})
-                                </button>
-                                <button
-                                    onClick={() => setComplianceSubTab('pending')}
-                                    className={`pb-2.5 px-4 text-xs font-extrabold border-b-2 transition-all cursor-pointer ${
-                                        complianceSubTab === 'pending' ? 'border-teal-500 text-teal-650' : 'border-transparent text-slate-400 hover:text-slate-600'
-                                    }`}
-                                >
-                                    Unverified Coordinators ({unverifiedUsers.length})
-                                </button>
-                            </div>
-
                             {/* Compliance Lists */}
                             <div className="glass-panel rounded-3xl border border-slate-200/80 shadow-xl p-5 bg-white min-h-[250px]">
-                                {complianceSubTab === 'deviations-this' && (
-                                    <div className="overflow-x-auto">
-                                        {groupedDeviationsThisWeek.length === 0 ? (
-                                            <div className="text-center py-12 text-slate-400 font-bold">No deviations recorded this week. Excellent compliance!</div>
-                                        ) : (
-                                            <table className="w-full text-left text-xs border-collapse">
-                                                <thead>
-                                                    <tr className="border-b border-slate-200 text-slate-500 uppercase font-extrabold tracking-wider text-[10px] bg-slate-50/60">
-                                                        <th className="py-2.5 px-4 w-1/3">Coordinator</th>
-                                                        <th className="py-2.5 px-4 w-1/3">Department</th>
-                                                        <th className="py-2.5 px-4 w-1/6 text-center">Deviations</th>
-                                                        <th className="py-2.5 px-4 w-1/6 text-center">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {groupedDeviationsThisWeek.map((group, idx) => {
-                                                        const isExpanded = !!expandedCoordinators[group.userEmail.toLowerCase()];
-                                                        return (
-                                                            <React.Fragment key={idx}>
-                                                                <tr 
-                                                                    onClick={() => toggleExpandCoordinator(group.userEmail)}
-                                                                    className="border-b border-slate-100 hover:bg-slate-50/80 text-slate-700 cursor-pointer transition-all"
-                                                                >
-                                                                    <td className="py-3.5 px-4 font-bold text-slate-900">{group.userEmail}</td>
-                                                                    <td className="py-3.5 px-4 font-bold text-slate-550">{group.department}</td>
-                                                                    <td className="py-3.5 px-4 text-center">
-                                                                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                                                            {group.deviations.length}
-                                                                        </span>
-                                                                    </td>
-                                                                    <td className="py-3.5 px-4 text-center text-slate-400">
-                                                                        <span className="inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 font-extrabold text-xs">
-                                                                            {isExpanded ? 'Hide Details' : 'View Details'}
-                                                                            <svg className={`w-3.5 h-3.5 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                                                                            </svg>
-                                                                        </span>
-                                                                    </td>
-                                                                </tr>
-                                                                {isExpanded && (
-                                                                    <tr>
-                                                                        <td colSpan={4} className="p-0 bg-slate-50/50 border-b border-slate-100">
-                                                                            <div className="px-6 py-4 border-l-4 border-teal-500 bg-slate-50/30 flex flex-col gap-3">
-                                                                                <h5 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 mb-1">Detailed Deviations for {group.userEmail}</h5>
-                                                                                <div className="flex flex-col gap-2.5">
-                                                                                    {group.deviations.map((dev, dIdx) => (
-                                                                                        <div key={dIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+                                <div className="overflow-x-auto">
+                                    {coordinatorComplianceData.length === 0 ? (
+                                        <div className="text-center py-12 text-slate-400 font-bold">No coordinators configured or available.</div>
+                                    ) : (
+                                        <table className="w-full text-left text-xs border-collapse">
+                                            <thead>
+                                                <tr className="border-b border-slate-200 text-slate-500 uppercase font-extrabold tracking-wider text-[10px] bg-slate-50/60">
+                                                    <th className="py-2.5 px-4 w-1/4">Coordinators</th>
+                                                    <th className="py-2.5 px-4 w-1/4">Department</th>
+                                                    <th className="py-2.5 px-4 w-1/8 text-center">Following</th>
+                                                    <th className="py-2.5 px-4 w-1/8 text-center">Not-Following</th>
+                                                    <th className="py-2.5 px-4 w-1/8 text-center">Pending</th>
+                                                    <th className="py-2.5 px-4 w-1/8 text-center">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {coordinatorComplianceData.map((coord, idx) => {
+                                                    const isExpanded = expandedCell.coordinatorEmail === coord.headEmail.toLowerCase();
+                                                    const activeSubTab = isExpanded ? expandedCell.tab : '';
+                                                    
+                                                    return (
+                                                        <React.Fragment key={idx}>
+                                                            <tr className="border-b border-slate-100 hover:bg-slate-50/50 text-slate-700 transition-all">
+                                                                {/* Coordinator name & email */}
+                                                                <td className="py-3 px-4 font-bold text-slate-900">
+                                                                    <div>{coord.headName}</div>
+                                                                    <div className="text-[10px] text-slate-400 font-normal">{coord.headEmail}</div>
+                                                                </td>
+                                                                
+                                                                {/* Department */}
+                                                                <td className="py-3 px-4 font-extrabold text-slate-650">{coord.deptName}</td>
+                                                                
+                                                                {/* Following Count */}
+                                                                <td className="py-3 px-4 text-center">
+                                                                    <button 
+                                                                        onClick={() => toggleExpandCell(coord.headEmail, 'following')}
+                                                                        className={`px-3 py-1 rounded-full text-xs font-black transition-all cursor-pointer border ${
+                                                                            activeSubTab === 'following'
+                                                                            ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
+                                                                            : coord.following.length > 0
+                                                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                                                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
+                                                                        }`}
+                                                                    >
+                                                                        {coord.following.length}
+                                                                    </button>
+                                                                </td>
+                                                                
+                                                                {/* Not-Following Count */}
+                                                                <td className="py-3 px-4 text-center">
+                                                                    <button 
+                                                                        onClick={() => toggleExpandCell(coord.headEmail, 'not_following')}
+                                                                        className={`px-3 py-1 rounded-full text-xs font-black transition-all cursor-pointer border ${
+                                                                            activeSubTab === 'not_following'
+                                                                            ? 'bg-rose-500 text-white border-rose-500 shadow-sm'
+                                                                            : coord.notFollowing.length > 0
+                                                                                ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                                                                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
+                                                                        }`}
+                                                                    >
+                                                                        {coord.notFollowing.length}
+                                                                    </button>
+                                                                </td>
+                                                                
+                                                                {/* Pending Count */}
+                                                                <td className="py-3 px-4 text-center">
+                                                                    <button 
+                                                                        onClick={() => toggleExpandCell(coord.headEmail, 'pending')}
+                                                                        className={`px-3 py-1 rounded-full text-xs font-black transition-all cursor-pointer border ${
+                                                                            activeSubTab === 'pending'
+                                                                            ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                                                                            : coord.pending.length > 0
+                                                                                ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                                                                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
+                                                                        }`}
+                                                                    >
+                                                                        {coord.pending.length}
+                                                                    </button>
+                                                                </td>
+                                                                
+                                                                {/* Total Count */}
+                                                                <td className="py-3 px-4 text-center">
+                                                                    <button 
+                                                                        onClick={() => toggleExpandCell(coord.headEmail, 'total')}
+                                                                        className={`px-3 py-1 rounded-full text-xs font-black transition-all cursor-pointer border ${
+                                                                            activeSubTab === 'total'
+                                                                            ? 'bg-indigo-650 text-white border-indigo-650 shadow-sm'
+                                                                            : coord.total.length > 0
+                                                                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+                                                                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
+                                                                        }`}
+                                                                    >
+                                                                        {coord.total.length}
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                            
+                                                            {/* Expanded Detail Panel Row */}
+                                                            {isExpanded && (
+                                                                <tr className="bg-slate-50/40">
+                                                                    <td colSpan={6} className="p-0 border-b border-slate-150">
+                                                                        <div className={`px-6 py-5 border-l-4 ${
+                                                                            activeSubTab === 'following' ? 'border-emerald-500' :
+                                                                            activeSubTab === 'not_following' ? 'border-rose-500' :
+                                                                            activeSubTab === 'pending' ? 'border-amber-500' : 'border-indigo-600'
+                                                                        } bg-slate-50/20 flex flex-col gap-3.5`}>
+                                                                            <div className="flex items-center justify-between">
+                                                                                <h5 className="text-[10px] uppercase font-black tracking-widest text-slate-400">
+                                                                                    {activeSubTab === 'following' && `SOP Policies Followed by ${coord.headName}`}
+                                                                                    {activeSubTab === 'not_following' && `SOP Deviations reported by ${coord.headName}`}
+                                                                                    {activeSubTab === 'pending' && `SOP Policies Pending affirmation by ${coord.headName}`}
+                                                                                    {activeSubTab === 'total' && `All Assigned SOP Policies for ${coord.headName}`}
+                                                                                </h5>
+                                                                                <span className="text-[10px] font-bold text-slate-400">
+                                                                                    {activeSubTab === 'following' && `${coord.following.length} Followed`}
+                                                                                    {activeSubTab === 'not_following' && `${coord.notFollowing.length} Deviated`}
+                                                                                    {activeSubTab === 'pending' && `${coord.pending.length} Pending`}
+                                                                                    {activeSubTab === 'total' && `${coord.total.length} Total Assigned`}
+                                                                                </span>
+                                                                            </div>
+                                                                            
+                                                                            <div className="flex flex-col gap-2.5">
+                                                                                {activeSubTab === 'following' && coord.following.length === 0 && (
+                                                                                    <div className="text-xs font-semibold text-slate-400 py-2">No policies marked as following for this week.</div>
+                                                                                )}
+                                                                                {activeSubTab === 'following' && coord.following.map((policy, pIdx) => (
+                                                                                    <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+                                                                                        <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
+                                                                                                <span className="px-2 py-0.5 rounded bg-emerald-50 text-[10px] font-bold text-emerald-700 border border-emerald-200/50 uppercase tracking-wider">{policy.policyId}</span>
+                                                                                            </div>
+                                                                                            <span className="text-[10px] text-slate-400 font-medium">{policy.record?.timestamp}</span>
+                                                                                        </div>
+                                                                                        <div className="text-xs font-semibold text-slate-700 leading-relaxed">
+                                                                                            {policy.policyText}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ))}
+                                                                                
+                                                                                {activeSubTab === 'not_following' && coord.notFollowing.length === 0 && (
+                                                                                    <div className="text-xs font-semibold text-slate-400 py-2">No deviations reported for this week.</div>
+                                                                                )}
+                                                                                {activeSubTab === 'not_following' && coord.notFollowing.map((policy, pIdx) => (
+                                                                                    <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+                                                                                        <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
+                                                                                                <span className="px-2 py-0.5 rounded bg-rose-50 text-[10px] font-bold text-rose-700 border border-rose-200/50 uppercase tracking-wider">{policy.policyId}</span>
+                                                                                            </div>
+                                                                                            <span className="text-[10px] text-slate-400 font-medium">{policy.record?.timestamp}</span>
+                                                                                        </div>
+                                                                                        <div className="text-xs font-semibold text-slate-700 leading-relaxed">
+                                                                                            {policy.policyText}
+                                                                                        </div>
+                                                                                        <div className="text-xs font-bold text-rose-700 bg-rose-50/40 border border-rose-100 rounded-xl p-3 leading-relaxed mt-1 flex flex-col gap-1">
+                                                                                            <span className="text-[9px] uppercase tracking-wider text-rose-450 font-black">Reason for Deviation</span>
+                                                                                            <span>{policy.record?.reason}</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ))}
+                                                                                
+                                                                                {activeSubTab === 'pending' && coord.pending.length === 0 && (
+                                                                                    <div className="text-xs font-semibold text-slate-400 py-2">All assigned policies have been verified!</div>
+                                                                                )}
+                                                                                {activeSubTab === 'pending' && coord.pending.map((policy, pIdx) => (
+                                                                                    <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+                                                                                        <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
+                                                                                                <span className="px-2 py-0.5 rounded bg-amber-50 text-[10px] font-bold text-amber-700 border border-amber-200/50 uppercase tracking-wider">{policy.policyId}</span>
+                                                                                            </div>
+                                                                                            <span className="px-2 py-0.5 rounded bg-slate-50 text-[9px] font-bold text-slate-400 border border-slate-200/60 uppercase tracking-wider">Pending</span>
+                                                                                        </div>
+                                                                                        <div className="text-xs font-semibold text-slate-700 leading-relaxed">
+                                                                                            {policy.policyText}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ))}
+                                                                                
+                                                                                {activeSubTab === 'total' && coord.total.length === 0 && (
+                                                                                    <div className="text-xs font-semibold text-slate-400 py-2">No SOP policies assigned to this coordinator.</div>
+                                                                                )}
+                                                                                {activeSubTab === 'total' && coord.total.map((policy, pIdx) => {
+                                                                                    const isF = coord.following.some(p => p.sopId === policy.sopId && p.policyId === policy.policyId);
+                                                                                    const isNF = coord.notFollowing.find(p => p.sopId === policy.sopId && p.policyId === policy.policyId);
+                                                                                    return (
+                                                                                        <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
                                                                                             <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                                                                                                 <div className="flex items-center gap-2">
-                                                                                                    <span className="px-2 py-0.5 rounded bg-slate-150 text-[10px] font-bold text-slate-700 border border-slate-200 uppercase tracking-wider">{dev.sopId}</span>
-                                                                                                    <span className="px-2 py-0.5 rounded bg-teal-50 text-[10px] font-bold text-teal-700 border border-teal-200/50 uppercase tracking-wider">{dev.policyId}</span>
+                                                                                                    <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
+                                                                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ${
+                                                                                                        isF ? 'bg-emerald-50 text-emerald-700 border-emerald-200/55' :
+                                                                                                        isNF ? 'bg-rose-50 text-rose-700 border-rose-200/55' :
+                                                                                                        'bg-amber-50 text-amber-700 border-amber-200/55'
+                                                                                                    }`}>{policy.policyId}</span>
                                                                                                 </div>
-                                                                                                <span className="text-[10px] text-slate-400 font-medium">{dev.timestamp}</span>
+                                                                                                <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                                                                                                    isF ? 'bg-emerald-100 text-emerald-800' :
+                                                                                                    isNF ? 'bg-rose-100 text-rose-800' :
+                                                                                                    'bg-slate-100 text-slate-500'
+                                                                                                }`}>
+                                                                                                    {isF ? 'Following' : isNF ? 'Not Following' : 'Pending'}
+                                                                                                </span>
                                                                                             </div>
-                                                                                            <div className="text-xs font-semibold text-amber-700 bg-amber-50/40 border border-amber-100/60 rounded-xl p-3 leading-relaxed">
-                                                                                                {dev.reason}
+                                                                                            <div className="text-xs font-semibold text-slate-700 leading-relaxed">
+                                                                                                {policy.policyText}
                                                                                             </div>
+                                                                                            {isNF && (
+                                                                                                <div className="text-xs font-bold text-rose-700 bg-rose-50/40 border border-rose-100 rounded-xl p-3 leading-relaxed mt-1 flex flex-col gap-1">
+                                                                                                    <span className="text-[9px] uppercase tracking-wider text-rose-450 font-black">Reason for Deviation</span>
+                                                                                                    <span>{isNF.record?.reason}</span>
+                                                                                                </div>
+                                                                                            )}
                                                                                         </div>
-                                                                                    ))}
-                                                                                </div>
+                                                                                    );
+                                                                                })}
                                                                             </div>
-                                                                        </td>
-                                                                    </tr>
-                                                                )}
-                                                            </React.Fragment>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        )}
-                                    </div>
-                                )}
-
-                                {complianceSubTab === 'deviations-last' && (
-                                    <div className="overflow-x-auto">
-                                        {groupedDeviationsLastWeek.length === 0 ? (
-                                            <div className="text-center py-12 text-slate-400 font-bold">No deviations recorded last week.</div>
-                                        ) : (
-                                            <table className="w-full text-left text-xs border-collapse">
-                                                <thead>
-                                                    <tr className="border-b border-slate-200 text-slate-500 uppercase font-extrabold tracking-wider text-[10px] bg-slate-50/60">
-                                                        <th className="py-2.5 px-4 w-1/3">Coordinator</th>
-                                                        <th className="py-2.5 px-4 w-1/3">Department</th>
-                                                        <th className="py-2.5 px-4 w-1/6 text-center">Deviations</th>
-                                                        <th className="py-2.5 px-4 w-1/6 text-center">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {groupedDeviationsLastWeek.map((group, idx) => {
-                                                        const isExpanded = !!expandedCoordinators[group.userEmail.toLowerCase()];
-                                                        return (
-                                                            <React.Fragment key={idx}>
-                                                                <tr 
-                                                                    onClick={() => toggleExpandCoordinator(group.userEmail)}
-                                                                    className="border-b border-slate-100 hover:bg-slate-50/80 text-slate-700 cursor-pointer transition-all"
-                                                                >
-                                                                    <td className="py-3.5 px-4 font-bold text-slate-900">{group.userEmail}</td>
-                                                                    <td className="py-3.5 px-4 font-bold text-slate-550">{group.department}</td>
-                                                                    <td className="py-3.5 px-4 text-center">
-                                                                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                                                            {group.deviations.length}
-                                                                        </span>
-                                                                    </td>
-                                                                    <td className="py-3.5 px-4 text-center text-slate-400">
-                                                                        <span className="inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 font-extrabold text-xs">
-                                                                            {isExpanded ? 'Hide Details' : 'View Details'}
-                                                                            <svg className={`w-3.5 h-3.5 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                                                                            </svg>
-                                                                        </span>
+                                                                        </div>
                                                                     </td>
                                                                 </tr>
-                                                                {isExpanded && (
-                                                                    <tr>
-                                                                        <td colSpan={4} className="p-0 bg-slate-50/50 border-b border-slate-100">
-                                                                            <div className="px-6 py-4 border-l-4 border-teal-500 bg-slate-50/30 flex flex-col gap-3">
-                                                                                <h5 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 mb-1">Detailed Deviations for {group.userEmail}</h5>
-                                                                                <div className="flex flex-col gap-2.5">
-                                                                                    {group.deviations.map((dev, dIdx) => (
-                                                                                        <div key={dIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
-                                                                                            <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                                                                                                <div className="flex items-center gap-2">
-                                                                                                    <span className="px-2 py-0.5 rounded bg-slate-150 text-[10px] font-bold text-slate-700 border border-slate-200 uppercase tracking-wider">{dev.sopId}</span>
-                                                                                                    <span className="px-2 py-0.5 rounded bg-teal-50 text-[10px] font-bold text-teal-700 border border-teal-200/50 uppercase tracking-wider">{dev.policyId}</span>
-                                                                                                </div>
-                                                                                                <span className="text-[10px] text-slate-400 font-medium">{dev.timestamp}</span>
-                                                                                            </div>
-                                                                                            <div className="text-xs font-semibold text-amber-700 bg-amber-50/40 border border-amber-100/60 rounded-xl p-3 leading-relaxed">
-                                                                                                {dev.reason}
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            </div>
-                                                                        </td>
-                                                                    </tr>
-                                                                )}
-                                                            </React.Fragment>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        )}
-                                    </div>
-                                )}
-
-                                {complianceSubTab === 'pending' && (
-                                    <div className="overflow-x-auto">
-                                        {unverifiedUsers.length === 0 ? (
-                                            <div className="text-center py-12 text-slate-400 font-bold">All coordinators have completed their weekly verification!</div>
-                                        ) : (
-                                            <table className="w-full text-left text-xs border-collapse">
-                                                <thead>
-                                                    <tr className="border-b border-slate-200 text-slate-500 uppercase font-extrabold tracking-wider text-[10px] bg-slate-50/60">
-                                                        <th className="py-2.5 px-4 w-1/4">Name</th>
-                                                        <th className="py-2.5 px-4 w-1/4">Email</th>
-                                                        <th className="py-2.5 px-4 w-1/4">Department</th>
-                                                        <th className="py-2.5 px-4 w-1/8 text-center">Unverified Count</th>
-                                                        <th className="py-2.5 px-4 w-1/8 text-center">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {unverifiedUsers.map((user, i) => {
-                                                        const isExpanded = !!expandedUnverifiedCoordinators[user.headEmail.toLowerCase()];
-                                                        return (
-                                                            <React.Fragment key={i}>
-                                                                <tr 
-                                                                    onClick={() => toggleExpandUnverified(user.headEmail)}
-                                                                    className="border-b border-slate-100 hover:bg-slate-50/80 text-slate-700 cursor-pointer transition-all"
-                                                                >
-                                                                    <td className="py-3.5 px-4 font-bold text-slate-800">{user.headName}</td>
-                                                                    <td className="py-3.5 px-4 font-medium text-slate-550">{user.headEmail}</td>
-                                                                    <td className="py-3.5 px-4 font-bold text-teal-600">{user.deptName}</td>
-                                                                    <td className="py-3.5 px-4 text-center">
-                                                                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                                                                            {user.pendingCount} pending
-                                                                        </span>
-                                                                    </td>
-                                                                    <td className="py-3.5 px-4 text-center text-slate-400">
-                                                                        <span className="inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 font-extrabold text-xs">
-                                                                            {isExpanded ? 'Hide Policies' : 'View Policies'}
-                                                                            <svg className={`w-3.5 h-3.5 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                                                                            </svg>
-                                                                        </span>
-                                                                    </td>
-                                                                </tr>
-                                                                {isExpanded && (
-                                                                    <tr>
-                                                                        <td colSpan={5} className="p-0 bg-slate-50/50 border-b border-slate-100">
-                                                                            <div className="px-6 py-4 border-l-4 border-rose-500 bg-slate-50/30 flex flex-col gap-3">
-                                                                                <h5 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 mb-1">Pending policies for {user.headName}</h5>
-                                                                                <div className="grid sm:grid-cols-2 gap-2.5">
-                                                                                    {user.pendingPolicies.map((policyStr, pIdx) => (
-                                                                                        <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-3 shadow-sm flex items-center justify-between gap-3">
-                                                                                            <div className="flex flex-col gap-0.5 min-w-0">
-                                                                                                <span className="text-xs font-bold text-slate-800 truncate">{policyStr}</span>
-                                                                                            </div>
-                                                                                            <span className="px-2 py-0.5 rounded bg-rose-50 text-[10px] font-bold text-rose-700 border border-rose-200/50 flex-shrink-0 uppercase tracking-wider">Pending</span>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            </div>
-                                                                        </td>
-                                                                    </tr>
-                                                                )}
-                                                            </React.Fragment>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        )}
-                                    </div>
-                                )}
+                                                            )}
+                                                        </React.Fragment>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
