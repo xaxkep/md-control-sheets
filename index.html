@@ -6086,62 +6086,43 @@
                     />
                     
                     {/* Header */}
-                    <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 text-white shadow-lg py-2.5 px-3 md:py-3.5 md:px-6 transition-all duration-300">
-                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
-                            {/* Brand Logo & Name */}
-                            <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-                                <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-gradient-to-tr from-teal-400 to-indigo-500 flex items-center justify-center shadow-md shadow-indigo-500/10">
-                                    <Icon name="sheet" className="w-4 h-4 md:w-5 md:h-5 text-slate-900" />
+                    <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 text-white shadow-lg transition-all duration-300">
+                        {/* Main Header Container */}
+                        <div className="max-w-7xl mx-auto px-3 py-2 md:py-3.5 md:px-6 flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4">
+                            
+                            {/* Row 1 on mobile: Brand and User Profile/Controls */}
+                            <div className="flex items-center justify-between w-full md:w-auto gap-2">
+                                {/* Brand Logo & Name */}
+                                <div className="flex items-center gap-1.5 md:gap-3 flex-shrink-0">
+                                    <div className="h-7 w-7 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-gradient-to-tr from-teal-400 to-indigo-500 flex items-center justify-center shadow-md shadow-indigo-500/10 flex-shrink-0">
+                                        <Icon name="sheet" className="w-3.5 h-3.5 md:w-5 md:h-5 text-slate-900" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-xs md:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-200 via-indigo-200 to-white">
+                                            MD Command Center
+                                        </h1>
+                                        <p className="hidden md:block text-[10px] md:text-xs text-slate-400 font-medium">Google Sheets Engine</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h1 className="text-sm md:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-200 via-indigo-200 to-white">
-                                        MD Command Center
-                                    </h1>
-                                    <p className="text-[10px] md:text-xs text-slate-400 font-medium">Google Sheets Engine</p>
-                                </div>
-                            </div>
 
-                            {/* Centered Tab Switcher in the Header Heading Section */}
-                            {activeRole && (
-                                <div className="flex bg-slate-950/60 p-0.5 rounded-xl border border-slate-800/80 text-[9px] md:text-[11px] gap-0.5 shadow-inner">
-                                    <button 
-                                        onClick={() => setActiveMetricTab('All')}
-                                        className={`px-3.5 py-1.5 rounded-lg font-extrabold tracking-wider uppercase transition-all cursor-pointer ${
-                                            activeMetricTab !== 'SOP' 
-                                            ? 'bg-gradient-to-r from-teal-400 to-indigo-500 text-slate-950 shadow-md font-black' 
-                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
-                                        }`}
-                                    >
-                                        Task Management
-                                    </button>
-                                    <button 
-                                        onClick={() => setActiveMetricTab('SOP')}
-                                        className={`px-3.5 py-1.5 rounded-lg font-extrabold tracking-wider uppercase transition-all cursor-pointer ${
-                                            activeMetricTab === 'SOP' 
-                                            ? 'bg-gradient-to-r from-teal-400 to-indigo-500 text-slate-950 shadow-md font-black' 
-                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
-                                        }`}
-                                    >
-                                        SOP Management
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Active Persona Banner for Sandbox */}
-                            {isSandbox && (
-                                <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 px-2 py-1 md:px-4 md:py-1.5 rounded-full flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs font-semibold shadow-inner">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                    <span className="hidden sm:inline">Demo Sandbox Active</span>
-                                    <span className="sm:hidden">Sandbox</span>
-                                    <span className="text-slate-500 font-normal">|</span>
-                                    <span className="text-slate-100 flex items-center gap-1">
-                                        <span className="hidden sm:inline">Role:</span> 
+                                {/* User Controls on mobile (shown on the right of Row 1) */}
+                                <div className="flex md:hidden items-center gap-1.5 flex-shrink-0">
+                                    {deferredPrompt && (
+                                        <button 
+                                            onClick={handleInstallApp}
+                                            title="Install App"
+                                            className="p-1 rounded-lg bg-teal-500/10 border border-teal-500/30 text-teal-400 hover:text-teal-300 hover:bg-teal-500/20 transition-all cursor-pointer shadow-sm animate-pulse"
+                                        >
+                                            <Icon name="download" className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                    {isSandbox && (
                                         <select 
                                             value={sandboxRole}
                                             onChange={(e) => setSandboxRole(e.target.value)}
-                                            className="bg-slate-800 text-amber-300 border-none outline-none font-bold cursor-pointer rounded px-1 py-0.5 text-[10px] md:text-xs"
+                                            className="bg-slate-800 text-amber-300 border border-slate-700 outline-none font-bold cursor-pointer rounded px-1 py-0.5 text-[9px]"
                                         >
-                                            <option value="MD">Managing Director</option>
+                                            <option value="MD">MD</option>
                                             {(() => {
                                                 const seen = new Set();
                                                 const list = [];
@@ -6152,30 +6133,131 @@
                                                         list.push(m);
                                                     }
                                                 });
-                                                return list.map(m => {
-                                                    const depts = mappings.filter(x => x.headEmail.toLowerCase() === m.headEmail.toLowerCase()).map(x => x.deptName).join(' & ');
-                                                    return (
-                                                        <option key={m.id} value={`DH:${m.headEmail.toLowerCase()}`}>
-                                                            DH: {m.headName} ({depts})
-                                                        </option>
-                                                    );
-                                                });
+                                                return list.map(m => (
+                                                    <option key={m.id} value={`DH:${m.headEmail.toLowerCase()}`}>
+                                                        DH: {m.headName.split(' ')[0]}
+                                                    </option>
+                                                ));
                                             })()}
                                         </select>
-                                    </span>
+                                    )}
+                                    {activeRole ? (
+                                        <div className="flex items-center gap-1.5">
+                                            {auth?.picture ? (
+                                                <img src={auth.picture} alt="Avatar" className="h-6 w-6 rounded-full border border-slate-700 shadow" />
+                                            ) : (
+                                                <div className="h-6 w-6 rounded-full bg-slate-800 flex items-center justify-center font-bold text-teal-400 shadow border border-slate-700 text-[10px]">
+                                                    {activeRole.name.charAt(0)}
+                                                </div>
+                                            )}
+                                            <button 
+                                                onClick={handleLogout} 
+                                                title="Logout"
+                                                className="p-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 transition-all cursor-pointer shadow-sm"
+                                            >
+                                                <Icon name="logout" className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-1">
+                                            <button 
+                                                onClick={() => {
+                                                    setIsSandbox(true);
+                                                    setSandboxRole('MD');
+                                                    showNotification('Entered Demo Sandbox Mode. No real Google updates will occur.', 'info');
+                                                }}
+                                                className="px-2 py-0.5 text-[9px] font-semibold text-teal-400 bg-teal-500/10 border border-teal-500/30 rounded"
+                                            >
+                                                Sandbox
+                                            </button>
+                                            {clientId ? (
+                                                <button 
+                                                    onClick={triggerGoogleLogin}
+                                                    className="px-2 py-0.5 text-[9px] font-semibold text-white bg-indigo-600 border border-indigo-500/50 rounded flex items-center gap-0.5"
+                                                >
+                                                    <Icon name="globe" className="w-2.5 h-2.5" /> Sign In
+                                                </button>
+                                            ) : (
+                                                <span className="text-[9px] text-slate-500 italic">Pending</span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Centered Tab Switcher in the Header Heading Section */}
+                            {activeRole && (
+                                <div className="flex bg-slate-950/60 p-0.5 rounded-xl border border-slate-800/80 text-[9px] md:text-[11px] gap-0.5 shadow-inner self-center flex-shrink-0">
+                                    <button 
+                                        onClick={() => setActiveMetricTab('All')}
+                                        className={`px-3 py-1 md:px-3.5 md:py-1.5 rounded-lg font-extrabold tracking-wider uppercase transition-all cursor-pointer ${
+                                            activeMetricTab !== 'SOP' 
+                                            ? 'bg-gradient-to-r from-teal-400 to-indigo-500 text-slate-950 shadow-md font-black' 
+                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
+                                        }`}
+                                    >
+                                        Tasks<span className="hidden md:inline"> Management</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => setActiveMetricTab('SOP')}
+                                        className={`px-3 py-1 md:px-3.5 md:py-1.5 rounded-lg font-extrabold tracking-wider uppercase transition-all cursor-pointer ${
+                                            activeMetricTab === 'SOP' 
+                                            ? 'bg-gradient-to-r from-teal-400 to-indigo-500 text-slate-950 shadow-md font-black' 
+                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
+                                        }`}
+                                    >
+                                        SOPs<span className="hidden md:inline"> Management</span>
+                                    </button>
                                 </div>
                             )}
 
-                            {/* User Authentication Profile & Controls */}
-                            <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+                            {/* User Controls on Desktop (hidden on mobile) */}
+                            <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+                                {isSandbox && (
+                                    <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-semibold shadow-inner">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        <span>Demo Sandbox Active</span>
+                                        <span className="text-slate-500 font-normal">|</span>
+                                        <span className="text-slate-100 flex items-center gap-1">
+                                            <span>Role:</span> 
+                                            <select 
+                                                value={sandboxRole}
+                                                onChange={(e) => setSandboxRole(e.target.value)}
+                                                className="bg-slate-800 text-amber-300 border-none outline-none font-bold cursor-pointer rounded px-1 py-0.5 text-xs"
+                                            >
+                                                <option value="MD">Managing Director</option>
+                                                {(() => {
+                                                    const seen = new Set();
+                                                    const list = [];
+                                                    mappings.forEach(m => {
+                                                        const email = m.headEmail.toLowerCase();
+                                                        if (!seen.has(email)) {
+                                                            seen.add(email);
+                                                            list.push(m);
+                                                        }
+                                                    });
+                                                    return list.map(m => {
+                                                        const depts = mappings.filter(x => x.headEmail.toLowerCase() === m.headEmail.toLowerCase()).map(x => x.deptName).join(' & ');
+                                                        return (
+                                                            <option key={m.id} value={`DH:${m.headEmail.toLowerCase()}`}>
+                                                                DH: {m.headName} ({depts})
+                                                            </option>
+                                                        );
+                                                    });
+                                                })()}
+                                            </select>
+                                        </span>
+                                    </div>
+                                )}
+
                                 {activeRole ? (
-                                    <div className="flex items-center gap-2 md:gap-3">
-                                        <div className="text-right hidden sm:block">
-                                            <div className="text-xs md:text-sm font-semibold text-slate-100">{activeRole.name}</div>
-                                            <div className="text-[10px] md:text-xs text-slate-400 flex items-center justify-end gap-1 font-medium">
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-right">
+                                            <div className="text-sm font-semibold text-slate-100">{activeRole.name}</div>
+                                            <div className="text-xs text-slate-400 flex items-center justify-end gap-1 font-medium">
                                                 {activeRole.isMD ? (
                                                     <span className="text-teal-400 font-bold flex items-center gap-0.5">
-                                                        <Icon name="shield" className="w-3 h-3 md:w-3.5 md:h-3.5" /> MD
+                                                        <Icon name="shield" className="w-3.5 h-3.5" /> MD
                                                     </span>
                                                 ) : (
                                                     <span className="text-indigo-400 font-semibold truncate max-w-[120px]" title={activeRole.mappings ? activeRole.mappings.map(m => m.deptName).join(' & ') : (activeRole.mapping?.deptName || '')}>
@@ -6184,25 +6266,19 @@
                                                 )}
                                             </div>
                                         </div>
-                                        {isSandbox ? (
-                                            <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white shadow border border-indigo-400/20 text-xs md:text-base">
+                                        {auth?.picture ? (
+                                            <img src={auth.picture} alt="Avatar" className="h-10 w-10 rounded-full border border-slate-700 shadow" />
+                                        ) : (
+                                            <div className="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-teal-400 shadow border border-slate-700">
                                                 {activeRole.name.charAt(0)}
                                             </div>
-                                        ) : (
-                                            auth?.picture ? (
-                                                <img src={auth.picture} alt="Avatar" className="h-8 w-8 md:h-10 md:w-10 rounded-full border border-slate-700 shadow" />
-                                            ) : (
-                                                <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-teal-400 shadow border border-slate-700 text-xs md:text-base">
-                                                    {activeRole.name.charAt(0)}
-                                                </div>
-                                            )
                                         )}
                                         <button 
                                             onClick={handleLogout} 
                                             title="Logout"
-                                            className="p-1.5 md:p-2 rounded-lg md:rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 hover:border-rose-900/30 transition-all cursor-pointer shadow-sm"
+                                            className="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 hover:border-rose-900/30 transition-all cursor-pointer shadow-sm"
                                         >
-                                            <Icon name="logout" className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                            <Icon name="logout" className="w-4 h-4" />
                                         </button>
                                     </div>
                                 ) : (
@@ -6236,13 +6312,11 @@
                                     <button 
                                         onClick={handleInstallApp}
                                         title="Install App"
-                                        className="p-1.5 md:p-2 rounded-lg md:rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400 hover:text-teal-300 hover:bg-teal-500/20 transition-all cursor-pointer shadow-sm animate-pulse"
+                                        className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400 hover:text-teal-300 hover:bg-teal-500/20 transition-all cursor-pointer shadow-sm animate-pulse"
                                     >
-                                        <Icon name="download" className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                        <Icon name="download" className="w-4 h-4" />
                                     </button>
                                 )}
-
-
                             </div>
                         </div>
                     </header>
