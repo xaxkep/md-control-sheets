@@ -6423,6 +6423,134 @@
                             /* Logged In Dashboard View */
                             <div className="flex flex-col gap-6">
                                 
+                                {/* Filter Panel (Moved to top, only visible when not in SOP tab) */}
+                                {activeMetricTab !== 'SOP' && (
+                                    <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-xl flex flex-col gap-4 bg-white/90">
+                                        {/* Search and Main Filters */}
+                                        <div className="flex flex-col md:flex-row items-center gap-3">
+                                            <div className="w-full md:flex-grow relative">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                                    <Icon name="search" className="w-4 h-4" />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                    placeholder="Search directives, remarks, departments..."
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                />
+                                            </div>
+
+                                            <div className="flex gap-2 w-full md:w-auto md:ml-auto">
+                                                {filterType === 'WSR' && (
+                                                    <button 
+                                                        onClick={handlePrintWsr}
+                                                        className="px-4 py-2.5 text-xs font-bold text-slate-900 bg-teal-400 hover:bg-teal-300 border border-teal-300 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+                                                    >
+                                                        <Icon name="print" className="w-3.5 h-3.5 text-slate-900" />
+                                                        Print WSR
+                                                    </button>
+                                                )}
+                                                <button 
+                                                    onClick={() => setShowCompletedAudits(prev => !prev)}
+                                                    className={`px-4 py-2.5 text-xs font-bold border rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5 ${
+                                                        showCompletedAudits 
+                                                        ? 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100' 
+                                                        : 'text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 border-slate-200'
+                                                    }`}
+                                                >
+                                                    <Icon name={showCompletedAudits ? "check" : "eye"} className="w-3.5 h-3.5" />
+                                                    {showCompletedAudits ? "Hide Completed Audits" : "Show Completed Audits"}
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        setSearchTerm('');
+                                                        setFilterDept('All');
+                                                        setFilterStatus('All');
+                                                        setFilterPriority('All');
+                                                        setFilterType('All');
+                                                        setActiveMetricTab('All');
+                                                        showNotification('Filters reset.');
+                                                    }}
+                                                    className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-808 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all cursor-pointer shadow-sm"
+                                                >
+                                                    Clear
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Multi-select filter inputs */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                            {/* Dept Filter */}
+                                            {(activeRole.isMD || (activeRole.mappings && activeRole.mappings.length > 1)) && (
+                                                <div>
+                                                    <select
+                                                        value={filterDept}
+                                                        onChange={(e) => setFilterDept(e.target.value)}
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 text-xs focus:outline-none"
+                                                    >
+                                                        <option value="All">All Departments</option>
+                                                        {(activeRole.isMD ? mappings : activeRole.mappings).map(m => (
+                                                            <option key={m.id} value={m.id}>
+                                                                {activeRole.isMD ? `${m.headName} (${m.deptName})` : m.deptName}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
+
+                                            {/* Status Filter */}
+                                            <div>
+                                                <select
+                                                    value={filterStatus}
+                                                    onChange={(e) => setFilterStatus(e.target.value)}
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 text-xs focus:outline-none"
+                                                >
+                                                    <option value="All">All Statuses</option>
+                                                    <option value="Pending">Pending</option>
+                                                    <option value="Not Seen">Not Seen</option>
+                                                    <option value="In Progress">In Progress</option>
+                                                    <option value="On Hold">On Hold</option>
+                                                    <option value="Completed">Completed</option>
+                                                    <option value="Checked & Confirmed">Checked & Confirmed</option>
+                                                </select>
+                                            </div>
+
+                                            {/* Priority Filter */}
+                                            <div>
+                                                <select
+                                                    value={filterPriority}
+                                                    onChange={(e) => setFilterPriority(e.target.value)}
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 text-xs focus:outline-none"
+                                                >
+                                                    <option value="All">All Priorities</option>
+                                                    <option value="Normal">Normal</option>
+                                                    <option value="Urgent">Urgent</option>
+                                                    <option value="Very Urgent">Very Urgent</option>
+                                                </select>
+                                            </div>
+
+                                            {/* Type Filter */}
+                                            <div>
+                                                <select
+                                                    value={filterType}
+                                                    onChange={(e) => setFilterType(e.target.value)}
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 text-xs focus:outline-none"
+                                                >
+                                                    <option value="All">All Types</option>
+                                                    <option value="Work">Work</option>
+                                                    <option value="Deficiency">Deficiency</option>
+                                                    <option value="Instruction">Instruction</option>
+                                                    <option value="Growth/Idea">Growth/Idea</option>
+                                                    <option value="Management Summary">Management Summary</option>
+                                                    <option value="WSR">WSR</option>
+                                                    <option value="Reports">Reports</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Metrics Cards (Top Panel) */}
                                 <div className={`grid grid-cols-2 ${activeRole && !activeRole.isUnregistered ? (showCompletedAudits ? 'md:grid-cols-6' : 'md:grid-cols-5') : 'md:grid-cols-4'} gap-3 md:gap-4`}>
                                     {/* Pending Tasks Card */}
@@ -6675,132 +6803,6 @@
                                     {/* Consolidated Canvas Table (MD and DH Workspace) */}
                                     <div className="w-full flex flex-col gap-4">
                                         
-                                        {/* Filter Panel */}
-                                        <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-xl flex flex-col gap-4 bg-white/90">
-                                            {/* Search and Main Filters */}
-                                            <div className="flex flex-col md:flex-row items-center gap-3">
-                                                <div className="w-full md:flex-grow relative">
-                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                                        <Icon name="search" className="w-4 h-4" />
-                                                    </div>
-                                                    <input
-                                                        type="text"
-                                                        value={searchTerm}
-                                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                                        placeholder="Search directives, remarks, departments..."
-                                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                                                    />
-                                                </div>
-
-                                                <div className="flex gap-2 w-full md:w-auto md:ml-auto">
-                                                    {filterType === 'WSR' && (
-                                                        <button 
-                                                            onClick={handlePrintWsr}
-                                                            className="px-4 py-2.5 text-xs font-bold text-slate-900 bg-teal-400 hover:bg-teal-300 border border-teal-300 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
-                                                        >
-                                                            <Icon name="print" className="w-3.5 h-3.5 text-slate-900" />
-                                                            Print WSR
-                                                        </button>
-                                                    )}
-                                                    <button 
-                                                        onClick={() => setShowCompletedAudits(prev => !prev)}
-                                                        className={`px-4 py-2.5 text-xs font-bold border rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5 ${
-                                                            showCompletedAudits 
-                                                            ? 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100' 
-                                                            : 'text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 border-slate-200'
-                                                        }`}
-                                                    >
-                                                        <Icon name={showCompletedAudits ? "check" : "eye"} className="w-3.5 h-3.5" />
-                                                        {showCompletedAudits ? "Hide Completed Audits" : "Show Completed Audits"}
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => {
-                                                            setSearchTerm('');
-                                                            setFilterDept('All');
-                                                            setFilterStatus('All');
-                                                            setFilterPriority('All');
-                                                            setFilterType('All');
-                                                            setActiveMetricTab('All');
-                                                            showNotification('Filters reset.');
-                                                        }}
-                                                        className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all cursor-pointer shadow-sm"
-                                                    >
-                                                        Clear
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Multi-select filter inputs */}
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                                {/* Dept Filter */}
-                                                {(activeRole.isMD || (activeRole.mappings && activeRole.mappings.length > 1)) && (
-                                                    <div>
-                                                        <select
-                                                            value={filterDept}
-                                                            onChange={(e) => setFilterDept(e.target.value)}
-                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 text-xs focus:outline-none"
-                                                        >
-                                                            <option value="All">All Departments</option>
-                                                            {(activeRole.isMD ? mappings : activeRole.mappings).map(m => (
-                                                                <option key={m.id} value={m.id}>
-                                                                    {activeRole.isMD ? `${m.headName} (${m.deptName})` : m.deptName}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                )}
-
-                                                {/* Status Filter */}
-                                                <div>
-                                                    <select
-                                                        value={filterStatus}
-                                                        onChange={(e) => setFilterStatus(e.target.value)}
-                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 text-xs focus:outline-none"
-                                                    >
-                                                        <option value="All">All Statuses</option>
-                                                        <option value="Pending">Pending</option>
-                                                        <option value="Not Seen">Not Seen</option>
-                                                        <option value="In Progress">In Progress</option>
-                                                        <option value="On Hold">On Hold</option>
-                                                        <option value="Completed">Completed</option>
-                                                        <option value="Checked & Confirmed">Checked & Confirmed</option>
-                                                    </select>
-                                                </div>
-
-                                                {/* Priority Filter */}
-                                                <div>
-                                                    <select
-                                                        value={filterPriority}
-                                                        onChange={(e) => setFilterPriority(e.target.value)}
-                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 text-xs focus:outline-none"
-                                                    >
-                                                        <option value="All">All Priorities</option>
-                                                        <option value="Normal">Normal</option>
-                                                        <option value="Urgent">Urgent</option>
-                                                        <option value="Very Urgent">Very Urgent</option>
-                                                    </select>
-                                                </div>
-
-                                                {/* Type Filter */}
-                                                <div>
-                                                    <select
-                                                        value={filterType}
-                                                        onChange={(e) => setFilterType(e.target.value)}
-                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 text-xs focus:outline-none"
-                                                    >
-                                                        <option value="All">All Types</option>
-                                                        <option value="Work">Work</option>
-                                                        <option value="Deficiency">Deficiency</option>
-                                                        <option value="Instruction">Instruction</option>
-                                                        <option value="Growth/Idea">Growth/Idea</option>
-                                                        <option value="Management Summary">Management Summary</option>
-                                                        <option value="WSR">WSR</option>
-                                                        <option value="Reports">Reports</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-
                                         {/* Table Canvas Panel */}
                                         <div className="glass-panel rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden flex flex-col min-h-[350px] md:min-h-[400px] bg-white/90">
                                             {/* Desktop Table View */}
