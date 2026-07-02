@@ -581,10 +581,12 @@
             const [activeTab, setActiveTab] = React.useState('compliance'); // 'compliance' | 'policies' | 'mappings'
             const [selectedWeek, setSelectedWeek] = React.useState(getCurrentWeekCode());
             const [isNewSopIdOption, setIsNewSopIdOption] = React.useState(false);
+            const [selectedSopFilter, setSelectedSopFilter] = React.useState('All');
             const [expandedCell, setExpandedCell] = React.useState({ coordinatorEmail: '', tab: '' });
             
             const toggleExpandCell = (email, tabName) => {
                 const lowerEmail = email.toLowerCase();
+                setSelectedSopFilter('All');
                 setExpandedCell(prev => {
                     if (prev.coordinatorEmail === lowerEmail && prev.tab === tabName) {
                         return { coordinatorEmail: '', tab: '' };
@@ -596,10 +598,8 @@
             const [expandedSops, setExpandedSops] = React.useState({});
             
             const toggleExpandSop = (sopId) => {
-                setExpandedSops(prev => ({
-                    ...prev,
-                    [sopId.toLowerCase()]: !prev[sopId.toLowerCase()]
-                }));
+                const lowerSopId = sopId.toLowerCase();
+                setExpandedSops(prev => (!prev[lowerSopId] ? { [lowerSopId]: true } : {}));
             };
 
             const [mappingsSubTab, setMappingsSubTab] = React.useState('active-mappings'); // 'active-mappings' | 'groups'
@@ -913,7 +913,7 @@
                                         activeTab === 'compliance' ? 'bg-teal-500 text-slate-900 shadow-md' : 'text-slate-300 hover:text-white'
                                     }`}
                                 >
-                                    Compliance Logs
+                                    Summary Report
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('policies')}
@@ -1054,130 +1054,159 @@
                                                             </tr>
                                                             
                                                             {/* Expanded Detail Panel Row */}
-                                                            {isExpanded && (
-                                                                <tr className="bg-slate-50/40">
-                                                                    <td colSpan={6} className="p-0 border-b border-slate-150">
-                                                                        <div className={`px-6 py-5 border-l-4 ${
-                                                                            activeSubTab === 'following' ? 'border-emerald-500' :
-                                                                            activeSubTab === 'not_following' ? 'border-rose-500' :
-                                                                            activeSubTab === 'pending' ? 'border-amber-500' : 'border-indigo-600'
-                                                                        } bg-slate-50/20 flex flex-col gap-3.5`}>
-                                                                            <div className="flex items-center justify-between">
-                                                                                <h5 className="text-[10px] uppercase font-black tracking-widest text-slate-400">
-                                                                                    {activeSubTab === 'following' && `SOP Policies Followed by ${coord.headName}`}
-                                                                                    {activeSubTab === 'not_following' && `SOP Deviations reported by ${coord.headName}`}
-                                                                                    {activeSubTab === 'pending' && `SOP Policies Pending affirmation by ${coord.headName}`}
-                                                                                    {activeSubTab === 'total' && `All Assigned SOP Policies for ${coord.headName}`}
-                                                                                </h5>
-                                                                                <span className="text-[10px] font-bold text-slate-400">
-                                                                                    {activeSubTab === 'following' && `${coord.following.length} Followed`}
-                                                                                    {activeSubTab === 'not_following' && `${coord.notFollowing.length} Deviated`}
-                                                                                    {activeSubTab === 'pending' && `${coord.pending.length} Pending`}
-                                                                                    {activeSubTab === 'total' && `${coord.total.length} Total Assigned`}
-                                                                                </span>
-                                                                            </div>
-                                                                            
-                                                                            <div className="flex flex-col gap-2.5">
-                                                                                {activeSubTab === 'following' && coord.following.length === 0 && (
-                                                                                    <div className="text-xs font-semibold text-slate-400 py-2">No policies marked as following for this week.</div>
-                                                                                )}
-                                                                                {activeSubTab === 'following' && coord.following.map((policy, pIdx) => (
-                                                                                    <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
-                                                                                        <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                                                                                            <div className="flex items-center gap-2">
-                                                                                                <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
-                                                                                                <span className="px-2 py-0.5 rounded bg-emerald-50 text-[10px] font-bold text-emerald-700 border border-emerald-200/50 uppercase tracking-wider">{policy.policyId}</span>
-                                                                                            </div>
-                                                                                            <span className="text-[10px] text-slate-400 font-medium">{policy.record?.timestamp}</span>
-                                                                                        </div>
-                                                                                        <div className="text-xs font-semibold text-slate-700 leading-relaxed">
-                                                                                            {policy.policyText}
-                                                                                        </div>
+                                                            {isExpanded && (() => {
+                                                                const activePoliciesList = activeSubTab === 'following' ? coord.following :
+                                                                                           activeSubTab === 'not_following' ? coord.notFollowing :
+                                                                                           activeSubTab === 'pending' ? coord.pending : coord.total;
+                                                                const uniqueSopsInDetail = [];
+                                                                const seenSops = new Set();
+                                                                activePoliciesList.forEach(p => {
+                                                                    if (!seenSops.has(p.sopId)) {
+                                                                        seenSops.add(p.sopId);
+                                                                        uniqueSopsInDetail.push({ id: p.sopId, name: p.sopName });
+                                                                    }
+                                                                });
+                                                                const filteredPolicies = activePoliciesList.filter(p => 
+                                                                    selectedSopFilter === 'All' || String(p.sopId).trim().toLowerCase() === selectedSopFilter.trim().toLowerCase()
+                                                                );
+                                                                return (
+                                                                    <tr className="bg-slate-50/40">
+                                                                        <td colSpan={6} className="p-0 border-b border-slate-150">
+                                                                            <div className={`px-6 py-5 border-l-4 ${
+                                                                                activeSubTab === 'following' ? 'border-emerald-500' :
+                                                                                activeSubTab === 'not_following' ? 'border-rose-500' :
+                                                                                activeSubTab === 'pending' ? 'border-amber-500' : 'border-indigo-600'
+                                                                            } bg-slate-50/20 flex flex-col gap-3.5`}>
+                                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
+                                                                                    <div>
+                                                                                        <h5 className="text-[10px] uppercase font-black tracking-widest text-slate-450">
+                                                                                            {activeSubTab === 'following' && `SOP Policies Followed by ${coord.headName}`}
+                                                                                            {activeSubTab === 'not_following' && `SOP Deviations reported by ${coord.headName}`}
+                                                                                            {activeSubTab === 'pending' && `SOP Policies Pending affirmation by ${coord.headName}`}
+                                                                                            {activeSubTab === 'total' && `All Assigned SOP Policies for ${coord.headName}`}
+                                                                                        </h5>
+                                                                                        <span className="text-[10px] font-bold text-slate-400 block mt-0.5">
+                                                                                            {activeSubTab === 'following' && `${coord.following.length} Followed`}
+                                                                                            {activeSubTab === 'not_following' && `${coord.notFollowing.length} Deviated`}
+                                                                                            {activeSubTab === 'pending' && `${coord.pending.length} Pending`}
+                                                                                            {activeSubTab === 'total' && `${coord.total.length} Total Assigned`}
+                                                                                            {selectedSopFilter !== 'All' && ` (${filteredPolicies.length} showing)`}
+                                                                                        </span>
                                                                                     </div>
-                                                                                ))}
+                                                                                    {uniqueSopsInDetail.length > 1 && (
+                                                                                        <div className="flex items-center gap-2 bg-white/80 p-1.5 rounded-xl border border-slate-200/80 shadow-sm self-end">
+                                                                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider pl-1.5">Filter SOP:</span>
+                                                                                            <select
+                                                                                                value={selectedSopFilter}
+                                                                                                onChange={(e) => setSelectedSopFilter(e.target.value)}
+                                                                                                className="text-[10px] font-extrabold px-2.5 py-1 border border-slate-200 rounded-lg bg-white outline-none cursor-pointer text-slate-700 focus:ring-1 focus:ring-teal-500"
+                                                                                            >
+                                                                                                <option value="All">All SOPs ({activePoliciesList.length})</option>
+                                                                                                {uniqueSopsInDetail.map(sop => {
+                                                                                                    const countForSop = activePoliciesList.filter(p => p.sopId === sop.id).length;
+                                                                                                    return (
+                                                                                                        <option key={sop.id} value={sop.id}>{sop.name} ({countForSop})</option>
+                                                                                                    );
+                                                                                                })}
+                                                                                            </select>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
                                                                                 
-                                                                                {activeSubTab === 'not_following' && coord.notFollowing.length === 0 && (
-                                                                                    <div className="text-xs font-semibold text-slate-400 py-2">No deviations reported for this week.</div>
-                                                                                )}
-                                                                                {activeSubTab === 'not_following' && coord.notFollowing.map((policy, pIdx) => (
-                                                                                    <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
-                                                                                        <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                                                                                            <div className="flex items-center gap-2">
-                                                                                                <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
-                                                                                                <span className="px-2 py-0.5 rounded bg-rose-50 text-[10px] font-bold text-rose-700 border border-rose-200/50 uppercase tracking-wider">{policy.policyId}</span>
-                                                                                            </div>
-                                                                                            <span className="text-[10px] text-slate-400 font-medium">{policy.record?.timestamp}</span>
-                                                                                        </div>
-                                                                                        <div className="text-xs font-semibold text-slate-700 leading-relaxed">
-                                                                                            {policy.policyText}
-                                                                                        </div>
-                                                                                        <div className="text-xs font-bold text-rose-700 bg-rose-50/40 border border-rose-100 rounded-xl p-3 leading-relaxed mt-1 flex flex-col gap-1">
-                                                                                            <span className="text-[9px] uppercase tracking-wider text-rose-450 font-black">Reason for Deviation</span>
-                                                                                            <span>{policy.record?.reason}</span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                ))}
-                                                                                
-                                                                                {activeSubTab === 'pending' && coord.pending.length === 0 && (
-                                                                                    <div className="text-xs font-semibold text-slate-400 py-2">All assigned policies have been verified!</div>
-                                                                                )}
-                                                                                {activeSubTab === 'pending' && coord.pending.map((policy, pIdx) => (
-                                                                                    <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
-                                                                                        <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                                                                                            <div className="flex items-center gap-2">
-                                                                                                <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
-                                                                                                <span className="px-2 py-0.5 rounded bg-amber-50 text-[10px] font-bold text-amber-700 border border-amber-200/50 uppercase tracking-wider">{policy.policyId}</span>
-                                                                                            </div>
-                                                                                            <span className="px-2 py-0.5 rounded bg-slate-50 text-[9px] font-bold text-slate-400 border border-slate-200/60 uppercase tracking-wider">Pending</span>
-                                                                                        </div>
-                                                                                        <div className="text-xs font-semibold text-slate-700 leading-relaxed">
-                                                                                            {policy.policyText}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                ))}
-                                                                                
-                                                                                {activeSubTab === 'total' && coord.total.length === 0 && (
-                                                                                    <div className="text-xs font-semibold text-slate-400 py-2">No SOP policies assigned to this coordinator.</div>
-                                                                                )}
-                                                                                {activeSubTab === 'total' && coord.total.map((policy, pIdx) => {
-                                                                                    const isF = coord.following.some(p => p.sopId === policy.sopId && p.policyId === policy.policyId);
-                                                                                    const isNF = coord.notFollowing.find(p => p.sopId === policy.sopId && p.policyId === policy.policyId);
-                                                                                    return (
+                                                                                <div className="flex flex-col gap-2.5">
+                                                                                    {filteredPolicies.length === 0 && (
+                                                                                        <div className="text-xs font-semibold text-slate-400 py-2">No policies match the selected filter.</div>
+                                                                                    )}
+                                                                                    
+                                                                                    {activeSubTab === 'following' && filteredPolicies.map((policy, pIdx) => (
                                                                                         <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
                                                                                             <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                                                                                                 <div className="flex items-center gap-2">
                                                                                                     <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
-                                                                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ${
-                                                                                                        isF ? 'bg-emerald-50 text-emerald-700 border-emerald-200/55' :
-                                                                                                        isNF ? 'bg-rose-50 text-rose-700 border-rose-200/55' :
-                                                                                                        'bg-amber-50 text-amber-700 border-amber-200/55'
-                                                                                                    }`}>{policy.policyId}</span>
+                                                                                                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-[10px] font-bold text-emerald-700 border border-emerald-200/50 uppercase tracking-wider">{policy.policyId}</span>
                                                                                                 </div>
-                                                                                                <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                                                                                                    isF ? 'bg-emerald-100 text-emerald-800' :
-                                                                                                    isNF ? 'bg-rose-100 text-rose-800' :
-                                                                                                    'bg-slate-100 text-slate-500'
-                                                                                                }`}>
-                                                                                                    {isF ? 'Following' : isNF ? 'Not Following' : 'Pending'}
-                                                                                                </span>
+                                                                                                <span className="text-[10px] text-slate-400 font-medium">{policy.record?.timestamp}</span>
                                                                                             </div>
                                                                                             <div className="text-xs font-semibold text-slate-700 leading-relaxed">
                                                                                                 {policy.policyText}
                                                                                             </div>
-                                                                                            {isNF && (
-                                                                                                <div className="text-xs font-bold text-rose-700 bg-rose-50/40 border border-rose-100 rounded-xl p-3 leading-relaxed mt-1 flex flex-col gap-1">
-                                                                                                    <span className="text-[9px] uppercase tracking-wider text-rose-450 font-black">Reason for Deviation</span>
-                                                                                                    <span>{isNF.record?.reason}</span>
-                                                                                                </div>
-                                                                                            )}
                                                                                         </div>
-                                                                                    );
-                                                                                })}
+                                                                                    ))}
+                                                                                    
+                                                                                    {activeSubTab === 'not_following' && filteredPolicies.map((policy, pIdx) => (
+                                                                                        <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+                                                                                            <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
+                                                                                                    <span className="px-2 py-0.5 rounded bg-rose-50 text-[10px] font-bold text-rose-700 border border-rose-200/50 uppercase tracking-wider">{policy.policyId}</span>
+                                                                                                </div>
+                                                                                                <span className="text-[10px] text-slate-400 font-medium">{policy.record?.timestamp}</span>
+                                                                                            </div>
+                                                                                            <div className="text-xs font-semibold text-slate-700 leading-relaxed">
+                                                                                                {policy.policyText}
+                                                                                            </div>
+                                                                                            <div className="text-xs font-bold text-rose-700 bg-rose-50/40 border border-rose-100 rounded-xl p-3 leading-relaxed mt-1 flex flex-col gap-1">
+                                                                                                <span className="text-[9px] uppercase tracking-wider text-rose-450 font-black">Reason for Deviation</span>
+                                                                                                <span>{policy.record?.reason}</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                    
+                                                                                    {activeSubTab === 'pending' && filteredPolicies.map((policy, pIdx) => (
+                                                                                        <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+                                                                                            <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
+                                                                                                    <span className="px-2 py-0.5 rounded bg-amber-50 text-[10px] font-bold text-amber-700 border border-amber-200/50 uppercase tracking-wider">{policy.policyId}</span>
+                                                                                                </div>
+                                                                                                <span className="px-2 py-0.5 rounded bg-slate-50 text-[9px] font-bold text-slate-400 border border-slate-200/60 uppercase tracking-wider">Pending</span>
+                                                                                            </div>
+                                                                                            <div className="text-xs font-semibold text-slate-700 leading-relaxed">
+                                                                                                {policy.policyText}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                    
+                                                                                    {activeSubTab === 'total' && filteredPolicies.map((policy, pIdx) => {
+                                                                                        const isF = coord.following.some(p => p.sopId === policy.sopId && p.policyId === policy.policyId);
+                                                                                        const isNF = coord.notFollowing.find(p => p.sopId === policy.sopId && p.policyId === policy.policyId);
+                                                                                        return (
+                                                                                            <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+                                                                                                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                                                                                    <div className="flex items-center gap-2">
+                                                                                                        <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
+                                                                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ${
+                                                                                                            isF ? 'bg-emerald-50 text-emerald-700 border-emerald-200/55' :
+                                                                                                            isNF ? 'bg-rose-50 text-rose-700 border-rose-200/55' :
+                                                                                                            'bg-amber-50 text-amber-700 border-amber-200/55'
+                                                                                                        }`}>{policy.policyId}</span>
+                                                                                                    </div>
+                                                                                                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                                                                                                        isF ? 'bg-emerald-100 text-emerald-800' :
+                                                                                                        isNF ? 'bg-rose-100 text-rose-800' :
+                                                                                                        'bg-slate-100 text-slate-500'
+                                                                                                    }`}>
+                                                                                                        {isF ? 'Following' : isNF ? 'Not Following' : 'Pending'}
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                                <div className="text-xs font-semibold text-slate-700 leading-relaxed">
+                                                                                                    {policy.policyText}
+                                                                                                </div>
+                                                                                                {isNF && (
+                                                                                                    <div className="text-xs font-bold text-rose-700 bg-rose-50/40 border border-rose-100 rounded-xl p-3 leading-relaxed mt-1 flex flex-col gap-1">
+                                                                                                        <span className="text-[9px] uppercase tracking-wider text-rose-450 font-black">Reason for Deviation</span>
+                                                                                                        <span>{isNF.record?.reason}</span>
+                                                                                                    </div>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            )}
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })()}
                                                         </React.Fragment>
                                                     );
                                                 })}
@@ -1188,11 +1217,10 @@
                             </div>
                         </div>
                     )}
-
                     {activeTab === 'policies' && (
-                        <div className="grid md:grid-cols-3 gap-6 items-start animate-slide-up">
-                            {/* SOPs and policies list */}
-                            <div className="md:col-span-2 flex flex-col gap-4">
+                        <div className="flex flex-col gap-4 animate-slide-up">
+                            {/* SOPs and policies list - Full Width */}
+                            <div className="w-full flex flex-col gap-4">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-tight">Configured SOPs & Policies</h3>
                                     <button
@@ -1278,189 +1306,201 @@
                                                                     </div>
                                                                 </div>
                                                             ))}
-                                                         </div>
-                                                     )}
-                                                 </div>
-                                             );
-                                         })
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })
                                     )}
                                 </div>
                             </div>
 
-                            {/* Editor Form Panel */}
-                            <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-xl bg-white flex flex-col gap-4">
-                                <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight">
-                                    {editingPolicy ? (editingPolicy.isNew ? 'New Policy Creator' : 'Edit Policy Details') : 'Select Policy to Edit'}
-                                </h3>
+                            {/* Modal Policy Editor Form Overlay */}
+                            {editingPolicy && (
+                                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                                    <div className="glass-panel p-6 rounded-3xl border border-slate-200/80 shadow-2xl bg-white flex flex-col gap-4 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-zoom-in relative">
+                                        {/* Close Button */}
+                                        <button 
+                                            onClick={() => {
+                                                setIsNewSopIdOption(false);
+                                                setEditingPolicy(null);
+                                            }}
+                                            className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                                            title="Close Modal"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
 
-                                {editingPolicy ? (
-                                    <div className="flex flex-col gap-4">
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SOP ID (e.g. SOP_IT)</label>
-                                            {editingPolicy.isNew ? (
-                                                <div className="flex flex-col gap-1.5">
-                                                    <select
-                                                        value={isNewSopIdOption ? 'NEW' : (editingPolicy.sopId || '')}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            if (val === 'NEW') {
-                                                                setIsNewSopIdOption(true);
-                                                                setEditingPolicy(prev => ({ ...prev, sopId: '', sopName: '' }));
-                                                            } else {
-                                                                setIsNewSopIdOption(false);
-                                                                const found = uniqueSopsList.find(s => s.id === val);
-                                                                setEditingPolicy(prev => ({
-                                                                    ...prev,
-                                                                    sopId: val,
-                                                                    sopName: found ? found.name : ''
-                                                                }));
-                                                            }
-                                                        }}
-                                                        className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold bg-white text-slate-700 cursor-pointer"
-                                                    >
-                                                        <option value="">Select SOP ID...</option>
-                                                        <option value="NEW">[Create New SOP ID]</option>
-                                                        {uniqueSopsList.map(s => (
-                                                            <option key={s.id} value={s.id}>{s.id} ({s.name})</option>
-                                                        ))}
-                                                    </select>
-                                                    {isNewSopIdOption && (
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Enter new SOP ID (e.g. SOP_FINANCE)"
-                                                            value={editingPolicy.sopId || ''}
-                                                            onChange={(e) => setEditingPolicy(prev => ({ ...prev, sopId: e.target.value.trim().toUpperCase() }))}
-                                                            className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold animate-slide-up"
-                                                        />
-                                                    )}
-                                                </div>
-                                            ) : (
+                                        <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight pr-8">
+                                            {editingPolicy.isNew ? 'New Policy Creator' : 'Edit Policy Details'}
+                                        </h3>
+
+                                        <div className="flex flex-col gap-4">
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SOP ID (e.g. SOP_IT)</label>
+                                                {editingPolicy.isNew ? (
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <select
+                                                            value={isNewSopIdOption ? 'NEW' : (editingPolicy.sopId || '')}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                if (val === 'NEW') {
+                                                                    setIsNewSopIdOption(true);
+                                                                    setEditingPolicy(prev => ({ ...prev, sopId: '', sopName: '' }));
+                                                                } else {
+                                                                    setIsNewSopIdOption(false);
+                                                                    const found = uniqueSopsList.find(s => s.id === val);
+                                                                    setEditingPolicy(prev => ({
+                                                                        ...prev,
+                                                                        sopId: val,
+                                                                        sopName: found ? found.name : ''
+                                                                    }));
+                                                                }
+                                                            }}
+                                                            className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold bg-white text-slate-700 cursor-pointer"
+                                                        >
+                                                            <option value="">Select SOP ID...</option>
+                                                            <option value="NEW">[Create New SOP ID]</option>
+                                                            {uniqueSopsList.map(s => (
+                                                                <option key={s.id} value={s.id}>{s.id} ({s.name})</option>
+                                                            ))}
+                                                        </select>
+                                                        {isNewSopIdOption && (
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Enter new SOP ID (e.g. SOP_FINANCE)"
+                                                                value={editingPolicy.sopId || ''}
+                                                                onChange={(e) => setEditingPolicy(prev => ({ ...prev, sopId: e.target.value.trim().toUpperCase() }))}
+                                                                className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold animate-slide-up"
+                                                            />
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        disabled={true}
+                                                        value={editingPolicy.sopId}
+                                                        className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none transition-all font-bold bg-slate-150 text-slate-400"
+                                                    />
+                                                )}
+                                            </div>
+
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SOP Name (e.g. IT Security Policy)</label>
                                                 <input
                                                     type="text"
-                                                    disabled={true}
-                                                    value={editingPolicy.sopId}
-                                                    className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none transition-all font-bold bg-slate-150 text-slate-400"
+                                                    disabled={!editingPolicy.isNew || (!isNewSopIdOption && !!editingPolicy.sopId)}
+                                                    value={editingPolicy.sopName || ''}
+                                                    onChange={(e) => setEditingPolicy(prev => ({ ...prev, sopName: e.target.value }))}
+                                                    className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150 disabled:text-slate-400"
                                                 />
-                                            )}
-                                        </div>
-
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SOP Name (e.g. IT Security Policy)</label>
-                                            <input
-                                                type="text"
-                                                disabled={!editingPolicy.isNew || (!isNewSopIdOption && !!editingPolicy.sopId)}
-                                                value={editingPolicy.sopName || ''}
-                                                onChange={(e) => setEditingPolicy(prev => ({ ...prev, sopName: e.target.value }))}
-                                                className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150 disabled:text-slate-400"
-                                            />
-                                        </div>
-
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Policy ID (e.g. P1, P2)</label>
-                                            <input
-                                                type="text"
-                                                disabled={!editingPolicy.isNew}
-                                                value={editingPolicy.policyId}
-                                                onChange={(e) => setEditingPolicy(prev => ({ ...prev, policyId: e.target.value.trim().toUpperCase() }))}
-                                                className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150 disabled:text-slate-400"
-                                            />
-                                        </div>
-
-                                        <div className="flex flex-col gap-1.5">
-                                            <div className="flex justify-between items-center text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-                                                <span>Policy Rule Text</span>
-                                                <div className="flex gap-1.5">
-                                                    <button
-                                                        onClick={() => handleTextFormat('bold')}
-                                                        className="px-2 py-0.5 rounded border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold hover:text-slate-700 cursor-pointer transition-all"
-                                                        title="Bold Selection (**)"
-                                                    >
-                                                        Bold
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleTextFormat('bullet')}
-                                                        className="px-2 py-0.5 rounded border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold hover:text-slate-700 cursor-pointer transition-all"
-                                                        title="Add Bullet Item (*)"
-                                                    >
-                                                        List
-                                                    </button>
-                                                </div>
                                             </div>
-                                            <textarea
-                                                ref={textareaRef}
-                                                rows={6}
-                                                value={editingPolicy.policyText}
-                                                onChange={(e) => setEditingPolicy(prev => ({ ...prev, policyText: e.target.value }))}
-                                                className="w-full text-xs p-3 border border-slate-200 focus:border-teal-500 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 transition-all font-medium text-slate-700"
-                                            ></textarea>
-                                        </div>
 
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Status</label>
-                                            <select
-                                                value={editingPolicy.status}
-                                                onChange={(e) => setEditingPolicy(prev => ({ ...prev, status: e.target.value }))}
-                                                className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
-                                            >
-                                                <option value="Active">Active</option>
-                                                <option value="Inactive">Inactive</option>
-                                            </select>
-                                        </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Policy ID (e.g. P1, P2)</label>
+                                                <input
+                                                    type="text"
+                                                    disabled={!editingPolicy.isNew}
+                                                    value={editingPolicy.policyId}
+                                                    onChange={(e) => setEditingPolicy(prev => ({ ...prev, policyId: e.target.value.trim().toUpperCase() }))}
+                                                    className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150 disabled:text-slate-400"
+                                                />
+                                            </div>
 
-                                        <div className="flex gap-3.5 mt-2">
-                                            <button
-                                                onClick={() => {
-                                                    setIsNewSopIdOption(false);
-                                                    setEditingPolicy(null);
-                                                }}
-                                                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-550 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer text-center"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    if (!editingPolicy.sopId || !editingPolicy.sopName || !editingPolicy.policyId || !editingPolicy.policyText) {
-                                                        showNotification('Please fill in all policy fields.', 'warning');
-                                                        return;
-                                                    }
-                                                    
-                                                    let updated = [];
-                                                    if (editingPolicy.isNew) {
-                                                        // Check for duplicate policy ID inside same SOP
-                                                        if (sops.some(p => p.sopId === editingPolicy.sopId && p.policyId === editingPolicy.policyId)) {
-                                                            showNotification(`Policy ID ${editingPolicy.policyId} already exists inside SOP ${editingPolicy.sopId}.`, 'warning');
+                                            <div className="flex flex-col gap-1.5">
+                                                <div className="flex justify-between items-center text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                                                    <span>Policy Rule Text</span>
+                                                    <div className="flex gap-1.5">
+                                                        <button
+                                                            onClick={() => handleTextFormat('bold')}
+                                                            className="px-2 py-0.5 rounded border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold hover:text-slate-700 cursor-pointer transition-all"
+                                                            title="Bold Selection (**)"
+                                                        >
+                                                            Bold
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleTextFormat('bullet')}
+                                                            className="px-2 py-0.5 rounded border border-slate-200 hover:bg-slate-100 text-slate-500 font-extrabold hover:text-slate-700 cursor-pointer transition-all"
+                                                            title="Add Bullet Item (*)"
+                                                        >
+                                                            List
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <textarea
+                                                    ref={textareaRef}
+                                                    rows={5}
+                                                    value={editingPolicy.policyText}
+                                                    onChange={(e) => setEditingPolicy(prev => ({ ...prev, policyText: e.target.value }))}
+                                                    className="w-full text-xs p-3 border border-slate-200 focus:border-teal-500 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 transition-all font-medium text-slate-700"
+                                                ></textarea>
+                                            </div>
+
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Status</label>
+                                                <select
+                                                    value={editingPolicy.status}
+                                                    onChange={(e) => setEditingPolicy(prev => ({ ...prev, status: e.target.value }))}
+                                                    className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
+                                                >
+                                                    <option value="Active">Active</option>
+                                                    <option value="Inactive">Inactive</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="flex gap-3.5 mt-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setIsNewSopIdOption(false);
+                                                        setEditingPolicy(null);
+                                                    }}
+                                                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-550 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer text-center"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (!editingPolicy.sopId || !editingPolicy.sopName || !editingPolicy.policyId || !editingPolicy.policyText) {
+                                                            showNotification('Please fill in all policy fields.', 'warning');
                                                             return;
                                                         }
-                                                        updated = [...sops, { 
-                                                            sopId: editingPolicy.sopId,
-                                                            sopName: editingPolicy.sopName,
-                                                            policyId: editingPolicy.policyId,
-                                                            policyText: editingPolicy.policyText,
-                                                            status: editingPolicy.status
-                                                        }];
-                                                    } else {
-                                                        updated = sops.map(p => 
-                                                            (p.sopId === editingPolicy.sopId && p.policyId === editingPolicy.policyId)
-                                                            ? { ...p, policyText: editingPolicy.policyText, status: editingPolicy.status }
-                                                            : p
-                                                        );
-                                                    }
-                                                    saveSops(updated);
-                                                    setIsNewSopIdOption(false);
-                                                    setEditingPolicy(null);
-                                                }}
-                                                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all cursor-pointer text-center shadow-md shadow-teal-600/10"
-                                            >
-                                                Save Policy
-                                            </button>
+                                                        
+                                                        let updated = [];
+                                                        if (editingPolicy.isNew) {
+                                                            // Check for duplicate policy ID inside same SOP
+                                                            if (sops.some(p => p.sopId === editingPolicy.sopId && p.policyId === editingPolicy.policyId)) {
+                                                                showNotification(`Policy ID ${editingPolicy.policyId} already exists inside SOP ${editingPolicy.sopId}.`, 'warning');
+                                                                return;
+                                                            }
+                                                            updated = [...sops, { 
+                                                                sopId: editingPolicy.sopId,
+                                                                sopName: editingPolicy.sopName,
+                                                                policyId: editingPolicy.policyId,
+                                                                policyText: editingPolicy.policyText,
+                                                                status: editingPolicy.status
+                                                            }];
+                                                        } else {
+                                                            updated = sops.map(p => 
+                                                                (p.sopId === editingPolicy.sopId && p.policyId === editingPolicy.policyId)
+                                                                ? { ...p, policyText: editingPolicy.policyText, status: editingPolicy.status }
+                                                                : p
+                                                            );
+                                                        }
+                                                        saveSops(updated);
+                                                        setIsNewSopIdOption(false);
+                                                        setEditingPolicy(null);
+                                                    }}
+                                                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all cursor-pointer text-center shadow-md shadow-teal-600/10"
+                                                >
+                                                    Save Policy
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                ) : (
-                                    <div className="text-center py-12 text-slate-400 font-bold border border-dashed border-slate-200 rounded-2.5xl p-6">
-                                        Select a policy to edit, or create a new SOP from the button above.
-                                    </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
                     )}
                     {activeTab === 'mappings' && (
@@ -1491,11 +1531,10 @@
                                     Coordinators Groups ({uniqueGroups.length})
                                 </button>
                             </div>
-
                             {mappingsSubTab === 'active-mappings' && (
-                                <div className="grid md:grid-cols-3 gap-6 items-start">
-                                    {/* Mappings list */}
-                                    <div className="md:col-span-2 flex flex-col gap-4">
+                                <div className="flex flex-col gap-4">
+                                    {/* Mappings list - Full Width */}
+                                    <div className="w-full flex flex-col gap-4">
                                         <div className="flex items-center justify-between">
                                             <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-tight">Active Mappings</h3>
                                             <button
@@ -1574,187 +1613,199 @@
                                         </div>
                                     </div>
 
-                                    {/* Mapping Creator Form */}
-                                    <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-xl bg-white flex flex-col gap-4">
-                                        <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight">
-                                            {editingMapping ? 'New Mapping Details' : 'Select Target to Map'}
-                                        </h3>
+                                    {/* Modal Mapping Creator Form Overlay */}
+                                    {editingMapping && (
+                                        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                                            <div className="glass-panel p-6 rounded-3xl border border-slate-200/80 shadow-2xl bg-white flex flex-col gap-4 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-zoom-in relative">
+                                                {/* Close Button */}
+                                                <button 
+                                                    onClick={() => {
+                                                        setIsNewGroupInline(false);
+                                                        setEditingMapping(null);
+                                                    }}
+                                                    className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                                                    title="Close Modal"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
 
-                                        {editingMapping ? (
-                                            <div className="flex flex-col gap-4 animate-slide-up">
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Mapping Target Type</label>
-                                                    <select
-                                                        value={editingMapping.type}
-                                                        onChange={(e) => {
-                                                            const type = e.target.value;
-                                                            setIsNewGroupInline(false);
-                                                            setEditingMapping(prev => ({ ...prev, type, targetId: '' }));
-                                                        }}
-                                                        className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
-                                                    >
-                                                        <option value="dept">Department</option>
-                                                        <option value="group">Group / default</option>
-                                                    </select>
-                                                </div>
+                                                <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight pr-8">
+                                                    New Mapping Details
+                                                </h3>
 
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Target ID (Department or Group Name)</label>
-                                                    {editingMapping.type === 'dept' ? (
+                                                <div className="flex flex-col gap-4">
+                                                    <div className="flex flex-col gap-1">
+                                                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Mapping Target Type</label>
                                                         <select
-                                                            value={editingMapping.targetId}
-                                                            onChange={(e) => setEditingMapping(prev => ({ ...prev, targetId: e.target.value }))}
+                                                            value={editingMapping.type}
+                                                            onChange={(e) => {
+                                                                const type = e.target.value;
+                                                                setIsNewGroupInline(false);
+                                                                setEditingMapping(prev => ({ ...prev, type, targetId: '' }));
+                                                            }}
                                                             className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
                                                         >
-                                                            <option value="">Select a Department...</option>
-                                                            {mappings.map(map => (
-                                                                <option key={map.id} value={map.id}>{map.deptName} (ID: {map.id})</option>
-                                                            ))}
+                                                            <option value="dept">Department</option>
+                                                            <option value="group">Group / default</option>
                                                         </select>
-                                                    ) : (
-                                                        <div className="flex flex-col gap-2">
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-1">
+                                                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Target ID (Department or Group Name)</label>
+                                                        {editingMapping.type === 'dept' ? (
                                                             <select
-                                                                value={isNewGroupInline ? 'NEW' : (editingMapping.targetId || '')}
-                                                                onChange={(e) => {
-                                                                    const val = e.target.value;
-                                                                    if (val === 'NEW') {
-                                                                        setIsNewGroupInline(true);
-                                                                        setInlineGroupMembers([]);
-                                                                        setEditingMapping(prev => ({ ...prev, targetId: '' }));
-                                                                    } else {
-                                                                        setIsNewGroupInline(false);
-                                                                        setEditingMapping(prev => ({ ...prev, targetId: val }));
-                                                                    }
-                                                                }}
+                                                                value={editingMapping.targetId}
+                                                                onChange={(e) => setEditingMapping(prev => ({ ...prev, targetId: e.target.value }))}
                                                                 className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
                                                             >
-                                                                <option value="">Select a Group...</option>
-                                                                <option value="NEW">[Create New Group & Map]</option>
-                                                                {uniqueGroups.map(g => (
-                                                                    <option key={g.groupId} value={g.groupId}>{g.groupId} ({g.deptIds.length} members)</option>
+                                                                <option value="">Select a Department...</option>
+                                                                {mappings.map(map => (
+                                                                    <option key={map.id} value={map.id}>{map.deptName} (ID: {map.id})</option>
                                                                 ))}
                                                             </select>
-                                                            {isNewGroupInline && (
-                                                                <div className="flex flex-col gap-2 border border-dashed border-teal-200 bg-teal-50/10 rounded-2xl p-3 animate-slide-up">
-                                                                    <input
-                                                                        type="text"
-                                                                        placeholder="Enter new Group Name (e.g. sales_team)"
-                                                                        value={editingMapping.targetId}
-                                                                        onChange={(e) => setEditingMapping(prev => ({ ...prev, targetId: e.target.value.trim().toLowerCase() }))}
-                                                                        className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold bg-white"
-                                                                    />
-                                                                    <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto bg-white p-2.5 rounded-xl border border-slate-200">
-                                                                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Select Group Members</span>
-                                                                        {mappings.map(map => {
-                                                                            const isChecked = inlineGroupMembers.includes(map.id);
-                                                                            return (
-                                                                                <label key={map.id} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
-                                                                                    <input
-                                                                                        type="checkbox"
-                                                                                        checked={isChecked}
-                                                                                        onChange={() => {
-                                                                                            if (isChecked) {
-                                                                                                setInlineGroupMembers(prev => prev.filter(id => id !== map.id));
-                                                                                            } else {
-                                                                                                setInlineGroupMembers(prev => [...prev, map.id]);
-                                                                                            }
-                                                                                        }}
-                                                                                        className="rounded text-teal-600 focus:ring-teal-500"
-                                                                                    />
-                                                                                    <span>{map.headName} ({map.deptName})</span>
-                                                                                </label>
-                                                                            );
-                                                                        })}
+                                                        ) : (
+                                                            <div className="flex flex-col gap-2">
+                                                                <select
+                                                                    value={isNewGroupInline ? 'NEW' : (editingMapping.targetId || '')}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value;
+                                                                        if (val === 'NEW') {
+                                                                            setIsNewGroupInline(true);
+                                                                            setInlineGroupMembers([]);
+                                                                            setEditingMapping(prev => ({ ...prev, targetId: '' }));
+                                                                        } else {
+                                                                            setIsNewGroupInline(false);
+                                                                            setEditingMapping(prev => ({ ...prev, targetId: val }));
+                                                                        }
+                                                                    }}
+                                                                    className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
+                                                                >
+                                                                    <option value="">Select a Group...</option>
+                                                                    <option value="NEW">[Create New Group & Map]</option>
+                                                                    {uniqueGroups.map(g => (
+                                                                        <option key={g.groupId} value={g.groupId}>{g.groupId} ({g.deptIds.length} members)</option>
+                                                                    ))}
+                                                                </select>
+                                                                {isNewGroupInline && (
+                                                                    <div className="flex flex-col gap-2 border border-dashed border-teal-200 bg-teal-50/10 rounded-2xl p-3 animate-slide-up">
+                                                                        <input
+                                                                            type="text"
+                                                                            placeholder="Enter new Group Name (e.g. sales_team)"
+                                                                            value={editingMapping.targetId}
+                                                                            onChange={(e) => setEditingMapping(prev => ({ ...prev, targetId: e.target.value.trim().toLowerCase() }))}
+                                                                            className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold bg-white"
+                                                                        />
+                                                                        <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto bg-white p-2.5 rounded-xl border border-slate-200">
+                                                                            <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Select Group Members</span>
+                                                                            {mappings.map(map => {
+                                                                                const isChecked = inlineGroupMembers.includes(map.id);
+                                                                                return (
+                                                                                    <label key={map.id} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                                                                        <input
+                                                                                            type="checkbox"
+                                                                                            checked={isChecked}
+                                                                                            onChange={() => {
+                                                                                                if (isChecked) {
+                                                                                                    setInlineGroupMembers(prev => prev.filter(id => id !== map.id));
+                                                                                                } else {
+                                                                                                    setInlineGroupMembers(prev => [...prev, map.id]);
+                                                                                                }
+                                                                                            }}
+                                                                                            className="rounded text-teal-600 focus:ring-teal-500"
+                                                                                        />
+                                                                                        <span>{map.headName} ({map.deptName})</span>
+                                                                                    </label>
+                                                                                );
+                                                                            })}
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
 
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Select SOP to Map</label>
-                                                    <select
-                                                        value={editingMapping.sopId}
-                                                        onChange={(e) => setEditingMapping(prev => ({ ...prev, sopId: e.target.value }))}
-                                                        className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
-                                                    >
-                                                        <option value="">Select an SOP...</option>
-                                                        {groupedSops.map(group => (
-                                                            <option key={group.sopId} value={group.sopId}>{group.sopName} ({group.sopId})</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
+                                                    <div className="flex flex-col gap-1">
+                                                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Select SOP to Map</label>
+                                                        <select
+                                                            value={editingMapping.sopId}
+                                                            onChange={(e) => setEditingMapping(prev => ({ ...prev, sopId: e.target.value }))}
+                                                            className="w-full text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:ring-1 focus:ring-teal-500 text-slate-700 bg-slate-50 cursor-pointer"
+                                                        >
+                                                            <option value="">Select an SOP...</option>
+                                                            {groupedSops.map(group => (
+                                                                <option key={group.sopId} value={group.sopId}>{group.sopName} ({group.sopId})</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
 
-                                                <div className="flex gap-3.5 mt-2">
-                                                    <button
-                                                        onClick={() => {
-                                                            setEditingMapping(null);
-                                                            setIsNewGroupInline(false);
-                                                        }}
-                                                        className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-550 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer text-center"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (!editingMapping.targetId || !editingMapping.sopId) {
-                                                                showNotification('Please select both target and SOP.', 'warning');
-                                                                return;
-                                                            }
-
-                                                            if (isNewGroupInline) {
-                                                                if (inlineGroupMembers.length === 0) {
-                                                                    showNotification('Please select at least one member for the new group.', 'warning');
-                                                                    return;
-                                                                }
-                                                                if (deptGroups.some(g => g.groupId.toLowerCase() === editingMapping.targetId.toLowerCase())) {
-                                                                    showNotification(`Group "${editingMapping.targetId}" already exists. Please select it from the list.`, 'warning');
+                                                    <div className="flex gap-3.5 mt-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingMapping(null);
+                                                                setIsNewGroupInline(false);
+                                                            }}
+                                                            className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-550 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer text-center"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (!editingMapping.targetId || !editingMapping.sopId) {
+                                                                    showNotification('Please select both target and SOP.', 'warning');
                                                                     return;
                                                                 }
 
-                                                                const newGroupRows = inlineGroupMembers.map(id => ({
-                                                                    groupId: editingMapping.targetId,
-                                                                    deptId: id
-                                                                }));
-                                                                const updatedGroups = [...deptGroups, ...newGroupRows];
-                                                                await saveDeptGroups(updatedGroups);
-                                                            }
+                                                                if (isNewGroupInline) {
+                                                                    if (inlineGroupMembers.length === 0) {
+                                                                        showNotification('Please select at least one member for the new group.', 'warning');
+                                                                        return;
+                                                                    }
+                                                                    if (deptGroups.some(g => g.groupId.toLowerCase() === editingMapping.targetId.toLowerCase())) {
+                                                                        showNotification(`Group "${editingMapping.targetId}" already exists. Please select it from the list.`, 'warning');
+                                                                        return;
+                                                                    }
 
-                                                            // Check for duplicate mapping
-                                                            if (sopMappings.some(item => item.targetId === editingMapping.targetId && item.sopId === editingMapping.sopId && item.type === editingMapping.type)) {
-                                                                showNotification('This mapping configuration already exists.', 'warning');
-                                                                return;
-                                                            }
+                                                                    const newGroupRows = inlineGroupMembers.map(id => ({
+                                                                        groupId: editingMapping.targetId,
+                                                                        deptId: id
+                                                                    }));
+                                                                    const updatedGroups = [...deptGroups, ...newGroupRows];
+                                                                    await saveDeptGroups(updatedGroups);
+                                                                }
 
-                                                            const updated = [...sopMappings, {
-                                                                targetId: editingMapping.targetId,
-                                                                type: editingMapping.type,
-                                                                sopId: editingMapping.sopId
-                                                            }];
-                                                            saveSopMappings(updated);
-                                                            setEditingMapping(null);
-                                                            setIsNewGroupInline(false);
-                                                        }}
-                                                        className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all cursor-pointer text-center shadow-md shadow-teal-600/10"
-                                                    >
-                                                        Create Mapping
-                                                    </button>
+                                                                // Check for duplicate mapping
+                                                                if (sopMappings.some(item => item.targetId === editingMapping.targetId && item.sopId === editingMapping.sopId && item.type === editingMapping.type)) {
+                                                                    showNotification('This mapping configuration already exists.', 'warning');
+                                                                    return;
+                                                                }
+
+                                                                const updated = [...sopMappings, {
+                                                                    targetId: editingMapping.targetId,
+                                                                    type: editingMapping.type,
+                                                                    sopId: editingMapping.sopId
+                                                                }];
+                                                                saveSopMappings(updated);
+                                                                setEditingMapping(null);
+                                                                setIsNewGroupInline(false);
+                                                            }}
+                                                            className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all cursor-pointer text-center shadow-md shadow-teal-600/10"
+                                                        >
+                                                            Create Mapping
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        ) : (
-                                            <div className="text-center py-12 text-slate-400 font-bold border border-dashed border-slate-200 rounded-2.5xl p-6">
-                                                Select "Add Mapping" above to link an SOP to a department or group.
-                                            </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
                             {mappingsSubTab === 'groups' && (
-                                <div className="grid md:grid-cols-3 gap-6 items-start">
-                                    {/* Groups list */}
-                                    <div className="md:col-span-2 flex flex-col gap-4">
+                                <div className="flex flex-col gap-4">
+                                    {/* Groups list - Full Width */}
+                                    <div className="w-full flex flex-col gap-4">
                                         <div className="flex items-center justify-between">
                                             <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-tight">Configured Groups</h3>
                                             <button
@@ -1812,7 +1863,7 @@
                                                                             saveSopMappings(updatedMappings);
                                                                         }
                                                                     }}
-                                                                    className="p-1.5 rounded-lg hover:bg-rose-100 text-rose-500 hover:text-rose-700 transition-all cursor-pointer border border-rose-250 bg-white"
+                                                                    className="p-1.5 rounded-lg hover:bg-rose-100 text-rose-50 hover:text-rose-700 transition-all cursor-pointer border border-rose-250 bg-white"
                                                                     title="Delete Group"
                                                                 >
                                                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1827,101 +1878,110 @@
                                         </div>
                                     </div>
 
-                                    {/* Group Editor Form */}
-                                    <div className="glass-panel p-5 rounded-3xl border border-slate-200/80 shadow-xl bg-white flex flex-col gap-4">
-                                        <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight">
-                                            {editingGroup ? (editingGroup.isNew ? 'Create New Group' : 'Edit Group Members') : 'Select Group to Edit'}
-                                        </h3>
+                                    {/* Modal Group Editor Form Overlay */}
+                                    {editingGroup && (
+                                        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                                            <div className="glass-panel p-6 rounded-3xl border border-slate-200/80 shadow-2xl bg-white flex flex-col gap-4 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-zoom-in relative">
+                                                {/* Close Button */}
+                                                <button 
+                                                    onClick={() => setEditingGroup(null)}
+                                                    className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                                                    title="Close Modal"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
 
-                                        {editingGroup ? (
-                                            <div className="flex flex-col gap-4 animate-slide-up">
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Group Name (ID)</label>
-                                                    <input
-                                                        type="text"
-                                                        disabled={!editingGroup.isNew}
-                                                        placeholder="e.g. managers, sales_team"
-                                                        value={editingGroup.groupId}
-                                                        onChange={(e) => setEditingGroup(prev => ({ ...prev, groupId: e.target.value.trim().toLowerCase() }))}
-                                                        className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150 disabled:text-slate-400 bg-slate-50"
-                                                    />
-                                                </div>
+                                                <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-tight pr-8">
+                                                    {editingGroup.isNew ? 'Create New Group' : 'Edit Group Members'}
+                                                </h3>
 
-                                                <div className="flex flex-col gap-1.5">
-                                                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Group Members</label>
-                                                    <div className="flex flex-col gap-2 bg-slate-50/55 p-3 rounded-2xl border border-slate-200/50 max-h-60 overflow-y-auto">
-                                                        {mappings.map(map => {
-                                                            const isChecked = editingGroup.deptIds.includes(map.id);
-                                                            return (
-                                                                <label key={map.id} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={isChecked}
-                                                                        onChange={() => {
-                                                                            if (isChecked) {
-                                                                                setEditingGroup(prev => ({
-                                                                                    ...prev,
-                                                                                    deptIds: prev.deptIds.filter(id => id !== map.id)
-                                                                                }));
-                                                                            } else {
-                                                                                setEditingGroup(prev => ({
-                                                                                    ...prev,
-                                                                                    deptIds: [...prev.deptIds, map.id]
-                                                                                }));
-                                                                            }
-                                                                        }}
-                                                                        className="rounded text-teal-600 focus:ring-teal-500"
-                                                                    />
-                                                                    <span>{map.headName} ({map.deptName})</span>
-                                                                </label>
-                                                            );
-                                                        })}
+                                                <div className="flex flex-col gap-4">
+                                                    <div className="flex flex-col gap-1">
+                                                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Group Name (ID)</label>
+                                                        <input
+                                                            type="text"
+                                                            disabled={!editingGroup.isNew}
+                                                            placeholder="e.g. managers, sales_team"
+                                                            value={editingGroup.groupId}
+                                                            onChange={(e) => setEditingGroup(prev => ({ ...prev, groupId: e.target.value.trim().toLowerCase() }))}
+                                                            className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150 disabled:text-slate-400 bg-slate-50"
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Group Members</label>
+                                                        <div className="flex flex-col gap-2 bg-slate-50/55 p-3 rounded-2xl border border-slate-200/50 max-h-60 overflow-y-auto">
+                                                            {mappings.map(map => {
+                                                                const isChecked = editingGroup.deptIds.includes(map.id);
+                                                                return (
+                                                                    <label key={map.id} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={isChecked}
+                                                                            onChange={() => {
+                                                                                if (isChecked) {
+                                                                                    setEditingGroup(prev => ({
+                                                                                        ...prev,
+                                                                                        deptIds: prev.deptIds.filter(id => id !== map.id)
+                                                                                    }));
+                                                                                } else {
+                                                                                    setEditingGroup(prev => ({
+                                                                                        ...prev,
+                                                                                        deptIds: [...prev.deptIds, map.id]
+                                                                                    }));
+                                                                                }
+                                                                            }}
+                                                                            className="rounded text-teal-600 focus:ring-teal-500"
+                                                                        />
+                                                                        <span>{map.headName} ({map.deptName})</span>
+                                                                    </label>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex gap-3.5 mt-2">
+                                                        <button
+                                                            onClick={() => setEditingGroup(null)}
+                                                            className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-550 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer text-center"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                if (!editingGroup.groupId) {
+                                                                    showNotification('Please enter a group name.', 'warning');
+                                                                    return;
+                                                                }
+                                                                if (editingGroup.deptIds.length === 0) {
+                                                                    showNotification('Please select at least one group member.', 'warning');
+                                                                    return;
+                                                                }
+
+                                                                if (editingGroup.isNew && deptGroups.some(g => g.groupId.toLowerCase() === editingGroup.groupId.toLowerCase())) {
+                                                                    showNotification(`Group "${editingGroup.groupId}" already exists.`, 'warning');
+                                                                    return;
+                                                                }
+
+                                                                const updatedGroups = deptGroups.filter(g => g.groupId.toLowerCase() !== editingGroup.groupId.toLowerCase());
+                                                                editingGroup.deptIds.forEach(id => {
+                                                                    updatedGroups.push({ groupId: editingGroup.groupId, deptId: id });
+                                                                });
+
+                                                                saveDeptGroups(updatedGroups);
+                                                                setEditingGroup(null);
+                                                            }}
+                                                            className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all cursor-pointer text-center shadow-md shadow-teal-600/10"
+                                                        >
+                                                            Save Group
+                                                        </button>
                                                     </div>
                                                 </div>
-
-                                                <div className="flex gap-3.5 mt-2">
-                                                    <button
-                                                        onClick={() => setEditingGroup(null)}
-                                                        className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-550 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer text-center"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            if (!editingGroup.groupId) {
-                                                                showNotification('Please enter a group name.', 'warning');
-                                                                return;
-                                                            }
-                                                            if (editingGroup.deptIds.length === 0) {
-                                                                showNotification('Please select at least one group member.', 'warning');
-                                                                return;
-                                                            }
-
-                                                            if (editingGroup.isNew && deptGroups.some(g => g.groupId.toLowerCase() === editingGroup.groupId.toLowerCase())) {
-                                                                showNotification(`Group "${editingGroup.groupId}" already exists.`, 'warning');
-                                                                return;
-                                                            }
-
-                                                            const updatedGroups = deptGroups.filter(g => g.groupId.toLowerCase() !== editingGroup.groupId.toLowerCase());
-                                                            editingGroup.deptIds.forEach(id => {
-                                                                updatedGroups.push({ groupId: editingGroup.groupId, deptId: id });
-                                                            });
-
-                                                            saveDeptGroups(updatedGroups);
-                                                            setEditingGroup(null);
-                                                        }}
-                                                        className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all cursor-pointer text-center shadow-md shadow-teal-600/10"
-                                                    >
-                                                        Save Group
-                                                    </button>
-                                                </div>
                                             </div>
-                                        ) : (
-                                            <div className="text-center py-12 text-slate-400 font-bold border border-dashed border-slate-200 rounded-2.5xl p-6">
-                                                Select a group to edit, or click "Create Group" to define a new group.
-                                            </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -6124,7 +6184,7 @@
 
                             {/* Centered Tab Switcher in the Header Heading Section */}
                             {activeRole && (
-                                <div className="flex bg-slate-950 p-0.5 rounded-xl border border-slate-800 text-[9px] md:text-[11px] gap-0.5 shadow-inner self-center flex-shrink-0">
+                                <div className="flex bg-slate-950 p-0.5 rounded-xl border border-[rgb(0,53,139)] text-[9px] md:text-[11px] gap-0.5 shadow-inner self-center flex-shrink-0">
                                     <button 
                                         onClick={() => setActiveMetricTab('All')}
                                         className={`px-3 py-1 md:px-3.5 md:py-1.5 rounded-lg font-extrabold tracking-wider uppercase transition-all cursor-pointer ${
