@@ -3889,7 +3889,7 @@
                 if (!isPending) return false;
                 if (d.type === 'WSR') return false;
 
-                // 1. If target date is specified and is a valid calendar date
+                // If target date is specified and is a valid calendar date
                 if (d.targetDate && d.targetDate !== 'Immediate' && d.targetDate !== '-') {
                     const targetDateObj = parseDateString(d.targetDate);
                     if (targetDateObj && !isNaN(targetDateObj.getTime()) && targetDateObj.getTime() !== 0) {
@@ -3903,8 +3903,8 @@
                     }
                 }
 
-                // 2. Otherwise fall back to 72 hours
-                return isPendingMoreThan72Hours(d.date);
+                // Do not treat as overdue (no 72 hours fallback)
+                return false;
             };
 
             const triggerIndividualReminder = async (d) => {
@@ -6925,7 +6925,7 @@
                                                                                         ? 'text-rose-700 bg-rose-50 border-rose-200 animate-pulse' 
                                                                                         : 'text-teal-600 bg-teal-50 border-teal-200'
                                                                                     }`} 
-                                                                                    title={isOverdue72h ? "Pending for > 72 hours!" : "Pending Elapsed Time"}
+                                                                                    title={isOverdue72h ? "Task is Overdue!" : "Pending Elapsed Time"}
                                                                                 >
                                                                                     <span>⏳</span>
                                                                                     <span>{getPendingElapsedTime(d.date)}</span>
@@ -7163,7 +7163,7 @@
                                                                                     ? 'text-rose-700 bg-rose-50 border-rose-200 animate-pulse' 
                                                                                     : 'text-teal-600 bg-teal-50/70 border-teal-200'
                                                                                 }`} 
-                                                                                title={isOverdue72h ? "Pending for > 72 hours!" : "Pending Elapsed Time"}
+                                                                                title={isOverdue72h ? "Task is Overdue!" : "Pending Elapsed Time"}
                                                                             >
                                                                                 <span>⏳</span>
                                                                                 <span>{getPendingElapsedTime(d.date)}</span>
