@@ -703,12 +703,8 @@
             // Calculate coordinator compliance details for the selected week
             const coordinatorComplianceData = React.useMemo(() => {
                 if (!mappings || !sops || !sopMappings || !sopReadRecords) return [];
-                const mdEmailsList = (mdEmail || '').split(',').map(e => e.trim().toLowerCase());
                 
-                return mappings.filter(map => {
-                    const email = map.headEmail.toLowerCase();
-                    return !mdEmailsList.includes(email);
-                }).map(map => {
+                return mappings.map(map => {
                     const email = map.headEmail.toLowerCase();
                     
                     // Resolve assigned SOP IDs
@@ -5932,10 +5928,8 @@
             // Calculate unanswered coordinators count for current week
             const unansweredThisWeekCount = React.useMemo(() => {
                 if (!mappings || !sops || !sopMappings || !sopReadRecords) return 0;
-                const mdEmailsList = (mdEmail || '').split(',').map(e => e.trim().toLowerCase());
                 return mappings.filter(map => {
                     const email = map.headEmail.toLowerCase();
-                    if (mdEmailsList.includes(email)) return false;
                     const mappedSopIds = sopMappings
                         .filter(m => String(m.type).trim().toLowerCase() === 'dept' && String(m.targetId).trim().toLowerCase() === String(map.id).trim().toLowerCase())
                         .map(m => String(m.sopId).trim().toLowerCase());
