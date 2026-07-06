@@ -3245,6 +3245,40 @@
             // Settings states loaded from localStorage or initialized with defaults
             const [clientId, setClientId] = React.useState(() => localStorage.getItem('pcil_clientId') || '680867814154-rji8esp30qasc5c7nuhh0rkq6nd6d484.apps.googleusercontent.com');
             const [mdEmail, setMdEmail] = React.useState(() => localStorage.getItem('pcil_mdEmail') || 'manan.mongia@super91.com');
+            const DEFAULT_PERMISSIONS = React.useMemo(() => ({
+                CanViewAllSOPs: false,
+                CanCreateSOPs: false,
+                CanEditSOPs: false,
+                CanDeleteSOPs: false,
+                CanCreateMappingsGroups: false,
+                CanEditMappingsGroups: false,
+                CanDeletMappingsGroups: false,
+                CanCreateMappings: false,
+                CanDeleteMappings: false,
+                CanIssueDirectives: false,
+                CanVerifyDirectives: false,
+                CanEditDirectives: false,
+                CanDeleteDirectives: false
+            }), []);
+
+            const [userPermissions, setUserPermissions] = React.useState(() => {
+                const saved = localStorage.getItem('pcil_userPermissions');
+                return saved ? JSON.parse(saved) : {
+                    CanViewAllSOPs: false,
+                    CanCreateSOPs: false,
+                    CanEditSOPs: false,
+                    CanDeleteSOPs: false,
+                    CanCreateMappingsGroups: false,
+                    CanEditMappingsGroups: false,
+                    CanDeletMappingsGroups: false,
+                    CanCreateMappings: false,
+                    CanDeleteMappings: false,
+                    CanIssueDirectives: false,
+                    CanVerifyDirectives: false,
+                    CanEditDirectives: false,
+                    CanDeleteDirectives: false
+                };
+            });
             const [mdSopDocId, setMdSopDocId] = React.useState(() => localStorage.getItem('pcil_mdSopDocId') || '');
             
             // Department groups state
@@ -3286,6 +3320,15 @@
             // Sandbox State
             const [isSandbox, setIsSandbox] = React.useState(false);
             const [sandboxRole, setSandboxRole] = React.useState('MD'); // 'MD' or 'DH:email'
+            const effectivePermissions = React.useMemo(() => {
+                if (isSandbox) {
+                    if (sandboxRole === 'MD') {
+                        return Object.keys(DEFAULT_PERMISSIONS).reduce((acc, k) => ({ ...acc, [k]: true }), {});
+                    }
+                    return DEFAULT_PERMISSIONS;
+                }
+                return userPermissions;
+            }, [isSandbox, sandboxRole, userPermissions, DEFAULT_PERMISSIONS]);
             const [mockDb, setMockDb] = React.useState(() => {
                 const saved = localStorage.getItem('pcil_mockDb');
                 return saved ? JSON.parse(saved) : DEFAULT_MOCK_DATA;
@@ -3329,6 +3372,7 @@
             const [filterStatus, setFilterStatus] = React.useState('All');
             const [filterPriority, setFilterPriority] = React.useState('All');
             const [filterType, setFilterType] = React.useState('All');
+            const [filterCreator, setFilterCreator] = React.useState('All');
 
             // Dispatch Form State
             const [dispatchDeptId, setDispatchDeptId] = React.useState('');
@@ -3367,12 +3411,12 @@
             // Notification message state
             const [notification, setNotification] = React.useState(null);
 
-            const fetchCentralConfiguration = async (accessToken) => {
+            const fetchCentralConfiguration = async (accessToken = auth?.accessToken) => {
                 if (!accessToken) return null;
                 try {
                     console.log('[Config] Fetching central configuration from Google Sheets...');
-                    let ranges = ['Settings!A:B', 'Mappings!A:Z', 'SOPs!A:Z', 'DeptGroups!A:B', 'SOPMappings!A:Z', 'SOPReadRecords!A:Z'];
-                    let rangeParams = ranges.map(r => `ranges=${encodeURIComponent(r)}`).join('&');
+                    let allRanges = ['Settings!A:B', 'Mappings!A:Z', 'SOPs!A:Z', 'DeptGroups!A:B', 'SOPMappings!A:Z', 'SOPReadRecords!A:Z', 'Permissions!A:Z'];
+                    let rangeParams = allRanges.map(r => `ranges=${encodeURIComponent(r)}`).join('&');
                     
                     let response;
                     try {
@@ -3385,9 +3429,9 @@
                             }
                         );
                         if (!response.ok && response.status === 400) {
-                            console.warn('[Config] SOPReadRecords sheet might be missing, retrying without it...');
-                            ranges = ['Settings!A:B', 'Mappings!A:Z', 'SOPs!A:Z', 'DeptGroups!A:B', 'SOPMappings!A:Z'];
-                            rangeParams = ranges.map(r => `ranges=${encodeURIComponent(r)}`).join('&');
+                            console.warn('[Config] Permissions or SOPReadRecords sheet might be missing, retrying without Permissions...');
+                            allRanges = ['Settings!A:B', 'Mappings!A:Z', 'SOPs!A:Z', 'DeptGroups!A:B', 'SOPMappings!A:Z', 'SOPReadRecords!A:Z'];
+                            rangeParams = allRanges.map(r => `ranges=${encodeURIComponent(r)}`).join('&');
                             response = await fetchWithRetry(
                                 `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values:batchGet?${rangeParams}`,
                                 {
@@ -3396,6 +3440,19 @@
                                     }
                                 }
                             );
+                            if (!response.ok && response.status === 400) {
+                                console.warn('[Config] Retrying without both Permissions and SOPReadRecords...');
+                                allRanges = ['Settings!A:B', 'Mappings!A:Z', 'SOPs!A:Z', 'DeptGroups!A:B', 'SOPMappings!A:Z'];
+                                rangeParams = allRanges.map(r => `ranges=${encodeURIComponent(r)}`).join('&');
+                                response = await fetchWithRetry(
+                                    `https://sheets.googleapis.com/v4/spreadsheets/${CENTRAL_CONFIG_SPREADSHEET_ID}/values:batchGet?${rangeParams}`,
+                                    {
+                                        headers: {
+                                            'Authorization': `Bearer ${accessToken}`
+                                        }
+                                    }
+                                );
+                            }
                         }
                     } catch (fetchErr) {
                         console.error('[Config] Failed to fetch central configuration:', fetchErr);
@@ -3411,12 +3468,18 @@
                         throw new Error('Invalid response structure: valueRanges not found');
                     }
                     
-                    const settingsRange = data.valueRanges[0];
-                    const mappingsRange = data.valueRanges[1];
-                    const sopsRange = data.valueRanges[2];
-                    const groupsRange = data.valueRanges[3];
-                    const mappingsSopRange = data.valueRanges[4];
-                    const readRecordsRange = data.valueRanges[5];
+                    const getRangeValues = (valueRanges, tabName) => {
+                        const r = valueRanges.find(vr => vr && vr.range && vr.range.toLowerCase().includes(tabName.toLowerCase()));
+                        return r || null;
+                    };
+
+                    const settingsRange = getRangeValues(data.valueRanges, 'Settings');
+                    const mappingsRange = getRangeValues(data.valueRanges, 'Mappings');
+                    const sopsRange = getRangeValues(data.valueRanges, 'SOPs');
+                    const groupsRange = getRangeValues(data.valueRanges, 'DeptGroups');
+                    const mappingsSopRange = getRangeValues(data.valueRanges, 'SOPMappings');
+                    const readRecordsRange = getRangeValues(data.valueRanges, 'SOPReadRecords');
+                    const permissionsRange = getRangeValues(data.valueRanges, 'Permissions');
                     
                     // 1. Parse Settings
                     let fetchedClientId = '';
@@ -3687,6 +3750,63 @@
                     if (newReadRecordsStr !== oldReadRecordsStr) {
                         setSopReadRecords(fetchedReadRecords);
                         localStorage.setItem('pcil_sopReadRecords', newReadRecordsStr);
+                    }
+
+                    // 7. Parse & Enforce Permissions
+                    let parsedPermissions = {
+                        CanViewAllSOPs: false,
+                        CanCreateSOPs: false,
+                        CanEditSOPs: false,
+                        CanDeleteSOPs: false,
+                        CanCreateMappingsGroups: false,
+                        CanEditMappingsGroups: false,
+                        CanDeletMappingsGroups: false,
+                        CanCreateMappings: false,
+                        CanDeleteMappings: false,
+                        CanIssueDirectives: false,
+                        CanVerifyDirectives: false,
+                        CanEditDirectives: false,
+                        CanDeleteDirectives: false
+                    };
+                    const userEmail = auth?.email?.toLowerCase() || '';
+                    const mdEmailsList = fetchedMdEmail.split(',').map(e => e.trim().toLowerCase());
+                    
+                    if (permissionsRange && permissionsRange.values && permissionsRange.values.length > 0) {
+                        const rows = permissionsRange.values;
+                        const emailsRow = rows[0] || [];
+                        const colIdx = emailsRow.findIndex((val, idx) => idx > 0 && String(val).trim().toLowerCase() === userEmail);
+                        
+                        if (colIdx !== -1) {
+                            for (let r = 1; r < rows.length; r++) {
+                                const row = rows[r];
+                                if (row && row[0]) {
+                                    const key = String(row[0]).trim();
+                                    const val = row[colIdx] ? String(row[colIdx]).trim().toUpperCase() === 'TRUE' : false;
+                                    if (key in parsedPermissions) {
+                                        parsedPermissions[key] = val;
+                                    }
+                                }
+                            }
+                        } else {
+                            if (mdEmailsList.includes(userEmail)) {
+                                Object.keys(parsedPermissions).forEach(k => {
+                                    parsedPermissions[k] = true;
+                                });
+                            }
+                        }
+                    } else {
+                        if (mdEmailsList.includes(userEmail)) {
+                            Object.keys(parsedPermissions).forEach(k => {
+                                parsedPermissions[k] = true;
+                            });
+                        }
+                    }
+                    
+                    const newPermissionsStr = JSON.stringify(parsedPermissions);
+                    const oldPermissionsStr = localStorage.getItem('pcil_userPermissions') || '';
+                    if (newPermissionsStr !== oldPermissionsStr) {
+                        setUserPermissions(parsedPermissions);
+                        localStorage.setItem('pcil_userPermissions', newPermissionsStr);
                     }
                     
                     console.log('[Config] Configuration loaded. Mappings:', fetchedMappings.length, 'SOPs:', fetchedSops.length);
@@ -4985,6 +5105,16 @@
                 }
             }, [auth, activeSopDocs, sopReadRecords]);
 
+            const extractCreatedBy = (text) => {
+                if (!text) return { text: '', createdBy: '' };
+                const match = String(text).match(/\[CreatedBy:\s*(.*?)\]/i);
+                if (match) {
+                    const cleanText = text.replace(/\[CreatedBy:\s*(.*?)\]/i, '').trim();
+                    return { text: cleanText, createdBy: match[1].trim() };
+                }
+                return { text: String(text), createdBy: '' };
+            };
+
             // Parse sheet rows, identifying headers dynamically
             const parseSheetRows = (values, mapping) => {
                 if (!values || values.length === 0) return [];
@@ -5110,6 +5240,10 @@
                         }
                     }
 
+                    const extracted = extractCreatedBy(parsedDesc);
+                    parsedDesc = extracted.text;
+                    const parsedCreatedBy = extracted.createdBy;
+
                     let parsedReportName = '';
                     if (parsedType === 'Reports') {
                         const match = String(parsedDesc).match(/^Report Name:\s*(.*?)(?:\r?\n\r?\n|\r?\n)([\s\S]*)$/i);
@@ -5200,6 +5334,7 @@
                         delegatedTo: parsedDelegated,
                         completionDate: parsedCompletion,
                         repetition: parsedRepetition,
+                        createdBy: parsedCreatedBy,
 
                         // Dynamic metadata tracking for safe updates
                         columnIndices: {
@@ -5235,6 +5370,7 @@
                     
                     const sNo = row[0] || '';
                     const particulars = row[1] || '';
+                    const parsedParticulars = extractCreatedBy(particulars);
                     const rawStatus = row[2] || '';
                     
                     let parsedStatus = String(rawStatus).trim();
@@ -5286,7 +5422,7 @@
                         
                         date: '',
                         type: 'WSR',
-                        description: particulars,
+                        description: parsedParticulars.text,
                         priority: 'Normal',
                         targetDate: '',
                         verification: parsedStatus === 'Completed' || parsedStatus === 'Checked & Confirmed' ? 'Done' : 'Pending',
@@ -5295,6 +5431,7 @@
                         delegatedTo: '',
                         completionDate: parsedCompletionDate,
                         repetition: parsedRepetition,
+                        createdBy: parsedParticulars.createdBy,
                         
                         columnIndices: {
                             dateIdx: -1,
@@ -5345,6 +5482,9 @@
                     dispatchRepetitionValue = dispatchInstructionType;
                 }
 
+                const userEmailAddr = auth?.email?.toLowerCase() || '';
+                const creatorTag = userEmailAddr ? `\n\n[CreatedBy: ${userEmailAddr}]` : '';
+
                 let activeTabName;
                 let appendValues;
 
@@ -5352,7 +5492,7 @@
                     activeTabName = 'WSR';
                     const deptWsrs = directives.filter(d => d.departmentId === targetDept.id && d.type === 'WSR');
                     const nextSNo = deptWsrs.length + 1;
-                    appendValues = [nextSNo, dispatchDesc, 'Pending'];
+                    appendValues = [nextSNo, dispatchDesc + creatorTag, 'Pending'];
                 } else {
                     activeTabName = targetDept.sheetTabName || 'Master Data';
                     let finalDesc = dispatchDesc;
@@ -5362,7 +5502,7 @@
                     appendValues = [
                         todayStr,
                         dispatchType,
-                        finalDesc,
+                        finalDesc + creatorTag,
                         dispatchPriority,
                         dispatchType === 'Reports' ? '' : targetDateStr,
                         'Pending',     // Verification
@@ -5383,7 +5523,7 @@
                             ["S.No.", "Particulars", "Status"]
                         ];
                         const nextSNo = existingRows.length - 1;
-                        const newRow = [nextSNo, dispatchDesc, 'Pending'];
+                        const newRow = [nextSNo, dispatchDesc + creatorTag, 'Pending'];
                         const updatedRows = [...existingRows, newRow];
                         setMockDb(prev => ({
                             ...prev,
@@ -5994,6 +6134,21 @@
                 }, 500);
             };
 
+            // Unique creators for filtering
+            const uniqueCreators = React.useMemo(() => {
+                const creators = new Set();
+                directives.forEach(d => {
+                    if (d.status !== 'Deleted') {
+                        if (d.createdBy) {
+                            creators.add(d.createdBy);
+                        } else {
+                            creators.add('System/SOP');
+                        }
+                    }
+                });
+                return Array.from(creators).sort();
+            }, [directives]);
+
             // Filtering calculations (base filters excluding metrics tab)
             const baseFilteredDirectives = directives.filter(d => {
                 if (d.status === 'Deleted') return false;
@@ -6011,6 +6166,8 @@
                 const matchesStatus = filterStatus === 'All' || d.status === filterStatus;
                 const matchesPriority = filterPriority === 'All' || d.priority === filterPriority;
                 const matchesType = filterType === 'All' || d.type === filterType;
+                const matchesCreator = filterCreator === 'All' || 
+                    (filterCreator === 'System/SOP' ? !d.createdBy : d.createdBy === filterCreator);
 
                 // Visibility filter for repeating WSR/Reports directives for non-MD roles
                 const isMD = activeRole && activeRole.isMD;
@@ -6019,7 +6176,7 @@
                     matchesRepeatingVisibility = isDueToday(d.type, d.repetition) || d.status === 'Pending';
                 }
 
-                return matchesSearch && matchesDept && matchesStatus && matchesPriority && matchesType && matchesRepeatingVisibility;
+                return matchesSearch && matchesDept && matchesStatus && matchesPriority && matchesType && matchesCreator && matchesRepeatingVisibility;
             });
 
             // Metrics calculation based on the base filtered list
@@ -6080,6 +6237,10 @@
             }, [mappings, syncStatuses]);
 
             const showDeptColumn = React.useMemo(() => {
+                return activeRole && (activeRole.isMD || (activeRole.mappings && activeRole.mappings.length > 1));
+            }, [activeRole]);
+
+            const canShowCreatedBy = React.useMemo(() => {
                 return activeRole && (activeRole.isMD || (activeRole.mappings && activeRole.mappings.length > 1));
             }, [activeRole]);
 
@@ -6679,6 +6840,7 @@
                                                         setFilterStatus('All');
                                                         setFilterPriority('All');
                                                         setFilterType('All');
+                                                        setFilterCreator('All');
                                                         setActiveMetricTab('All');
                                                         showNotification('Filters reset.');
                                                     }}
@@ -6690,7 +6852,7 @@
                                         </div>
 
                                         {/* Multi-select filter inputs */}
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
                                             {/* Dept Filter */}
                                             {(activeRole.isMD || (activeRole.mappings && activeRole.mappings.length > 1)) && (
                                                 <div>
@@ -6757,6 +6919,24 @@
                                                     <option value="Reports">Reports</option>
                                                 </select>
                                             </div>
+
+                                            {/* Creator Filter */}
+                                            {canShowCreatedBy && (
+                                                <div>
+                                                    <select
+                                                        value={filterCreator}
+                                                        onChange={(e) => setFilterCreator(e.target.value)}
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 text-xs focus:outline-none"
+                                                    >
+                                                        <option value="All">All Creators</option>
+                                                        {uniqueCreators.map(creator => (
+                                                            <option key={creator} value={creator}>
+                                                                {creator}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -7146,6 +7326,14 @@
                                                                             <div className="text-slate-800 text-sm font-medium hindi-text break-words">
                                                                                 {d.description}
                                                                             </div>
+                                                                            {canShowCreatedBy && (
+                                                                                <div className="mt-1 flex items-center gap-1.5 text-[10px] text-slate-400 font-semibold">
+                                                                                    <span>Created By:</span>
+                                                                                    <span className="bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-slate-600 font-bold">
+                                                                                        {d.createdBy || 'System/SOP'}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
                                                                             {d.targetDate && (
                                                                                 <div className="mt-1.5 flex items-center gap-1 text-[11px] text-amber-600 font-bold">
                                                                                     <span className="text-slate-400 font-normal">Target:</span>
@@ -7381,6 +7569,14 @@
                                                                 <div className="text-slate-800 text-[11px] font-semibold hindi-text leading-relaxed break-words line-clamp-3">
                                                                     {d.description}
                                                                 </div>
+                                                                {canShowCreatedBy && (
+                                                                    <div className="mt-1 flex items-center gap-1.5 text-[9px] text-slate-400 font-semibold">
+                                                                        <span>Created By:</span>
+                                                                        <span className="bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-slate-600 font-bold">
+                                                                            {d.createdBy || 'System/SOP'}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
 
                                                                 {d.targetDate && (
                                                                     <div className="flex items-center gap-1 text-[8.5px] text-amber-600 font-extrabold bg-amber-50/50 border border-amber-200 px-1.5 py-0.5 rounded-lg w-fit">
@@ -7889,6 +8085,14 @@
                                     <div className="text-slate-800 text-base md:text-lg font-medium leading-relaxed hindi-text whitespace-pre-wrap select-all mt-1">
                                         {selectedDirective.description}
                                     </div>
+                                    {canShowCreatedBy && (
+                                        <div className="mt-2.5 flex items-center gap-1.5 text-xs text-slate-405 font-semibold border-t border-slate-200/60 pt-2 w-full">
+                                            <span>Created By:</span>
+                                            <span className="bg-slate-150/60 border border-slate-200 px-2 py-0.5 rounded text-slate-600 font-bold">
+                                                {selectedDirective.createdBy || 'System/SOP'}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Metadata Grid */}
