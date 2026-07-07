@@ -496,9 +496,6 @@
                                 <div>
                                     <span className="text-[9px] font-bold text-teal-600 uppercase tracking-wider block mb-0.5">SOP DOCUMENT</span>
                                     <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-tight">{currentPolicy.sopName}</h4>
-                                    <div className="flex gap-2 items-center mt-1">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SOP ID: {currentPolicy.sopId}</span>
-                                    </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
                                     <span className="px-2 py-0.5 rounded bg-teal-50 text-[10px] font-bold text-teal-700 border border-teal-200/50 uppercase tracking-wider">{currentPolicy.policyId}</span>
@@ -1165,7 +1162,7 @@
                                                                                         <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
                                                                                             <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                                                                                                 <div className="flex items-center gap-2">
-                                                                                                    <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
+                                                                                                    <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName}</span>
                                                                                                     <span className="px-2 py-0.5 rounded bg-emerald-50 text-[10px] font-bold text-emerald-700 border border-emerald-200/50 uppercase tracking-wider">{policy.policyId}</span>
                                                                                                 </div>
                                                                                                 <span className="text-[10px] text-slate-400 font-medium">{policy.record?.timestamp}</span>
@@ -1180,7 +1177,7 @@
                                                                                         <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
                                                                                             <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                                                                                                 <div className="flex items-center gap-2">
-                                                                                                    <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
+                                                                                                    <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName}</span>
                                                                                                     <span className="px-2 py-0.5 rounded bg-rose-50 text-[10px] font-bold text-rose-700 border border-rose-200/50 uppercase tracking-wider">{policy.policyId}</span>
                                                                                                 </div>
                                                                                                 <span className="text-[10px] text-slate-400 font-medium">{policy.record?.timestamp}</span>
@@ -1199,7 +1196,7 @@
                                                                                         <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
                                                                                             <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                                                                                                 <div className="flex items-center gap-2">
-                                                                                                    <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
+                                                                                                    <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName}</span>
                                                                                                     <span className="px-2 py-0.5 rounded bg-amber-50 text-[10px] font-bold text-amber-700 border border-amber-200/50 uppercase tracking-wider">{policy.policyId}</span>
                                                                                                 </div>
                                                                                                 <span className="px-2 py-0.5 rounded bg-slate-50 text-[9px] font-bold text-slate-400 border border-slate-200/60 uppercase tracking-wider">Pending</span>
@@ -1217,7 +1214,7 @@
                                                                                             <div key={pIdx} className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
                                                                                                 <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                                                                                                     <div className="flex items-center gap-2">
-                                                                                                        <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName} ({policy.sopId})</span>
+                                                                                                        <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-650 border border-slate-200 uppercase tracking-wider">{policy.sopName}</span>
                                                                                                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ${
                                                                                                             isF ? 'bg-emerald-50 text-emerald-700 border-emerald-200/55' :
                                                                                                             isNF ? 'bg-rose-50 text-rose-700 border-rose-200/55' :
@@ -1296,7 +1293,6 @@
                                                     >
                                                         <div>
                                                             <h4 className="text-base font-extrabold text-slate-900 leading-tight">{group.sopName}</h4>
-                                                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{group.sopId}</span>
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             {isExpanded && (
@@ -1343,7 +1339,7 @@
                                                                     {/* Document Header */}
                                                                     <div className="text-center pb-4 border-b border-slate-200/80 mb-2">
                                                                         <h2 className="text-lg font-serif font-black text-slate-900 uppercase tracking-tight">{group.sopName}</h2>
-                                                                        <p className="text-[9px] text-slate-400 font-extrabold tracking-wider mt-1">{group.sopId} &bull; OFFICIAL DOCUMENT</p>
+                                                                        <p className="text-[9px] text-slate-400 font-extrabold tracking-wider mt-1">OFFICIAL DOCUMENT</p>
                                                                     </div>
 
                                                                     {/* Document Content */}
@@ -1368,7 +1364,13 @@
                                                                                             <button
                                                                                                 onClick={() => {
                                                                                                     setIsNewSopIdOption(false);
-                                                                                                    setEditingPolicy({ ...policy, isNew: false });
+                                                                                                    setEditingPolicy({
+                                                                                                        ...policy,
+                                                                                                        isNew: false,
+                                                                                                        originalPolicyId: policy.policyId,
+                                                                                                        originalSopId: policy.sopId,
+                                                                                                        originalSopName: policy.sopName
+                                                                                                    });
                                                                                                 }}
                                                                                                 className="p-1 rounded hover:bg-slate-150 text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
                                                                                                 title="Edit Policy"
@@ -1420,7 +1422,13 @@
                                                                                     <button
                                                                                         onClick={() => {
                                                                                             setIsNewSopIdOption(false);
-                                                                                            setEditingPolicy({ ...policy, isNew: false });
+                                                                                            setEditingPolicy({
+                                                                                                ...policy,
+                                                                                                isNew: false,
+                                                                                                originalPolicyId: policy.policyId,
+                                                                                                originalSopId: policy.sopId,
+                                                                                                originalSopName: policy.sopName
+                                                                                            });
                                                                                         }}
                                                                                         className="p-1.5 rounded-lg hover:bg-slate-200/80 text-slate-500 hover:text-slate-800 transition-all cursor-pointer border border-slate-200 bg-white"
                                                                                         title="Edit Policy"
@@ -1484,8 +1492,9 @@
                                         </h3>
 
                                         <div className="flex flex-col gap-4">
+                                            {/* SOP Name Section */}
                                             <div className="flex flex-col gap-1">
-                                                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SOP ID (e.g. SOP_IT)</label>
+                                                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SOP Name</label>
                                                 {editingPolicy.isNew ? (
                                                     <div className="flex flex-col gap-1.5">
                                                         <select
@@ -1507,18 +1516,18 @@
                                                             }}
                                                             className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold bg-white text-slate-700 cursor-pointer"
                                                         >
-                                                            <option value="">Select SOP ID...</option>
-                                                            <option value="NEW">[Create New SOP ID]</option>
+                                                            <option value="">Select SOP...</option>
+                                                            <option value="NEW">[Create New SOP]</option>
                                                             {uniqueSopsList.map(s => (
-                                                                <option key={s.id} value={s.id}>{s.id} ({s.name})</option>
+                                                                <option key={s.id} value={s.id}>{s.name}</option>
                                                             ))}
                                                         </select>
                                                         {isNewSopIdOption && (
                                                             <input
                                                                 type="text"
-                                                                placeholder="Enter new SOP ID (e.g. SOP_FINANCE)"
-                                                                value={editingPolicy.sopId || ''}
-                                                                onChange={(e) => setEditingPolicy(prev => ({ ...prev, sopId: e.target.value.trim().toUpperCase() }))}
+                                                                placeholder="Enter new SOP Name"
+                                                                value={editingPolicy.sopName || ''}
+                                                                onChange={(e) => setEditingPolicy(prev => ({ ...prev, sopName: e.target.value }))}
                                                                 className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold animate-slide-up"
                                                             />
                                                         )}
@@ -1526,32 +1535,23 @@
                                                 ) : (
                                                     <input
                                                         type="text"
-                                                        disabled={true}
-                                                        value={editingPolicy.sopId}
-                                                        className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none transition-all font-bold bg-slate-150 text-slate-400"
+                                                        placeholder="Enter SOP Name"
+                                                        value={editingPolicy.sopName || ''}
+                                                        onChange={(e) => setEditingPolicy(prev => ({ ...prev, sopName: e.target.value }))}
+                                                        className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold"
                                                     />
                                                 )}
                                             </div>
 
+                                            {/* Policy Name Section */}
                                             <div className="flex flex-col gap-1">
-                                                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SOP Name (e.g. IT Security Policy)</label>
+                                                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Policy Name</label>
                                                 <input
                                                     type="text"
-                                                    disabled={!editingPolicy.isNew || (!isNewSopIdOption && !!editingPolicy.sopId)}
-                                                    value={editingPolicy.sopName || ''}
-                                                    onChange={(e) => setEditingPolicy(prev => ({ ...prev, sopName: e.target.value }))}
-                                                    className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150 disabled:text-slate-400"
-                                                />
-                                            </div>
-
-                                            <div className="flex flex-col gap-1">
-                                                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Policy ID (e.g. P1, P2)</label>
-                                                <input
-                                                    type="text"
-                                                    disabled={!editingPolicy.isNew}
-                                                    value={editingPolicy.policyId}
-                                                    onChange={(e) => setEditingPolicy(prev => ({ ...prev, policyId: e.target.value.trim().toUpperCase() }))}
-                                                    className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold disabled:bg-slate-150 disabled:text-slate-400"
+                                                    placeholder="Enter Policy Name"
+                                                    value={editingPolicy.policyId || ''}
+                                                    onChange={(e) => setEditingPolicy(prev => ({ ...prev, policyId: e.target.value }))}
+                                                    className="w-full text-xs p-2.5 border border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-all font-bold text-slate-700 bg-white"
                                                 />
                                             </div>
 
@@ -1608,7 +1608,26 @@
                                                 </button>
                                                 <button
                                                     onClick={() => {
-                                                        if (!editingPolicy.sopId || !editingPolicy.sopName || !editingPolicy.policyId || !editingPolicy.policyText) {
+                                                        let finalSopId = editingPolicy.sopId;
+                                                        let finalSopName = editingPolicy.sopName ? editingPolicy.sopName.trim() : '';
+
+                                                        if (editingPolicy.isNew) {
+                                                            if (isNewSopIdOption) {
+                                                                if (!finalSopName) {
+                                                                    showNotification('Please enter the SOP name.', 'warning');
+                                                                    return;
+                                                                }
+                                                                // Auto-create SOP ID from SOP Name
+                                                                finalSopId = 'SOP_' + finalSopName.toUpperCase().replace(/[^A-Z0-9]/g, '_').replace(/_+/g, '_');
+                                                            }
+                                                        } else {
+                                                            if (!finalSopName) {
+                                                                showNotification('SOP Name cannot be empty.', 'warning');
+                                                                return;
+                                                            }
+                                                        }
+
+                                                        if (!finalSopId || !finalSopName || !editingPolicy.policyId || !editingPolicy.policyText) {
                                                             showNotification('Please fill in all policy fields.', 'warning');
                                                             return;
                                                         }
@@ -1616,23 +1635,43 @@
                                                         let updated = [];
                                                         if (editingPolicy.isNew) {
                                                             // Check for duplicate policy ID inside same SOP
-                                                            if (sops.some(p => p.sopId === editingPolicy.sopId && p.policyId === editingPolicy.policyId)) {
-                                                                showNotification(`Policy ID ${editingPolicy.policyId} already exists inside SOP ${editingPolicy.sopId}.`, 'warning');
+                                                            if (sops.some(p => p.sopId === finalSopId && p.policyId === editingPolicy.policyId)) {
+                                                                showNotification(`Policy Name "${editingPolicy.policyId}" already exists inside SOP "${finalSopName}".`, 'warning');
                                                                 return;
                                                             }
                                                             updated = [...sops, { 
-                                                                sopId: editingPolicy.sopId,
-                                                                sopName: editingPolicy.sopName,
+                                                                sopId: finalSopId,
+                                                                sopName: finalSopName,
                                                                 policyId: editingPolicy.policyId,
                                                                 policyText: editingPolicy.policyText,
                                                                 status: editingPolicy.status
                                                             }];
                                                         } else {
-                                                            updated = sops.map(p => 
-                                                                (p.sopId === editingPolicy.sopId && p.policyId === editingPolicy.policyId)
-                                                                ? { ...p, policyText: editingPolicy.policyText, status: editingPolicy.status }
-                                                                : p
-                                                            );
+                                                            // Check if policyId changed and if there is a duplicate in the same SOP
+                                                            if (editingPolicy.policyId !== editingPolicy.originalPolicyId) {
+                                                                if (sops.some(p => p.sopId === finalSopId && p.policyId === editingPolicy.policyId && !(p.sopId === editingPolicy.originalSopId && p.policyId === editingPolicy.originalPolicyId))) {
+                                                                    showNotification(`Policy Name "${editingPolicy.policyId}" already exists inside SOP "${finalSopName}".`, 'warning');
+                                                                    return;
+                                                                }
+                                                            }
+                                                            updated = sops.map(p => {
+                                                                if (p.sopId === editingPolicy.originalSopId && p.policyId === editingPolicy.originalPolicyId) {
+                                                                    return {
+                                                                        ...p,
+                                                                        sopName: finalSopName,
+                                                                        policyId: editingPolicy.policyId,
+                                                                        policyText: editingPolicy.policyText,
+                                                                        status: editingPolicy.status
+                                                                    };
+                                                                }
+                                                                if (p.sopId === editingPolicy.originalSopId) {
+                                                                    return {
+                                                                        ...p,
+                                                                        sopName: finalSopName
+                                                                    };
+                                                                }
+                                                                return p;
+                                                            });
                                                         }
                                                         saveSops(updated);
                                                         setIsNewSopIdOption(false);
@@ -1708,7 +1747,7 @@
                                                             <tr className="border-b border-slate-100 text-slate-400 uppercase font-extrabold tracking-wider text-[10px]">
                                                                 <th className="py-2.5 px-3">Target ID</th>
                                                                 <th className="py-2.5 px-3">Type</th>
-                                                                <th className="py-2.5 px-3">SOP ID</th>
+                                                                <th className="py-2.5 px-3">Mapped SOP</th>
                                                                 <th className="py-2.5 px-3">Resolved Name</th>
                                                                 <th className="py-2.5 px-3 text-right">Actions</th>
                                                             </tr>
@@ -1731,8 +1770,8 @@
                                                                                 {m.type}
                                                                             </span>
                                                                         </td>
-                                                                        <td className="py-3 px-3 font-bold text-slate-500">{m.sopId}</td>
-                                                                        <td className="py-3 px-3 text-slate-650 font-medium">{resolvedTargetName} &bull; <span className="text-[10px] text-slate-400 italic">{sopName}</span></td>
+                                                                        <td className="py-3 px-3 font-bold text-slate-500">{sopName}</td>
+                                                                        <td className="py-3 px-3 text-slate-650 font-medium">{resolvedTargetName}</td>
                                                                         <td className="py-3 px-3 text-right">
                                                                             <button
                                                                                 onClick={() => {
@@ -1882,7 +1921,7 @@
                                                         >
                                                             <option value="">Select an SOP...</option>
                                                             {groupedSops.map(group => (
-                                                                <option key={group.sopId} value={group.sopId}>{group.sopName} ({group.sopId})</option>
+                                                                <option key={group.sopId} value={group.sopId}>{group.sopName}</option>
                                                             ))}
                                                         </select>
                                                     </div>
