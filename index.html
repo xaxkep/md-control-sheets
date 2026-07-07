@@ -3293,6 +3293,9 @@
                     CanDeleteDirectives: false
                 };
             });
+            const [isInPermissionsSheet, setIsInPermissionsSheet] = React.useState(() => {
+                return localStorage.getItem('pcil_isInPermissionsSheet') === 'true';
+            });
             const [mdSopDocId, setMdSopDocId] = React.useState(() => localStorage.getItem('pcil_mdSopDocId') || '');
             
             // Department groups state
@@ -3784,6 +3787,7 @@
                     };
                     const userEmail = auth?.email?.toLowerCase() || '';
                     const mdEmailsList = fetchedMdEmail.split(',').map(e => e.trim().toLowerCase());
+                    let isUserInPermSheet = false;
                     
                     if (permissionsRange && permissionsRange.values && permissionsRange.values.length > 0) {
                         const rows = permissionsRange.values;
@@ -3791,6 +3795,7 @@
                         const colIdx = emailsRow.findIndex((val, idx) => idx > 0 && String(val).trim().toLowerCase() === userEmail);
                         
                         if (colIdx !== -1) {
+                            isUserInPermSheet = true;
                             for (let r = 1; r < rows.length; r++) {
                                 const row = rows[r];
                                 if (row && row[0]) {
@@ -3831,6 +3836,12 @@
                     if (newPermissionsStr !== oldPermissionsStr) {
                         setUserPermissions(parsedPermissions);
                         localStorage.setItem('pcil_userPermissions', newPermissionsStr);
+                    }
+
+                    const oldIsInPermSheet = localStorage.getItem('pcil_isInPermissionsSheet') === 'true';
+                    if (isUserInPermSheet !== oldIsInPermSheet) {
+                        setIsInPermissionsSheet(isUserInPermSheet);
+                        localStorage.setItem('pcil_isInPermissionsSheet', String(isUserInPermSheet));
                     }
                     
                     console.log('[Config] Configuration loaded. Mappings:', fetchedMappings.length, 'SOPs:', fetchedSops.length);
@@ -4396,7 +4407,8 @@
 
             const activeSopDocs = React.useMemo(() => {
                 const role = activeRole;
-                if (!role || role.isUnregistered) return [];
+                if (!role) return [];
+                if (role.isUnregistered && !isInPermissionsSheet) return [];
                 
                 const docs = [];
                 
@@ -4473,7 +4485,7 @@
                         policies: policies
                     };
                 });
-            }, [clientId, mdEmail, mappings, auth, mdSopDocId, isSandbox, sandboxRole, activeRole, filterDept, sops, deptGroups]);
+            }, [clientId, mdEmail, mappings, auth, mdSopDocId, isSandbox, sandboxRole, activeRole, filterDept, sops, deptGroups, isInPermissionsSheet, effectivePermissions]);
 
             // Generic helper to send email using Gmail API
             const sendEmailViaGmail = async (toEmail, subject, bodyText) => {
@@ -5087,9 +5099,17 @@
                 }
 
                 const role = getActiveUserRole();
-                if (!role || effectivePermissions.CanViewAllSOPs || role.isUnregistered || !activeSopDocs || activeSopDocs.length === 0) {
+                if (!role || !activeSopDocs || activeSopDocs.length === 0) {
                     setIsSopWizardOpen(false);
                     return;
+                }
+
+                // If user is not listed in the permissions sheet, exclude MDs (CanViewAllSOPs) and unregistered users from weekly affirmations
+                if (!isInPermissionsSheet) {
+                    if (effectivePermissions.CanViewAllSOPs || role.isUnregistered) {
+                        setIsSopWizardOpen(false);
+                        return;
+                    }
                 }
 
                 // Get active policies for mapped SOPs
@@ -5127,7 +5147,7 @@
                 } else {
                     setIsSopWizardOpen(false);
                 }
-            }, [auth, activeSopDocs, sopReadRecords]);
+            }, [auth, activeSopDocs, sopReadRecords, isInPermissionsSheet, effectivePermissions]);
 
             const extractCreatedBy = (text) => {
                 if (!text) return { text: '', createdBy: '' };
