@@ -1462,7 +1462,7 @@
                             </div>
 
                             {/* Modal Policy Editor Form Overlay */}
-                            {editingPolicy && (
+                            {editingPolicy && ReactDOM.createPortal(
                                 <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
                                     <div className="glass-panel p-6 rounded-3xl border border-slate-200/80 shadow-2xl bg-white flex flex-col gap-4 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-zoom-in relative">
                                         {/* Close Button */}
@@ -1645,7 +1645,8 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </div>,
+                                document.body
                             )}
                         </div>
                     )}
@@ -1760,7 +1761,7 @@
                                     </div>
 
                                     {/* Modal Mapping Creator Form Overlay */}
-                                    {editingMapping && (
+                                    {editingMapping && ReactDOM.createPortal(
                                         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
                                             <div className="glass-panel p-6 rounded-3xl border border-slate-200/80 shadow-2xl bg-white flex flex-col gap-4 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-zoom-in relative">
                                                 {/* Close Button */}
@@ -1943,7 +1944,8 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </div>,
+                                        document.body
                                     )}
                                 </div>
                             )}
@@ -2025,7 +2027,7 @@
                                     </div>
 
                                     {/* Modal Group Editor Form Overlay */}
-                                    {editingGroup && (
+                                    {editingGroup && ReactDOM.createPortal(
                                         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
                                             <div className="glass-panel p-6 rounded-3xl border border-slate-200/80 shadow-2xl bg-white flex flex-col gap-4 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-zoom-in relative">
                                                 {/* Close Button */}
@@ -2126,7 +2128,8 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </div>,
+                                        document.body
                                     )}
                                 </div>
                             )}
