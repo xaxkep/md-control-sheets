@@ -4529,6 +4529,56 @@
                 });
             }, [clientId, mdEmail, mappings, auth, mdSopDocId, isSandbox, sandboxRole, activeRole, filterDept, sops, deptGroups, isInPermissionsSheet, effectivePermissions]);
 
+            const assignedSopDocs = React.useMemo(() => {
+                const role = activeRole;
+                if (!role) return [];
+                if (role.isUnregistered && !isInPermissionsSheet) return [];
+                
+                const docs = [];
+                const coordinatorMappings = role.mappings || (role.mapping ? [role.mapping] : []);
+                
+                coordinatorMappings.forEach(m => {
+                    // 1. Resolve explicit department SOPs
+                    const parsedDeptSops = parseSops(m, m.deptName);
+                    parsedDeptSops.forEach(d => {
+                        if (!docs.some(existing => String(existing.id).trim().toLowerCase() === String(d.id).trim().toLowerCase())) {
+                            docs.push(d);
+                        }
+                    });
+                    
+                    // 2. Resolve group-level SOPs dynamically
+                    const groupIds = deptGroups
+                        .filter(g => String(g.deptId).trim().toLowerCase() === String(m.id).trim().toLowerCase())
+                        .map(g => String(g.groupId).trim().toLowerCase());
+                    
+                    const groupSopIds = sopMappings
+                        .filter(mapRule => {
+                            const mType = String(mapRule.type).trim().toLowerCase();
+                            const mTarget = String(mapRule.targetId).trim().toLowerCase();
+                            return mType === 'group' && (groupIds.includes(mTarget) || mTarget === 'default');
+                        })
+                        .map(mapRule => String(mapRule.sopId).trim().toLowerCase());
+                        
+                    groupSopIds.forEach(sopId => {
+                        const matchedSop = sops.find(s => String(s.sopId).trim().toLowerCase() === sopId);
+                        const sopName = matchedSop?.sopName || sopId;
+                        const sopDocId = matchedSop?.sopDocId || '';
+                        if (!docs.some(existing => String(existing.id).trim().toLowerCase() === sopId)) {
+                            docs.push({ id: sopId, name: sopName, docId: sopDocId });
+                        }
+                    });
+                });
+
+                // Attach parsed policies to each resolved SOP
+                return docs.map(doc => {
+                    const policies = sops.filter(s => String(s.sopId).trim().toLowerCase() === String(doc.id).trim().toLowerCase());
+                    return {
+                        ...doc,
+                        policies: policies
+                    };
+                });
+            }, [activeRole, isInPermissionsSheet, mappings, sops, deptGroups, sopMappings]);
+
             // Generic helper to send email using Gmail API
             const sendEmailViaGmail = async (toEmail, subject, bodyText) => {
                 if (isSandbox) {
@@ -5141,7 +5191,7 @@
                 }
 
                 const role = getActiveUserRole();
-                if (!role || !activeSopDocs || activeSopDocs.length === 0) {
+                if (!role || !assignedSopDocs || assignedSopDocs.length === 0) {
                     setIsSopWizardOpen(false);
                     return;
                 }
@@ -5156,7 +5206,7 @@
 
                 // Get active policies for mapped SOPs
                 const activePolicies = [];
-                activeSopDocs.forEach(sopDoc => {
+                assignedSopDocs.forEach(sopDoc => {
                     if (sopDoc.policies) {
                         sopDoc.policies.forEach(policy => {
                             if (String(policy.status).trim().toLowerCase() !== 'inactive') {
@@ -5189,7 +5239,7 @@
                 } else {
                     setIsSopWizardOpen(false);
                 }
-            }, [auth, activeSopDocs, sopReadRecords, isInPermissionsSheet, effectivePermissions]);
+            }, [auth, assignedSopDocs, sopReadRecords, isInPermissionsSheet, effectivePermissions]);
 
             const extractCreatedBy = (text) => {
                 if (!text) return { text: '', createdBy: '' };
@@ -7827,7 +7877,7 @@
                     {/* SOP Compliance Wizard Modal */}
                     <SOPWizardModal
                         isOpen={isSopWizardOpen}
-                        activeSopDocs={activeSopDocs}
+                        activeSopDocs={assignedSopDocs}
                         activeRole={activeRole}
                         sopReadRecords={sopReadRecords}
                         setSopReadRecords={setSopReadRecords}
