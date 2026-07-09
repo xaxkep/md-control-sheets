@@ -2249,7 +2249,7 @@
                         <div className="bg-gradient-to-br from-slate-900 to-slate-800/40 border border-slate-700/30 rounded-3xl p-8 flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden group gap-3">
                             <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-slate-500/5 blur-3xl group-hover:bg-slate-500/10 transition-all duration-500"></div>
                             <div>
-                                <h2 className="text-3xl md:text-4xl font-extrabold text-slate-100 tracking-tight">Pending Tasks</h2>
+                                <h2 className="text-3xl md:text-4xl font-extrabold text-slate-100 tracking-tight">Not seen</h2>
                             </div>
                             <div className="flex items-center justify-center">
                                 <span className="text-8xl md:text-[9rem] font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-slate-300 to-slate-500 leading-none">
@@ -7132,7 +7132,7 @@
                                          </div>
                                          <div>
                                              <div className="text-lg md:text-2xl font-black tracking-tight text-slate-800">{loading ? '...' : metrics.pending}</div>
-                                             <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">Pending Tasks</div>
+                                             <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">Not seen</div>
                                          </div>
                                      </div>
  
@@ -7166,21 +7166,24 @@
                                          <div className={`p-2 md:p-3.5 rounded-xl transition-all duration-200 ${activeMetricTab === 'Overdue' ? 'bg-rose-500 text-white' : 'bg-rose-500/10 text-rose-600'}`}>
                                              <Icon name="alert" className="w-4 h-4 md:w-6 md:h-6" />
                                          </div>
-                                         <div>
-                                             <div className="text-lg md:text-2xl font-black tracking-tight flex items-baseline gap-1.5 select-none">
-                                                 {loading ? (
-                                                     <span className="text-rose-600">...</span>
-                                                 ) : (
-                                                     <React.Fragment>
-                                                         <span className="text-rose-600">{(metrics.overdue || 0) + (metrics.awaitingAudit || 0)}</span>
-                                                         <span className="text-slate-300 font-normal text-sm md:text-base">|</span>
-                                                         <span className="text-sky-500">{metrics.awaitingAudit}</span>
-                                                         <span className="text-[10px] md:text-xs text-sky-500 font-bold uppercase tracking-wider">Awaiting</span>
-                                                     </React.Fragment>
-                                                 )}
-                                             </div>
-                                             <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">Overdue</div>
-                                         </div>
+                                          <div className="flex flex-col gap-2">
+                                              <div>
+                                                  <div className="text-lg md:text-2xl font-black tracking-tight text-rose-600 select-none leading-none">
+                                                      {loading ? '...' : ((metrics.overdue || 0) + (metrics.awaitingAudit || 0))}
+                                                  </div>
+                                                  <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mt-1.5">
+                                                      Target Date Passed
+                                                  </div>
+                                              </div>
+                                              <div className="mt-1">
+                                                  <div className="text-sm md:text-base font-extrabold tracking-tight text-sky-600 select-none leading-none">
+                                                      {loading ? '...' : (metrics.awaitingAudit || 0)}
+                                                  </div>
+                                                  <div className="text-[8px] md:text-[10px] font-bold text-sky-500 uppercase tracking-wider mt-1">
+                                                      Pending Verification
+                                                  </div>
+                                              </div>
+                                          </div>
                                      </div>
 
                                     {/* Completed Audits Card */}
