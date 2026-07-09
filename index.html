@@ -7172,7 +7172,7 @@
                                                      <span className="text-rose-600">...</span>
                                                  ) : (
                                                      <React.Fragment>
-                                                         <span className="text-rose-600">{metrics.overdue}</span>
+                                                         <span className="text-rose-600">{(metrics.overdue || 0) + (metrics.awaitingAudit || 0)}</span>
                                                          <span className="text-slate-300 font-normal text-sm md:text-base">|</span>
                                                          <span className="text-sky-500">{metrics.awaitingAudit}</span>
                                                          <span className="text-[10px] md:text-xs text-sky-500 font-bold uppercase tracking-wider">Awaiting</span>
