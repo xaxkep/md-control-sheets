@@ -7166,24 +7166,17 @@
                                          <div className={`p-2 md:p-3.5 rounded-xl transition-all duration-200 ${activeMetricTab === 'Overdue' ? 'bg-rose-500 text-white' : 'bg-rose-500/10 text-rose-600'}`}>
                                              <Icon name="alert" className="w-4 h-4 md:w-6 md:h-6" />
                                          </div>
-                                          <div className="flex flex-col gap-2">
-                                              <div>
-                                                  <div className="text-lg md:text-2xl font-black tracking-tight text-rose-600 select-none leading-none">
-                                                      {loading ? '...' : ((metrics.overdue || 0) + (metrics.awaitingAudit || 0))}
-                                                  </div>
-                                                  <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mt-1.5">
-                                                      Target Date Passed
-                                                  </div>
-                                              </div>
-                                              <div className="mt-1">
-                                                  <div className="text-sm md:text-base font-extrabold tracking-tight text-sky-600 select-none leading-none">
-                                                      {loading ? '...' : (metrics.awaitingAudit || 0)}
-                                                  </div>
-                                                  <div className="text-[8px] md:text-[10px] font-bold text-sky-500 uppercase tracking-wider mt-1">
-                                                      Pending Verification
-                                                  </div>
-                                              </div>
-                                          </div>
+                                           <div className="flex flex-col">
+                                               <div className="text-lg md:text-2xl font-black tracking-tight text-rose-600 select-none leading-tight">
+                                                   {loading ? '...' : ((metrics.overdue || 0) + (metrics.awaitingAudit || 0))}
+                                               </div>
+                                               <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5 leading-tight">
+                                                   Target Date Passed
+                                               </div>
+                                               <div className="text-[8px] md:text-[10px] font-bold text-sky-500 uppercase tracking-wider mt-1.5 leading-tight select-none">
+                                                   Pending Verification: <span className="font-extrabold text-sky-600">{loading ? '...' : (metrics.awaitingAudit || 0)}</span>
+                                               </div>
+                                           </div>
                                      </div>
 
                                     {/* Completed Audits Card */}
