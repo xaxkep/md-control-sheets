@@ -2181,6 +2181,9 @@
         function CabinDashboardView({ metrics, onBack }) {
             const currentHour = new Date().getHours();
             const isBefore2PM = currentHour < 14;
+            const dayOfWeek = new Date().getDay();
+            const isThursdayOrLater = dayOfWeek >= 4; // Thursday = 4, Friday = 5, Saturday = 6
+
             return (
                 <div className="w-screen h-screen bg-slate-950 text-white flex flex-col p-6 gap-6 overflow-hidden select-none relative font-sans">
                     {/* Discrete close button */}
@@ -2194,16 +2197,16 @@
                         </svg>
                     </button>
 
-                    {/* Row 1 (SOP Compliance - 3 Cards) */}
-                    <div className="grid grid-cols-3 gap-6 h-[calc(50vh-20px)]">
-                        {/* SOP Not Followed This Week */}
+                    {/* Row 1 (SOP Compliance - 2 Cards) */}
+                    <div className="grid grid-cols-2 gap-6 h-[calc(50vh-20px)]">
+                        {/* SOPs Not Followed This Week */}
                         <div className="bg-gradient-to-br from-amber-955/35 to-amber-900/10 border border-amber-500/20 rounded-3xl p-8 flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden group gap-4">
                             <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-amber-500/5 blur-3xl group-hover:bg-amber-500/10 transition-all duration-500"></div>
                             <div>
-                                <h2 className="text-4xl md:text-5xl font-extrabold text-slate-100 tracking-tight">SOP Not Followed This Week</h2>
+                                <h2 className="text-4xl md:text-5xl font-extrabold text-slate-100 tracking-tight">SOPs Not Followed This Week</h2>
                             </div>
                             <div className="flex items-center justify-center">
-                                <span className="text-9xl md:text-[10rem] font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-amber-400 to-yellow-600 leading-none">
+                                <span className={`text-9xl md:text-[10rem] font-black tracking-tighter leading-none ${isThursdayOrLater ? 'text-red-500 animate-pulse' : 'text-white'}`}>
                                     {metrics.sopNotFollowedThis}
                                 </span>
                             </div>
@@ -2212,27 +2215,11 @@
                             </div>
                         </div>
 
-                        {/* SOP Not Followed Last Week */}
-                        <div className="bg-gradient-to-br from-rose-955/35 to-rose-900/10 border border-rose-500/20 rounded-3xl p-8 flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden group gap-4">
-                            <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-rose-500/5 blur-3xl group-hover:bg-rose-500/10 transition-all duration-500"></div>
-                            <div>
-                                <h2 className="text-4xl md:text-5xl font-extrabold text-slate-100 tracking-tight">SOP Not Followed Last Week</h2>
-                            </div>
-                            <div className="flex items-center justify-center">
-                                <span className="text-9xl md:text-[10rem] font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-rose-400 to-red-600 leading-none">
-                                    {metrics.sopNotFollowedLast}
-                                </span>
-                            </div>
-                            <div className="w-full bg-rose-500/10 h-1.5 rounded-full overflow-hidden max-w-[80%] mt-2">
-                                <div className="bg-rose-500 h-full rounded-full w-full opacity-60"></div>
-                            </div>
-                        </div>
-
-                        {/* Unanswered This Week */}
+                        {/* SOPs Not Checked This Week */}
                         <div className="bg-gradient-to-br from-indigo-955/35 to-indigo-900/10 border border-indigo-500/20 rounded-3xl p-8 flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden group gap-4">
                             <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-indigo-500/5 blur-3xl group-hover:bg-indigo-500/10 transition-all duration-500"></div>
                             <div>
-                                <h2 className="text-4xl md:text-5xl font-extrabold text-slate-100 tracking-tight">Unanswered This Week</h2>
+                                <h2 className="text-4xl md:text-5xl font-extrabold text-slate-100 tracking-tight">SOPs Not Checked This Week</h2>
                             </div>
                             <div className="flex items-center justify-center">
                                 <span className="text-9xl md:text-[10rem] font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-indigo-400 to-purple-600 leading-none">
@@ -2247,11 +2234,11 @@
 
                     {/* Row 2 (Directive Tasks - 2 Cards) */}
                     <div className="grid grid-cols-2 gap-6 h-[calc(50vh-20px)]">
-                        {/* Not Seen */}
+                        {/* Tasks Not Seen */}
                         <div className="bg-gradient-to-br from-slate-900 to-slate-800/40 border border-slate-700/30 rounded-3xl p-8 flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden group gap-3">
                             <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-slate-500/5 blur-3xl group-hover:bg-slate-500/10 transition-all duration-500"></div>
                             <div>
-                                <h2 className="text-3xl md:text-4xl font-extrabold text-slate-100 tracking-tight">Not seen</h2>
+                                <h2 className="text-3xl md:text-4xl font-extrabold text-slate-100 tracking-tight">Tasks Not Seen</h2>
                             </div>
                             <div className="flex items-center justify-center">
                                 <span className="text-8xl md:text-[9rem] font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-slate-300 to-slate-500 leading-none">
@@ -2263,11 +2250,11 @@
                             </div>
                         </div>
 
-                        {/* Target Date Passed */}
+                        {/* Tasks Target Date Passed */}
                         <div className="bg-gradient-to-br from-rose-955/35 to-red-955/20 border border-rose-500/35 rounded-3xl p-8 flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden group gap-3">
                             <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-rose-500/5 blur-3xl group-hover:bg-rose-500/10 transition-all duration-500"></div>
                             <div>
-                                <h2 className="text-3xl md:text-4xl font-extrabold text-slate-100 tracking-tight">Target Date Passed</h2>
+                                <h2 className="text-3xl md:text-4xl font-extrabold text-slate-100 tracking-tight">Tasks Target Date Passed</h2>
                             </div>
                             <div className="flex items-center justify-center">
                                 <span className={`text-8xl md:text-[9rem] font-black tracking-tighter leading-none ${isBefore2PM ? 'text-white' : 'text-red-500 animate-pulse'}`}>
