@@ -2196,7 +2196,7 @@
             const valTasksNotSeen = metrics.pending || 0;
             const colorTasksNotSeen = valTasksNotSeen === 0 ? 'text-emerald-500' : 'text-red-500';
 
-            const valTasksTargetDatePassed = (metrics.overdue || 0) + (metrics.awaitingAudit || 0);
+            const valTasksTargetDatePassed = metrics.overdue || 0;
             const colorTasksTargetDatePassed = valTasksTargetDatePassed === 0 
                 ? 'text-emerald-500' 
                 : (isBefore2PM ? 'text-amber-500' : 'text-red-500');
@@ -4244,9 +4244,11 @@
 
             const isDirectiveOverdue = (d) => {
                 if (!d) return false;
-                const isPending = d.status !== 'Completed' && d.status !== 'Checked & Confirmed' && d.status !== 'Deleted';
-                if (!isPending) return false;
                 if (d.type === 'WSR') return false;
+                if (d.status === 'Deleted') return false;
+
+                const isNotVerified = d.verification !== 'Done' && d.verification !== 'Verified' && d.status !== 'Checked & Confirmed';
+                if (!isNotVerified) return false;
 
                 // If target date is specified and is a valid calendar date
                 if (d.targetDate && d.targetDate !== 'Immediate' && d.targetDate !== '-') {
@@ -6315,7 +6317,7 @@
                 } else if (activeMetricTab === 'Active') {
                     list = list.filter(d => d.type !== 'WSR' && ['Not Seen', 'Pending', 'In Progress', 'On Hold'].includes(d.status));
                 } else if (activeMetricTab === 'Overdue') {
-                    list = list.filter(d => isDirectiveOverdue(d) || (d.type !== 'WSR' && d.status === 'Completed' && d.verification !== 'Done' && d.verification !== 'Verified'));
+                    list = list.filter(d => isDirectiveOverdue(d));
                 } else if (activeMetricTab === 'AwaitingAudit') {
                     list = list.filter(d => d.type !== 'WSR' && d.status === 'Completed' && d.verification !== 'Done' && d.verification !== 'Verified');
                 } else if (activeMetricTab === 'Completed') {
@@ -7169,7 +7171,7 @@
                                          </div>
                                            <div className="flex flex-col">
                                                <div className="text-lg md:text-2xl font-black tracking-tight text-rose-600 select-none leading-tight">
-                                                   {loading ? '...' : ((metrics.overdue || 0) + (metrics.awaitingAudit || 0))}
+                                                   {loading ? '...' : (metrics.overdue || 0)}
                                                </div>
                                                <div className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5 leading-tight">
                                                    Target Date Passed
