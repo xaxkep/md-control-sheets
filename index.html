@@ -6456,7 +6456,7 @@
             const cabinMetrics = React.useMemo(() => {
                 const nonWsr = directives.filter(d => d.status !== 'Deleted' && d.type !== 'WSR');
                 
-                const isNotSeenFor3Days = (d) => {
+                const isNotSeenFor1Day = (d) => {
                     if (d.status !== 'Not Seen') return false;
                     if (!d.date) return false;
                     
@@ -6472,18 +6472,18 @@
                         if (day && monthIdx >= 0 && monthIdx < 12 && year) {
                             const dateObj = new Date(year, monthIdx, day);
                             const diffMs = Date.now() - dateObj.getTime();
-                            return (diffMs / (1000 * 60 * 60 * 24)) >= 3;
+                            return (diffMs / (1000 * 60 * 60 * 24)) >= 1;
                         }
                     }
                     
                     const parsed = new Date(d.date);
                     if (!isNaN(parsed.getTime())) {
-                        return ((Date.now() - parsed.getTime()) / (1000 * 60 * 60 * 24)) >= 3;
+                        return ((Date.now() - parsed.getTime()) / (1000 * 60 * 60 * 24)) >= 1;
                     }
                     return false;
                 };
 
-                const pending = nonWsr.filter(d => isNotSeenFor3Days(d)).length;
+                const pending = nonWsr.filter(d => isNotSeenFor1Day(d)).length;
                 const active = nonWsr.filter(d => ['Not Seen', 'Pending', 'In Progress', 'On Hold'].includes(d.status)).length;
                 const overdue = nonWsr.filter(d => isDirectiveOverdue(d)).length;
                 const awaitingAudit = nonWsr.filter(d => d.status === 'Completed' && d.verification !== 'Done' && d.verification !== 'Verified').length;
