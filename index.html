@@ -2180,9 +2180,26 @@
         // Cabin Dashboard View for MD Sir's Cabin Screen (Fullscreen TV View)
         function CabinDashboardView({ metrics, onBack }) {
             const currentHour = new Date().getHours();
-            const isBefore2PM = currentHour < 14;
+            const currentMinute = new Date().getMinutes();
+            const isBefore2PM = currentHour < 14 || (currentHour === 14 && currentMinute === 0);
             const dayOfWeek = new Date().getDay();
-            const isThursdayOrLater = dayOfWeek >= 4; // Thursday = 4, Friday = 5, Saturday = 6
+
+            // Color coding logic
+            const valSopNotFollowed = metrics.sopNotFollowedThis || 0;
+            const colorSopNotFollowed = valSopNotFollowed === 0 ? 'text-emerald-500' : 'text-red-500 animate-pulse';
+
+            const valSopNotChecked = metrics.unansweredThis || 0;
+            const colorSopNotChecked = valSopNotChecked === 0 
+                ? 'text-emerald-500' 
+                : (dayOfWeek <= 3 ? 'text-white' : 'text-red-500 animate-pulse');
+
+            const valTasksNotSeen = metrics.pending || 0;
+            const colorTasksNotSeen = valTasksNotSeen === 0 ? 'text-emerald-500' : 'text-red-500 animate-pulse';
+
+            const valTasksTargetDatePassed = (metrics.overdue || 0) + (metrics.awaitingAudit || 0);
+            const colorTasksTargetDatePassed = valTasksTargetDatePassed === 0 
+                ? 'text-emerald-500' 
+                : (isBefore2PM ? 'text-amber-500' : 'text-red-500 animate-pulse');
 
             return (
                 <div className="w-screen h-screen bg-slate-950 text-white flex flex-col p-6 gap-6 overflow-hidden select-none relative font-sans">
@@ -2206,8 +2223,8 @@
                                 <h2 className="text-4xl md:text-5xl font-extrabold text-slate-100 tracking-tight">SOPs Not Followed This Week</h2>
                             </div>
                             <div className="flex items-center justify-center">
-<span className="text-9xl md:text-[10rem] font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-amber-400 to-yellow-600 leading-none">
-                                    {metrics.sopNotFollowedThis}
+                                <span className={`text-9xl md:text-[10rem] font-black tracking-tighter leading-none ${colorSopNotFollowed}`}>
+                                    {valSopNotFollowed}
                                 </span>
                             </div>
                             <div className="w-full bg-amber-500/10 h-1.5 rounded-full overflow-hidden max-w-[80%] mt-2">
@@ -2222,8 +2239,8 @@
                                 <h2 className="text-4xl md:text-5xl font-extrabold text-slate-100 tracking-tight">SOPs Not Checked This Week</h2>
                             </div>
                             <div className="flex items-center justify-center">
-<span className={`text-9xl md:text-[10rem] font-black tracking-tighter leading-none ${isThursdayOrLater ? 'text-red-500 animate-pulse' : 'text-white'}`}>
-                                    {metrics.unansweredThis}
+                                <span className={`text-9xl md:text-[10rem] font-black tracking-tighter leading-none ${colorSopNotChecked}`}>
+                                    {valSopNotChecked}
                                 </span>
                             </div>
                             <div className="w-full bg-indigo-500/10 h-1.5 rounded-full overflow-hidden max-w-[80%] mt-2">
@@ -2241,8 +2258,8 @@
                                 <h2 className="text-3xl md:text-4xl font-extrabold text-slate-100 tracking-tight">Tasks Not Seen</h2>
                             </div>
                             <div className="flex items-center justify-center">
-                                <span className="text-8xl md:text-[9rem] font-black tracking-tighter text-red-500 leading-none">
-                                    {metrics.pending}
+                                <span className={`text-8xl md:text-[9rem] font-black tracking-tighter leading-none ${colorTasksNotSeen}`}>
+                                    {valTasksNotSeen}
                                 </span>
                             </div>
                             <div className="w-full bg-slate-500/10 h-1.5 rounded-full overflow-hidden max-w-[80%] mt-2">
@@ -2257,8 +2274,8 @@
                                 <h2 className="text-3xl md:text-4xl font-extrabold text-slate-100 tracking-tight">Tasks Target Date Passed</h2>
                             </div>
                             <div className="flex items-center justify-center">
-                                <span className={`text-8xl md:text-[9rem] font-black tracking-tighter leading-none ${isBefore2PM ? 'text-white' : 'text-red-500 animate-pulse'}`}>
-                                    {(metrics.overdue || 0) + (metrics.awaitingAudit || 0)}
+                                <span className={`text-8xl md:text-[9rem] font-black tracking-tighter leading-none ${colorTasksTargetDatePassed}`}>
+                                    {valTasksTargetDatePassed}
                                 </span>
                             </div>
                             <div className="w-full bg-rose-500/10 h-1.5 rounded-full overflow-hidden max-w-[80%] mt-2">
