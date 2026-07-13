@@ -2186,20 +2186,20 @@
 
             // Color coding logic
             const valSopNotFollowed = metrics.sopNotFollowedThis || 0;
-            const colorSopNotFollowed = valSopNotFollowed === 0 ? 'text-emerald-500' : 'text-red-500 animate-pulse';
+            const colorSopNotFollowed = valSopNotFollowed === 0 ? 'text-emerald-500' : 'text-red-500';
 
             const valSopNotChecked = metrics.unansweredThis || 0;
             const colorSopNotChecked = valSopNotChecked === 0 
                 ? 'text-emerald-500' 
-                : (dayOfWeek <= 3 ? 'text-white' : 'text-red-500 animate-pulse');
+                : (dayOfWeek <= 3 ? 'text-white' : 'text-red-500');
 
             const valTasksNotSeen = metrics.pending || 0;
-            const colorTasksNotSeen = valTasksNotSeen === 0 ? 'text-emerald-500' : 'text-red-500 animate-pulse';
+            const colorTasksNotSeen = valTasksNotSeen === 0 ? 'text-emerald-500' : 'text-red-500';
 
             const valTasksTargetDatePassed = (metrics.overdue || 0) + (metrics.awaitingAudit || 0);
             const colorTasksTargetDatePassed = valTasksTargetDatePassed === 0 
                 ? 'text-emerald-500' 
-                : (isBefore2PM ? 'text-amber-500' : 'text-red-500 animate-pulse');
+                : (isBefore2PM ? 'text-amber-500' : 'text-red-500');
 
             return (
                 <div className="w-screen h-screen bg-slate-950 text-white flex flex-col p-6 gap-6 overflow-hidden select-none relative font-sans">
@@ -2216,11 +2216,11 @@
 
                     {/* Row 1 (SOP Compliance - 2 Cards) */}
                     <div className="grid grid-cols-2 gap-6 h-[calc(50vh-20px)]">
-                        {/* SOPs Not Followed This Week */}
+                        {/* Policies Not Followed This Week */}
                         <div className="bg-gradient-to-br from-amber-955/35 to-amber-900/10 border border-amber-500/20 rounded-3xl p-8 flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden group gap-4">
                             <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-amber-500/5 blur-3xl group-hover:bg-amber-500/10 transition-all duration-500"></div>
                             <div>
-                                <h2 className="text-4xl md:text-5xl font-extrabold text-slate-100 tracking-tight">SOPs Not Followed This Week</h2>
+                                <h2 className="text-4xl md:text-5xl font-extrabold text-slate-100 tracking-tight">Policies Not Followed This Week</h2>
                             </div>
                             <div className="flex items-center justify-center">
                                 <span className={`text-9xl md:text-[10rem] font-black tracking-tighter leading-none ${colorSopNotFollowed}`}>
