@@ -6384,7 +6384,12 @@
                 const isMD = !!effectivePermissions.CanVerifyDirectives;
                 let matchesRepeatingVisibility = true;
                 if (!isMD && (d.type === 'WSR' || d.type === 'Reports')) {
-                    matchesRepeatingVisibility = isDueToday(d.type, d.repetition) || d.status === 'Pending';
+                    const isOnEvent = d.repetition && String(d.repetition).trim().toLowerCase() === 'on event';
+                    if (isOnEvent) {
+                        matchesRepeatingVisibility = true;
+                    } else {
+                        matchesRepeatingVisibility = isDueToday(d.type, d.repetition) || d.status === 'Pending';
+                    }
                 }
 
                 return matchesSearch && matchesDept && matchesStatus && matchesPriority && matchesType && matchesCreator && matchesRepeatingVisibility;
