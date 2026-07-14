@@ -3233,16 +3233,26 @@
             // Update description if changed (with Option A Report Name prefix for Reports type)
             if (indices.descIdx !== -1) {
                 const currentType = updatedFields.type || directive.type;
+                let descVal = '';
                 if (currentType === 'Reports') {
                     const finalReportName = updatedFields.hasOwnProperty('reportName') ? (updatedFields.reportName || '') : (directive.reportName || '');
                     const finalDesc = updatedFields.hasOwnProperty('description') ? (updatedFields.description || '') : (directive.description || '');
-                    updatedRowValues[indices.descIdx] = `Report Name: ${finalReportName}\n${finalDesc}`;
+                    descVal = `Report Name: ${finalReportName}\n${finalDesc}`;
                 } else {
                     if (updatedFields.hasOwnProperty('description')) {
-                        updatedRowValues[indices.descIdx] = updatedFields.description || '';
-                    } else if (!updatedRowValues[indices.descIdx]) {
-                        updatedRowValues[indices.descIdx] = directive.description || '';
+                        descVal = updatedFields.description || '';
+                    } else {
+                        descVal = updatedRowValues[indices.descIdx] || directive.description || '';
                     }
+                }
+
+                // Preserve the [CreatedBy: ...] tag if the directive has a creator
+                const cleanDesc = String(descVal).replace(/\[CreatedBy:\s*(.*?)\]/i, '').trim();
+                const creator = directive.createdBy || '';
+                if (creator) {
+                    updatedRowValues[indices.descIdx] = `${cleanDesc}\n\n[CreatedBy: ${creator}]`;
+                } else {
+                    updatedRowValues[indices.descIdx] = cleanDesc;
                 }
             }
 
