@@ -862,7 +862,7 @@
                         );
                         
                         if (record) {
-                            if (record.compliance === 'Following') {
+                            if (record.compliance === 'Following' || String(record.compliance).toLowerCase() === 'action taken') {
                                 followingPolicies.push({ ...policy, record });
                             } else if (record.compliance === 'Not Following') {
                                 notFollowingPolicies.push({ ...policy, record });
