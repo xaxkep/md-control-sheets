@@ -1852,7 +1852,15 @@
                                                                 
                                                                 return (
                                                                     <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 text-slate-700">
-                                                                        <td className="py-3 px-3 font-mono font-bold text-slate-800">{m.targetId}</td>
+                                                                        <td className="py-3 px-3">
+                                                                            <div className="font-mono font-bold text-slate-800">{m.targetId}</div>
+                                                                            {m.type === 'dept' && (() => {
+                                                                                const headName = mappings.find(map => String(map.id).trim() === m.targetId)?.headName;
+                                                                                return headName ? (
+                                                                                    <div className="text-[10px] text-slate-450 font-bold mt-0.5">{headName}</div>
+                                                                                ) : null;
+                                                                            })()}
+                                                                        </td>
                                                                         <td className="py-3 px-3 uppercase text-[10px] font-extrabold tracking-wider">
                                                                             <span className={`px-2 py-0.5 rounded ${m.type === 'dept' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/40' : 'bg-amber-50 text-amber-700 border border-amber-200/40'}`}>
                                                                                 {m.type}
