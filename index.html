@@ -5397,7 +5397,7 @@
                             descIdx = idx;
                         } else if (name.includes('priority') || name.includes('piority')) {
                             priorityIdx = idx;
-                        } else if (name.includes('target') || name.includes('deadline')) {
+                        } else if (name.includes('target') && name.includes('date')) {
                             targetDateIdx = idx;
                         } else if (name.includes('verification') || name.includes('audit')) {
                             verificationIdx = idx;
@@ -5422,9 +5422,6 @@
                 }
 
                 const maxRowLength = values.reduce((max, r) => Math.max(max, r ? r.length : 0), 0);
-                if (targetDateIdx === -1 && maxRowLength > 4) {
-                    targetDateIdx = 4; // Fallback to 5th column (Column E)
-                }
                 if (completionDateIdx === -1 && maxRowLength > 9) {
                     completionDateIdx = 9; // Fallback to 10th column (Column J)
                 }
